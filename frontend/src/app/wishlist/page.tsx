@@ -1,182 +1,26 @@
 "use client"
 
-import { useState } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import ProtectedRoute from '@/components/auth/ProtectedRoute'
-import { Heart, ShoppingCart, Trash2, Eye } from 'lucide-react'
-import { useCartGlobal as useCart } from '@/hooks/useCartGlobal'
+import { Heart, Trash2, Eye } from 'lucide-react'
+import { useRouter } from 'next/navigation'
 import { formatPrice } from '@/utils/currency'
-import { toast } from 'react-hot-toast'
-import { Product } from '@/types'
-
-// Mock data - En producción esto vendría de la API
-const mockWishlistItems = [
-  {
-    id: 1,
-    product: {
-      id: 1,
-      name: "Tank Top Essential",
-      slug: "tank-top-essential",
-      price: 29.99,
-      compare_price: 39.99,
-      brand: "FitStore",
-      category: "Tops",
-      image: "/images/products/tank-top-1.jpg",
-      rating: 4.8,
-      reviews: 124,
-      is_featured: true,
-      stock_quantity: 33
-    },
-    added_at: "2024-01-15T10:30:00Z"
-  },
-  {
-    id: 2,
-    product: {
-      id: 2,
-      name: "Leggings Power",
-      slug: "leggings-power",
-      price: 59.99,
-      compare_price: 79.99,
-      brand: "FitStore",
-      category: "Bottoms",
-      image: "/images/products/leggings-1.jpg",
-      rating: 4.9,
-      reviews: 89,
-      is_featured: true,
-      stock_quantity: 20
-    },
-    added_at: "2024-01-12T14:20:00Z"
-  },
-  {
-    id: 3,
-    product: {
-      id: 3,
-      name: "Hoodie Training",
-      slug: "hoodie-training",
-      price: 79.99,
-      compare_price: 99.99,
-      brand: "FitStore",
-      category: "Outerwear",
-      image: "/images/products/hoodie-1.jpg",
-      rating: 4.7,
-      reviews: 156,
-      is_featured: true,
-      stock_quantity: 15
-    },
-    added_at: "2024-01-10T09:15:00Z"
-  },
-  {
-    id: 4,
-    product: {
-      id: 4,
-      name: "Sports Bra Elite",
-      slug: "sports-bra-elite",
-      price: 39.99,
-      compare_price: 49.99,
-      brand: "FitStore",
-      category: "Sports Bras",
-      image: "/images/products/sports-bra-1.jpg",
-      rating: 4.9,
-      reviews: 203,
-      is_featured: true,
-      stock_quantity: 25
-    },
-    added_at: "2024-01-08T16:45:00Z"
-  }
-]
+import { useWishlist } from '@/hooks/useWishlist'
 
 export default function WishlistPage() {
-  const [wishlistItems, setWishlistItems] = useState(mockWishlistItems)
-  const { addToCart } = useCart()
+  const { items: wishlistItems, removeFromWishlist } = useWishlist()
+  const router = useRouter()
 
-  const convertToProduct = (wishlistProduct: any): Product => {
-    return {
-      id: wishlistProduct.id,
-      name: wishlistProduct.name,
-      slug: wishlistProduct.slug,
-      description: 'Descripción del producto',
-      short_description: 'Descripción corta',
-      sku: `SKU-${wishlistProduct.id}`,
-      category: 1,
-      brand: 1,
-      price: wishlistProduct.price * 1000, // Convertir a centavos
-      compare_price: (wishlistProduct.compare_price || wishlistProduct.price) * 1000,
-      cost_price: wishlistProduct.price * 500,
-      track_inventory: true,
-      inventory_quantity: wishlistProduct.stock_quantity || 100,
-      low_stock_threshold: 10,
-      allow_backorder: false,
-      status: 'published' as const,
-      is_featured: wishlistProduct.is_featured,
-      is_digital: false,
-      requires_shipping: true,
-      weight: 0.5,
-      meta_title: wishlistProduct.name,
-      meta_description: 'Descripción',
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-      published_at: new Date().toISOString(),
-      images: [{
-        id: 1,
-        product: wishlistProduct.id,
-        image: wishlistProduct.image,
-        alt_text: wishlistProduct.name,
-        sort_order: 1,
-        is_primary: true,
-        created_at: new Date().toISOString()
-      }],
-      category_details: {
-        id: 1,
-        name: wishlistProduct.category,
-        slug: wishlistProduct.category.toLowerCase(),
-        description: 'Descripción',
-        is_active: true,
-        sort_order: 1,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      },
-      brand_details: {
-        id: 1,
-        name: wishlistProduct.brand,
-        slug: wishlistProduct.brand.toLowerCase(),
-        description: 'Descripción',
-        is_active: true,
-        sort_order: 1,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      }
-    }
+  const handleViewDetails = (product: any) => {
+    router.push(`/producto/${product.slug}`)
   }
 
-  const handleAddToCart = async (product: any) => {
-    try {
-      const fullProduct = convertToProduct(product)
-      await addToCart(fullProduct, 1)
-      toast.success('Producto agregado al carrito')
-    } catch (error) {
-      toast.error('Error al agregar al carrito')
-    }
+  const handleRemoveFromWishlist = (productId: number) => {
+    removeFromWishlist(productId)
   }
 
-  const handleRemoveFromWishlist = (itemId: number) => {
-    setWishlistItems(prev => prev.filter(item => item.id !== itemId))
-    toast.success('Producto eliminado de la lista de deseos')
-  }
 
-  const handleAddAllToCart = async () => {
-    try {
-      for (const item of wishlistItems) {
-        const fullProduct = convertToProduct(item.product)
-        await addToCart(fullProduct, 1)
-      }
-      toast.success('Todos los productos agregados al carrito')
-      // Limpiar wishlist después de agregar todo al carrito
-      setWishlistItems([])
-    } catch (error) {
-      toast.error('Error al agregar productos al carrito')
-    }
-  }
 
   return (
     <ProtectedRoute>
@@ -207,7 +51,7 @@ export default function WishlistPage() {
                 Agrega productos que te gusten para tenerlos siempre a mano
               </p>
               <Link
-                href="/shop"
+                href="/tienda"
                 className="btn-primary inline-flex items-center"
               >
                 Explorar Productos
@@ -222,15 +66,7 @@ export default function WishlistPage() {
                     {wishlistItems.length} producto{wishlistItems.length !== 1 ? 's' : ''} en tu lista
                   </span>
                 </div>
-                <div className="flex space-x-4">
-                  <button
-                    onClick={handleAddAllToCart}
-                    className="btn-secondary flex items-center"
-                  >
-                    <ShoppingCart className="w-4 h-4 mr-2" />
-                    Agregar Todo al Carrito
-                  </button>
-                </div>
+
               </div>
 
               {/* Wishlist Items Grid */}
@@ -242,12 +78,18 @@ export default function WishlistPage() {
                   >
                     {/* Product Image */}
                     <div className="relative aspect-square overflow-hidden">
-                      <Image
-                        src={item.product.image}
-                        alt={item.product.name}
-                        fill
-                        className="object-cover transition-transform duration-500 group-hover:scale-110"
-                      />
+                      {item.product.images && item.product.images.length > 0 ? (
+                        <Image
+                          src={item.product.images[0].image}
+                          alt={item.product.name}
+                          fill
+                          className="object-cover transition-transform duration-500 group-hover:scale-110"
+                        />
+                      ) : (
+                        <div className="w-full h-full bg-dark-700 flex items-center justify-center">
+                          <span className="text-dark-400 text-sm">Sin imagen</span>
+                        </div>
+                      )}
 
                       {/* Overlay */}
                       <div className="absolute inset-0 bg-gradient-to-t from-dark-900/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
@@ -255,7 +97,7 @@ export default function WishlistPage() {
                       {/* Quick Actions */}
                       <div className="absolute top-4 right-4 flex flex-col space-y-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                         <button
-                          onClick={() => handleRemoveFromWishlist(item.id)}
+                          onClick={() => handleRemoveFromWishlist(item.product.id)}
                           className="p-2 bg-red-600/80 backdrop-blur-sm rounded-full text-white hover:bg-red-600 transition-colors duration-200"
                           title="Eliminar de la lista de deseos"
                           aria-label="Eliminar de la lista de deseos"
@@ -263,8 +105,9 @@ export default function WishlistPage() {
                           <Trash2 className="w-4 h-4" />
                         </button>
                         <Link
-                          href={`/products/${item.product.slug}`}
+                          href={`/producto/${item.product.slug}`}
                           className="p-2 bg-dark-800/80 backdrop-blur-sm rounded-full text-white hover:text-neon-green transition-colors duration-200"
+                          title="Ver detalles del producto"
                         >
                           <Eye className="w-4 h-4" />
                         </Link>
@@ -281,49 +124,30 @@ export default function WishlistPage() {
                     {/* Product Info */}
                     <div className="p-6">
                       <div className="mb-2">
-                        <span className="text-sm text-neon-green font-medium">{item.product.brand}</span>
+                        <span className="text-sm text-neon-green font-medium">
+                          {item.product.brand_details?.name || 'Sin marca'}
+                        </span>
                       </div>
 
                       <h3 className="text-lg font-semibold text-white mb-2 group-hover:text-neon-green transition-colors duration-200">
-                        <Link href={`/products/${item.product.slug}`}>
+                        <Link href={`/producto/${item.product.slug}`}>
                           {item.product.name}
                         </Link>
                       </h3>
 
                       <p className="text-sm text-white/70 mb-4">
-                        {item.product.category}
+                        {item.product.category_details?.name || 'Sin categoría'}
                       </p>
-
-                      {/* Rating */}
-                      <div className="flex items-center mb-4">
-                        <div className="flex items-center">
-                          {[...Array(5)].map((_, i) => (
-                            <span
-                              key={i}
-                              className={`text-sm ${
-                                i < Math.floor(item.product.rating)
-                                  ? 'text-yellow-400'
-                                  : 'text-gray-400'
-                              }`}
-                            >
-                              ★
-                            </span>
-                          ))}
-                        </div>
-                        <span className="text-sm text-white/70 ml-2">
-                          ({item.product.rating})
-                        </span>
-                      </div>
 
                       {/* Price */}
                       <div className="flex items-center justify-between mb-4">
                         <div className="flex items-center space-x-2">
                           <span className="text-xl font-bold text-white">
-                            {formatPrice(item.product.price * 100)}
+                            {formatPrice(item.product.price)}
                           </span>
                           {item.product.compare_price && item.product.compare_price > item.product.price && (
                             <span className="text-sm text-white/50 line-through">
-                              {formatPrice(item.product.compare_price * 100)}
+                              {formatPrice(item.product.compare_price)}
                             </span>
                           )}
                         </div>
@@ -333,33 +157,30 @@ export default function WishlistPage() {
                       <div className="mb-4">
                         <div className="flex items-center">
                           <div className={`w-2 h-2 rounded-full mr-2 ${
-                            item.product.stock_quantity > 10
+                            item.product.inventory_quantity > 10
                               ? 'bg-green-400'
-                              : item.product.stock_quantity > 0
+                              : item.product.inventory_quantity > 0
                               ? 'bg-yellow-400'
                               : 'bg-red-400'
                           }`} />
                           <span className="text-sm text-white/70">
-                            {item.product.stock_quantity > 10
+                            {item.product.inventory_quantity > 10
                               ? 'En stock'
-                              : item.product.stock_quantity > 0
-                              ? `Solo ${item.product.stock_quantity} disponibles`
+                              : item.product.inventory_quantity > 0
+                              ? `Solo ${item.product.inventory_quantity} disponibles`
                               : 'Agotado'
                             }
                           </span>
                         </div>
                       </div>
 
-                      {/* Add to Cart Button */}
+                      {/* View Details Button */}
                       <button
-                        onClick={() => handleAddToCart(item.product)}
-                        disabled={item.product.stock_quantity === 0}
-                        className={`w-full btn-primary flex items-center justify-center group ${
-                          item.product.stock_quantity === 0 ? 'opacity-50 cursor-not-allowed' : ''
-                        }`}
+                        onClick={() => handleViewDetails(item.product)}
+                        className="w-full btn-primary flex items-center justify-center group"
                       >
-                        <ShoppingCart className="w-4 h-4 mr-2 group-hover:scale-110 transition-transform duration-200" />
-                        {item.product.stock_quantity === 0 ? 'Agotado' : 'Agregar al Carrito'}
+                        <Eye className="w-4 h-4 mr-2 group-hover:scale-110 transition-transform duration-200" />
+                        Ver detalles
                       </button>
 
                       {/* Date Added */}
@@ -393,37 +214,29 @@ export default function WishlistPage() {
                       </div>
                       <div>
                         <div className="text-2xl font-bold text-neon-blue">
-                          {formatPrice(wishlistItems.reduce((total, item) => total + item.product.price, 0) * 100)}
+                          {formatPrice(wishlistItems.reduce((total, item) => total + item.product.price, 0))}
                         </div>
                         <div className="text-sm text-white/70">Valor Total</div>
                       </div>
                       <div>
                         <div className="text-2xl font-bold text-neon-purple">
                           {formatPrice(wishlistItems
-                            .filter(item => item.product.compare_price)
+                            .filter(item => item.product.compare_price && item.product.compare_price > item.product.price)
                             .reduce((total, item) =>
-                              total + ((item.product.compare_price || item.product.price) - item.product.price), 0
-                            ) * 100)}
+                              total + (item.product.compare_price - item.product.price), 0
+                            ))}
                         </div>
                         <div className="text-sm text-white/70">Ahorro</div>
                       </div>
                       <div>
                         <div className="text-2xl font-bold text-accent-500">
-                          {wishlistItems.filter(item => item.product.stock_quantity === 0).length}
+                          {wishlistItems.filter(item => item.product.inventory_quantity === 0).length}
                         </div>
                         <div className="text-sm text-white/70">Agotados</div>
                       </div>
                     </div>
                   </div>
-                  <div className="flex space-x-4">
-                    <button
-                      onClick={handleAddAllToCart}
-                      className="btn-primary flex items-center"
-                    >
-                      <ShoppingCart className="w-5 h-5 mr-2" />
-                      Comprar Todo
-                    </button>
-                  </div>
+
                 </div>
               </div>
             </>

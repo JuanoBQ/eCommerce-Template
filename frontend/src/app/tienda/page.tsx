@@ -4,11 +4,13 @@ import { useState, useEffect, Suspense } from 'react'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
 import { Grid, List, SlidersHorizontal, X } from 'lucide-react'
-import { useCartGlobal as useCart } from '@/hooks/useCartGlobal'
+import { useRouter } from 'next/navigation'
 import { useProducts } from '@/hooks/useProducts'
+import { useWishlist } from '@/hooks/useWishlist'
 import { Product } from '@/types'
 import { formatPrice } from '@/utils/currency'
 import Dropdown from '@/components/ui/Dropdown'
+import { Heart } from 'lucide-react'
 
 
 
@@ -24,8 +26,9 @@ interface Filters {
 }
 
 function TiendaContent() {
-  const { addToCart } = useCart()
+  const router = useRouter()
   const { products, categories, brands, isLoading: productsLoading, loadProducts } = useProducts()
+  const { addToWishlist, removeFromWishlist, isInWishlist } = useWishlist()
   const searchParams = useSearchParams()
   const [filteredProducts, setFilteredProducts] = useState<Product[]>([])
   const [filters, setFilters] = useState<Filters>({
@@ -119,8 +122,16 @@ function TiendaContent() {
     setFilteredProducts(filtered)
   }, [products, filters.search, filters.category, filters.brand, filters.minPrice, filters.maxPrice, filters.sortBy, filters.sortOrder])
 
-  const handleAddToCart = (product: Product) => {
-    addToCart(product, 1)
+  const handleViewDetails = (product: Product) => {
+    router.push(`/producto/${product.slug}`)
+  }
+
+  const handleWishlistToggle = (product: Product) => {
+    if (isInWishlist(product.id)) {
+      removeFromWishlist(product.id)
+    } else {
+      addToWishlist(product)
+    }
   }
 
   const clearFilters = () => {
@@ -390,17 +401,22 @@ function TiendaContent() {
 
                       <div className="flex gap-2">
                         <button
-                          onClick={() => handleAddToCart(product)}
+                          onClick={() => handleWishlistToggle(product)}
+                          className={`p-2 rounded-lg transition-colors ${
+                            isInWishlist(product.id)
+                              ? 'bg-red-600 text-white hover:bg-red-700'
+                              : 'bg-dark-700 text-white hover:bg-dark-600'
+                          }`}
+                          title={isInWishlist(product.id) ? 'Eliminar de lista de deseos' : 'Agregar a lista de deseos'}
+                        >
+                          <Heart className={`w-4 h-4 ${isInWishlist(product.id) ? 'fill-current' : ''}`} />
+                        </button>
+                        <button
+                          onClick={() => handleViewDetails(product)}
                           className="flex-1 bg-neon-green text-dark-900 px-4 py-2 rounded-lg font-semibold hover:bg-neon-green/90 transition-colors"
                         >
-                          Agregar al carrito
-                        </button>
-                        <Link
-                          href={`/producto/${product.slug}`}
-                          className="px-4 py-2 border border-dark-600 text-white rounded-lg hover:bg-dark-700 transition-colors"
-                        >
                           Ver detalles
-                        </Link>
+                        </button>
                       </div>
                     </div>
                   </div>

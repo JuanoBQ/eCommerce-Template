@@ -255,6 +255,15 @@ class ProductVariant(models.Model):
         blank=True
     )
     
+    # Imagen específica de la variante
+    image = models.ImageField(
+        _('variant image'),
+        upload_to='products/variants/',
+        null=True,
+        blank=True,
+        help_text=_('Imagen específica para esta variante')
+    )
+    
     # Timestamps
     created_at = models.DateTimeField(_('created at'), auto_now_add=True)
     updated_at = models.DateTimeField(_('updated at'), auto_now=True)

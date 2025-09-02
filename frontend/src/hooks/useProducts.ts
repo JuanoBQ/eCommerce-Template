@@ -4,10 +4,34 @@ import { Product, Category, Brand } from '@/types'
 import { getMockCategories, getMockBrands } from '@/data/mockData'
 import toast from 'react-hot-toast'
 
+// Tipos para tallas y colores
+export interface Size {
+  id: number
+  name: string
+  type: 'clothing' | 'shoes' | 'accessories'
+  type_display: string
+  sort_order: number
+  is_active: boolean
+  created_at: string
+  updated_at: string
+}
+
+export interface Color {
+  id: number
+  name: string
+  hex_code: string
+  is_active: boolean
+  sort_order: number
+  created_at: string
+  updated_at: string
+}
+
 export const useProducts = () => {
   const [products, setProducts] = useState<Product[]>([])
   const [categories, setCategories] = useState<Category[]>([])
   const [brands, setBrands] = useState<Brand[]>([])
+  const [sizes, setSizes] = useState<Size[]>([])
+  const [colors, setColors] = useState<Color[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -16,8 +40,12 @@ export const useProducts = () => {
   // Load categories and brands
   const loadCategories = useCallback(async () => {
     try {
+      console.log('🔍 Loading categories from API...')
       const response = await categoriesApi.getCategories()
-      setCategories(response.results || response)
+      console.log('🔍 Categories API response:', response)
+      const categoriesData = response.results || response
+      console.log('🔍 Categories data to set:', categoriesData)
+      setCategories(categoriesData)
     } catch (err) {
       console.error('Error loading categories, using mock data:', err)
       // Usar datos mock como fallback
@@ -27,12 +55,36 @@ export const useProducts = () => {
 
   const loadBrands = useCallback(async () => {
     try {
+      console.log('🔍 Loading brands from API...')
       const response = await categoriesApi.getBrands()
-      setBrands(response.results || response)
+      console.log('🔍 Brands API response:', response)
+      const brandsData = response.results || response
+      console.log('🔍 Brands data to set:', brandsData)
+      setBrands(brandsData)
     } catch (err) {
       console.error('Error loading brands, using mock data:', err)
       // Usar datos mock como fallback
       setBrands(getMockBrands())
+    }
+  }, [])
+
+  const loadSizes = useCallback(async (type: 'clothing' | 'shoes' | 'accessories' = 'clothing') => {
+    try {
+      const response = await categoriesApi.getSizes(type)
+      setSizes(response.results || response)
+    } catch (err) {
+      console.error('Error loading sizes:', err)
+      setSizes([])
+    }
+  }, [])
+
+  const loadColors = useCallback(async () => {
+    try {
+      const response = await categoriesApi.getColors()
+      setColors(response.results || response)
+    } catch (err) {
+      console.error('Error loading colors:', err)
+      setColors([])
     }
   }, [])
 
@@ -67,12 +119,16 @@ export const useProducts = () => {
     try {
       await Promise.all([
         loadCategories(),
-        loadBrands()
+        loadBrands(),
+        loadSizes('clothing'),
+        loadSizes('shoes'),
+        loadSizes('accessories'),
+        loadColors()
       ])
     } catch (err) {
       console.error('Error loading real data:', err)
     }
-  }, [loadCategories, loadBrands])
+  }, [loadCategories, loadBrands, loadSizes, loadColors])
 
   // Create product
   const createProduct = useCallback(async (productData: any): Promise<Product> => {
@@ -80,12 +136,17 @@ export const useProducts = () => {
     setError(null)
     try {
       console.log('🚀 Enviando datos al backend:', productData)
+      console.log('🚀 Estructura de datos:', JSON.stringify(productData, null, 2))
+      console.log('🚀 Variantes:', productData.variants)
       const newProduct = await productsApi.createProduct(productData) as Product
       setProducts(prev => [newProduct, ...prev])
       toast.success('Producto creado exitosamente')
       return newProduct
     } catch (err: any) {
       console.error('Error creating product, creating mock product:', err)
+      console.error('Error response data:', err.response?.data)
+      console.error('Error status:', err.response?.status)
+      console.error('Error message:', err.message)
       // Crear un producto mock como fallback
       const mockProduct: Product = {
         id: Date.now(),
@@ -221,12 +282,26 @@ export const useProducts = () => {
     loadRealData()
   }, [loadRealData])
 
-
+  // Upload variant image
+  const uploadVariantImage = useCallback(async (variantId: number, file: File) => {
+    try {
+      const result = await productsApi.uploadVariantImage(variantId, file)
+      toast.success('Imagen de variante subida exitosamente')
+      return result
+    } catch (err: any) {
+      console.error('Error uploading variant image:', err)
+      const errorMessage = err.response?.data?.detail || 'Error al subir imagen de variante'
+      toast.error(errorMessage)
+      throw err
+    }
+  }, [])
 
   return {
     products,
     categories,
     brands,
+    sizes,
+    colors,
     isLoading,
     error,
     loadProducts,
@@ -235,8 +310,11 @@ export const useProducts = () => {
     deleteProduct,
     getProduct,
     uploadProductImage,
+    uploadVariantImage,
     loadCategories,
     loadBrands,
+    loadSizes,
+    loadColors,
   }
 }
 

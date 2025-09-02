@@ -18,6 +18,7 @@ urlpatterns = [
     # Variantes de productos
     path('<int:product_id>/variants/', views.ProductVariantView.as_view(), name='product-variant-list'),
     path('<int:product_id>/variants/<int:pk>/', views.ProductVariantDetailView.as_view(), name='product-variant-detail'),
+    path('variants/<int:variant_id>/image/', views.upload_variant_image, name='upload-variant-image'),
     
     # Reseñas de productos
     path('<int:product_id>/reviews/', views.ProductReviewView.as_view(), name='product-review-list'),

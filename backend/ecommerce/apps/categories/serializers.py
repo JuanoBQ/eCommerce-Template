@@ -7,23 +7,26 @@ class CategorySerializer(serializers.ModelSerializer):
     Serializer para categorías.
     """
     children = serializers.SerializerMethodField()
-    level = serializers.ReadOnlyField()
+    parent_name = serializers.StringRelatedField(source='parent', read_only=True)
     full_path = serializers.ReadOnlyField()
+    level = serializers.ReadOnlyField()
     
     class Meta:
         model = Category
         fields = [
             'id', 'name', 'slug', 'description', 'image', 'icon',
-            'parent', 'is_active', 'sort_order', 'meta_title',
-            'meta_description', 'created_at', 'updated_at',
-            'children', 'level', 'full_path'
+            'parent', 'parent_name', 'is_active', 'sort_order',
+            'meta_title', 'meta_description', 'created_at', 'updated_at',
+            'children', 'full_path', 'level'
         ]
-        read_only_fields = ['id', 'created_at', 'updated_at']
+        read_only_fields = ['id', 'slug', 'created_at', 'updated_at']
     
     def get_children(self, obj):
-        if obj.children.exists():
-            return CategorySerializer(obj.children.filter(is_active=True), many=True).data
-        return []
+        """
+        Retorna las categorías hijas.
+        """
+        children = obj.get_children()
+        return CategorySerializer(children, many=True, context=self.context).data
 
 
 class BrandSerializer(serializers.ModelSerializer):
@@ -37,17 +40,19 @@ class BrandSerializer(serializers.ModelSerializer):
             'is_active', 'sort_order', 'meta_title', 'meta_description',
             'created_at', 'updated_at'
         ]
-        read_only_fields = ['id', 'created_at', 'updated_at']
+        read_only_fields = ['id', 'slug', 'created_at', 'updated_at']
 
 
 class SizeSerializer(serializers.ModelSerializer):
     """
     Serializer para tallas.
     """
+    type_display = serializers.CharField(source='get_type_display', read_only=True)
+    
     class Meta:
         model = Size
         fields = [
-            'id', 'name', 'type', 'sort_order', 'is_active',
+            'id', 'name', 'type', 'type_display', 'sort_order', 'is_active',
             'created_at', 'updated_at'
         ]
         read_only_fields = ['id', 'created_at', 'updated_at']

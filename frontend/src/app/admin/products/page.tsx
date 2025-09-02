@@ -150,6 +150,29 @@ export default function ProductsPage() {
         </div>
       </div>
 
+      {/* Categorías más populares */}
+      <div className="bg-dark-800 border border-dark-700 rounded-xl p-6 mt-6">
+        <h3 className="text-lg font-semibold text-white mb-4">Distribución por Categorías</h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {categories && Array.isArray(categories) && categories.map((category) => {
+            const categoryProducts = products.filter(p => p.category_details?.name === category.name)
+            return (
+              <div key={category.id} className="bg-dark-700 rounded-lg p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-white font-medium">{category.name}</p>
+                    <p className="text-dark-400 text-sm">{categoryProducts.length} productos</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-neon-green font-bold text-lg">{categoryProducts.length}</p>
+                  </div>
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      </div>
+
       {/* Filters */}
       <div className="bg-dark-800 border border-dark-700 rounded-xl p-6">
         <div className="space-y-4">
@@ -188,7 +211,7 @@ export default function ProductsPage() {
               aria-label="Filtrar productos por categoría"
             >
               <option value="all">Todas las categorías</option>
-              {categories.map((category) => (
+              {Array.isArray(categories) && categories.map((category) => (
                 <option key={category.id} value={category.name}>
                   {category.name}
                 </option>
@@ -203,7 +226,7 @@ export default function ProductsPage() {
               aria-label="Filtrar productos por marca"
             >
               <option value="all">Todas las marcas</option>
-              {brands.map((brand) => (
+              {Array.isArray(brands) && brands.map((brand) => (
                 <option key={brand.id} value={brand.name}>
                   {brand.name}
                 </option>

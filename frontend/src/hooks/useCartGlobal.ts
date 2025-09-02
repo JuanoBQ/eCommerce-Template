@@ -60,35 +60,43 @@ export const useCartGlobal = () => {
     }
   }, [rerender])
 
-  const addToCart = useCallback((product: Product, quantity: number = 1) => {
-    console.log('Adding to cart:', product.id, product.name, quantity)
+  const addToCart = useCallback((product: Product, quantity: number = 1, variant?: any) => {
+    console.log('Adding to cart:', product.id, product.name, quantity, variant)
 
-    const existingItemIndex = globalCartState.items.findIndex(item => item.product === product.id)
+    // Si hay variante, buscar por producto + variante, sino solo por producto
+    const existingItemIndex = globalCartState.items.findIndex(item => 
+      item.product === product.id && 
+      (variant ? item.variant === variant.id : !item.variant)
+    )
     let newItems: CartItem[]
 
     if (existingItemIndex >= 0) {
       // Update existing item
       newItems = [...globalCartState.items]
       const newQuantity = newItems[existingItemIndex].quantity + quantity
+      const unitPrice = variant?.price || product.price
       newItems[existingItemIndex] = {
         ...newItems[existingItemIndex],
         quantity: newQuantity,
-        total_price: product.price * newQuantity
+        variant_details: variant,
+        total_price: unitPrice * newQuantity
       }
       console.log('Updated existing item:', newItems[existingItemIndex])
     } else {
       // Add new item
+      const unitPrice = variant?.price || product.price
       const newItem: CartItem = {
         id: Date.now(),
         cart: 1,
         product: product.id,
-        variant: undefined,
+        variant: variant?.id,
         quantity,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
         product_details: product,
-        unit_price: product.price,
-        total_price: product.price * quantity
+        variant_details: variant,
+        unit_price: unitPrice,
+        total_price: unitPrice * quantity
       }
       newItems = [...globalCartState.items, newItem]
       console.log('Added new item:', newItem)

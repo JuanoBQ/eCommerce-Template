@@ -20,7 +20,7 @@ class ProductListView(generics.ListCreateAPIView):
     """
     Vista para listar y crear productos.
     """
-    queryset = Product.objects.select_related('category', 'brand').prefetch_related('images')
+    queryset = Product.objects.select_related('category', 'brand').prefetch_related('images', 'variants__size', 'variants__color')
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
     filterset_class = ProductFilter
     search_fields = ['name', 'description', 'short_description', 'sku']
@@ -37,6 +37,9 @@ class ProductListView(generics.ListCreateAPIView):
         if not self.request.user.is_authenticated:
             # Para usuarios no autenticados, solo productos publicados
             queryset = queryset.filter(status='published')
+        
+
+        
         return queryset
     
     def get_serializer_class(self):
@@ -55,7 +58,7 @@ class ProductDetailView(generics.RetrieveUpdateDestroyAPIView):
     Vista para obtener, actualizar y eliminar un producto específico.
     """
     queryset = Product.objects.select_related('category', 'brand').prefetch_related(
-        'images', 'variants', 'reviews'
+        'images', 'variants__size', 'variants__color', 'reviews'
     )
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
     
@@ -278,6 +281,42 @@ def upload_product_image(request, product_id):
     
     serializer = ProductImageSerializer(product_image)
     return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+
+@api_view(['POST'])
+@permission_classes([permissions.IsAuthenticated])
+def upload_variant_image(request, variant_id):
+    """
+    Vista para subir imagen de variante de producto.
+    """
+    try:
+        variant = ProductVariant.objects.get(id=variant_id)
+    except ProductVariant.DoesNotExist:
+        return Response({'error': 'Variante no encontrada'}, status=status.HTTP_404_NOT_FOUND)
+    
+    if 'image' not in request.FILES:
+        return Response({'error': 'No se proporcionó archivo de imagen'}, 
+                       status=status.HTTP_400_BAD_REQUEST)
+    
+    image = request.FILES['image']
+    
+    # Validar tamaño del archivo (máximo 10MB)
+    if image.size > 10 * 1024 * 1024:
+        return Response({'error': 'El archivo es demasiado grande. Máximo 10MB.'}, 
+                       status=status.HTTP_400_BAD_REQUEST)
+    
+    # Validar tipo de archivo
+    allowed_types = ['image/jpeg', 'image/png', 'image/gif', 'image/webp']
+    if image.content_type not in allowed_types:
+        return Response({'error': 'Tipo de archivo no válido. Solo se permiten JPG, PNG, GIF y WebP.'}, 
+                       status=status.HTTP_400_BAD_REQUEST)
+    
+    # Actualizar imagen de la variante
+    variant.image = image
+    variant.save()
+    
+    serializer = ProductVariantSerializer(variant)
+    return Response(serializer.data, status=status.HTTP_200_OK)
 
 
 @api_view(['GET'])

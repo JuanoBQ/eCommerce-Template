@@ -122,6 +122,86 @@ export default function ProductDetailPage() {
     ) || null
   }
 
+  // Obtener tallas únicas disponibles
+  const getAvailableSizes = () => {
+    if (!product?.variants) return []
+    
+    const sizes = new Map()
+    product.variants.forEach(variant => {
+      if (variant.size_details && variant.inventory_quantity > 0) {
+        // Si hay un color seleccionado, solo mostrar tallas de ese color
+        if (selectedColor) {
+          const hasColorVariant = product.variants?.some(v => 
+            v.size === variant.size && v.color === selectedColor && v.inventory_quantity > 0
+          )
+          if (hasColorVariant) {
+            sizes.set(variant.size, variant.size_details)
+          }
+        } else {
+          sizes.set(variant.size, variant.size_details)
+        }
+      }
+    })
+    
+    return Array.from(sizes.values())
+  }
+
+  // Obtener colores únicos disponibles
+  const getAvailableColors = () => {
+    if (!product?.variants) return []
+    
+    const colors = new Map()
+    product.variants.forEach(variant => {
+      if (variant.color_details && variant.inventory_quantity > 0) {
+        // Si hay una talla seleccionada, solo mostrar colores de esa talla
+        if (selectedSize) {
+          const hasSizeVariant = product.variants?.some(v => 
+            v.size === selectedSize && v.color === variant.color && v.inventory_quantity > 0
+          )
+          if (hasSizeVariant) {
+            colors.set(variant.color, variant.color_details)
+          }
+        } else {
+          colors.set(variant.color, variant.color_details)
+        }
+      }
+    })
+    
+    return Array.from(colors.values())
+  }
+
+  // Manejar selección de talla
+  const handleSizeSelection = (sizeId: number) => {
+    setSelectedSize(sizeId)
+    
+    // Si hay un color seleccionado, verificar si la combinación existe
+    if (selectedColor) {
+      const variant = product?.variants?.find(v => 
+        v.size === sizeId && v.color === selectedColor && v.inventory_quantity > 0
+      )
+      if (!variant) {
+        // Si la combinación no existe, limpiar la selección de color
+        setSelectedColor(null)
+      }
+    }
+  }
+
+  // Manejar selección de color
+  const handleColorSelection = (colorId: number) => {
+    setSelectedColor(colorId)
+    
+    // Si hay una talla seleccionada, verificar si la combinación existe
+    if (selectedSize) {
+      const variant = product?.variants?.find(v => 
+        v.size === selectedSize && v.color === colorId && v.inventory_quantity > 0
+      )
+      if (!variant) {
+        // Si la combinación no existe, limpiar la selección de talla
+        setSelectedSize(null)
+      }
+    }
+  }
+
   const getCurrentPrice = () => {
     if (!product) return 0
     
@@ -192,8 +272,14 @@ export default function ProductDetailPage() {
 
     setIsLoading(true)
     try {
-      addToCart(product, quantity)
-      toast.success(`${quantity} ${quantity === 1 ? 'unidad' : 'unidades'} agregada${quantity === 1 ? '' : 's'} al carrito`)
+      const variant = getSelectedVariant()
+      addToCart(product, quantity, variant)
+      
+      const variantText = variant 
+        ? ` (${variant.size_details?.name} - ${variant.color_details?.name})`
+        : ''
+      
+      toast.success(`${quantity} ${quantity === 1 ? 'unidad' : 'unidades'} agregada${quantity === 1 ? '' : 's'} al carrito${variantText}`)
     } catch (error) {
       toast.error('Error al agregar al carrito')
     } finally {
@@ -415,22 +501,22 @@ export default function ProductDetailPage() {
                 <div>
                   <h3 className="text-lg font-semibold text-white mb-3">Talla</h3>
                   <div className="flex flex-wrap gap-2">
-                    {product.variants.map((variant) => (
+                    {getAvailableSizes().map((size) => (
                       <button
-                        key={variant.id}
-                        onClick={() => setSelectedSize(variant.size || null)}
-                        disabled={variant.inventory_quantity === 0}
+                        key={size.id}
+                        onClick={() => handleSizeSelection(size.id)}
                         className={`px-4 py-2 border rounded-lg font-medium transition-all ${
-                          selectedSize === variant.size
+                          selectedSize === size.id
                             ? 'border-neon-green bg-neon-green text-dark-900'
-                            : variant.inventory_quantity === 0
-                            ? 'border-dark-600 text-dark-500 cursor-not-allowed'
                             : 'border-dark-600 text-white hover:border-dark-500'
                         }`}
                       >
-                        {variant.size_details?.name}
+                        {size.name}
                       </button>
                     ))}
+                    {getAvailableSizes().length === 0 && (
+                      <p className="text-dark-400 text-sm">No hay tallas disponibles</p>
+                    )}
                   </div>
                 </div>
 
@@ -438,21 +524,23 @@ export default function ProductDetailPage() {
                 <div>
                   <h3 className="text-lg font-semibold text-white mb-3">Color</h3>
                   <div className="flex flex-wrap gap-2">
-                    {product.variants.map((variant) => (
+                    {getAvailableColors().map((color) => (
                       <button
-                        key={variant.id}
-                        onClick={() => setSelectedColor(variant.color || null)}
-                        disabled={variant.inventory_quantity === 0}
+                        key={color.id}
+                        onClick={() => handleColorSelection(color.id)}
                         className={`w-10 h-10 rounded-full border-2 transition-all ${
-                          selectedColor === variant.color 
+                          selectedColor === color.id 
                             ? 'border-neon-green scale-110' 
                             : 'border-dark-600 hover:border-dark-500'
                         }`}
-                        style={{ backgroundColor: variant.color_details?.hex_code || '#666' }}
-                        title={variant.color_details?.name}
-                        aria-label={`Seleccionar color ${variant.color_details?.name}`}
+                        style={{ backgroundColor: color.hex_code || '#666' }}
+                        title={color.name}
+                        aria-label={`Seleccionar color ${color.name}`}
                       />
                     ))}
+                    {getAvailableColors().length === 0 && (
+                      <p className="text-dark-400 text-sm">No hay colores disponibles</p>
+                    )}
                   </div>
                 </div>
               </div>

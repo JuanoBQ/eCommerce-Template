@@ -12,8 +12,9 @@ import {
   Trash2
 } from 'lucide-react'
 import { toast } from 'react-hot-toast'
-import { useProducts } from '@/hooks/useProducts'
+import { useProducts, Size, Color } from '@/hooks/useProducts'
 import { Category, Brand } from '@/types'
+import ProductVariants from '@/components/admin/ProductVariants'
 
 interface ProductFormData {
   name: string
@@ -42,16 +43,19 @@ interface ProductFormData {
 }
 
 interface ProductVariant {
-  id: string
-  name: string
-  price: number
-  stock: number
-  attributes: Record<string, string>
+  id?: number
+  size?: number
+  color?: number
+  size_details?: Size
+  color_details?: Color
+  inventory_quantity?: number
+  image?: File
+  image_url?: string
 }
 
 export default function NewProductPage() {
   const router = useRouter()
-  const { createProduct, categories, brands, isLoading, uploadProductImage } = useProducts()
+  const { createProduct, categories, brands, sizes, colors, isLoading, uploadProductImage } = useProducts()
   
 
   const [formData, setFormData] = useState<ProductFormData>({
@@ -81,6 +85,18 @@ export default function NewProductPage() {
   })
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [uploadProgress, setUploadProgress] = useState<Record<number, number>>({})
+
+  // Calcular inventario total automáticamente basado en las variantes
+  useEffect(() => {
+    const totalInventory = formData.variants.reduce((sum, variant) => {
+      return sum + (variant.inventory_quantity || 0)
+    }, 0)
+    
+    setFormData(prev => ({
+      ...prev,
+      inventory_quantity: totalInventory
+    }))
+  }, [formData.variants])
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target
@@ -173,6 +189,13 @@ export default function NewProductPage() {
         weight: formData.weight || null, // Ensure weight is null if not provided
         meta_title: formData.meta_title || '',
         meta_description: formData.meta_description || '',
+        variants: formData.variants.map(variant => ({
+          size: variant.size || null,
+          color: variant.color || null,
+          inventory_quantity: variant.inventory_quantity || 0,
+          // Las imágenes de variantes se subirán por separado después de crear el producto
+          // Los demás campos se generarán automáticamente en el backend
+        }))
       }
 
       // Create the product
@@ -189,6 +212,23 @@ export default function NewProductPage() {
             })
           } catch (error) {
             console.error(`Error uploading image ${i + 1}:`, error)
+          }
+        }
+      }
+
+      // Upload variant images if any
+      if (newProduct.variants && formData.variants.length > 0) {
+        for (let i = 0; i < formData.variants.length; i++) {
+          const variant = formData.variants[i]
+          const createdVariant = newProduct.variants[i]
+          
+          if (variant.image && createdVariant) {
+            try {
+              await uploadVariantImage(createdVariant.id, variant.image)
+              console.log(`✅ Imagen de variante ${i + 1} subida correctamente`)
+            } catch (error) {
+              console.error(`Error uploading variant image ${i + 1}:`, error)
+            }
           }
         }
       }
@@ -489,20 +529,20 @@ export default function NewProductPage() {
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
                 <div>
                   <label className="block text-sm font-medium text-white mb-2">
-                    Inventario
+                    Inventario Total
+                    <span className="text-xs text-gray-400 ml-2">(Calculado automáticamente)</span>
                   </label>
                   <input
                     type="number"
                     name="inventory_quantity"
                     value={formData.inventory_quantity}
-                    onChange={handleInputChange}
-                    min="0"
-                    className={`w-full px-4 py-3 bg-dark-700 border rounded-lg text-white placeholder-dark-400 focus:outline-none focus:ring-2 focus:ring-neon-green focus:border-transparent ${
-                      errors.inventory_quantity ? 'border-red-500' : 'border-dark-600'
-                    }`}
+                    readOnly
+                    className="w-full px-4 py-3 bg-dark-600 border border-dark-500 rounded-lg text-white placeholder-dark-400 cursor-not-allowed"
                     placeholder="0"
                   />
-                  {errors.inventory_quantity && <p className="text-red-400 text-sm mt-1">{errors.inventory_quantity}</p>}
+                  <p className="text-gray-400 text-xs mt-1">
+                    Se calcula sumando el stock de todas las variantes
+                  </p>
                 </div>
 
                 <div>
@@ -688,6 +728,17 @@ export default function NewProductPage() {
                   Cancelar
                 </Link>
               </div>
+            </div>
+
+            {/* Product Variants */}
+            <div className="bg-dark-800 border border-dark-700 rounded-xl p-6">
+              <ProductVariants
+                variants={formData.variants}
+                sizes={sizes}
+                colors={colors}
+                onVariantsChange={(variants) => setFormData({ ...formData, variants })}
+                selectedCategory={formData.category}
+              />
             </div>
 
             {/* Product Preview */}

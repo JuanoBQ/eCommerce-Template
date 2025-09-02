@@ -6,15 +6,19 @@ import { useRouter } from 'next/navigation'
 import { ShoppingCart, User, Search, Menu, X, Heart } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
 import { useCartGlobal as useCart } from '@/hooks/useCartGlobal'
+import { useWishlist } from '@/hooks/useWishlist'
 import CartSidebar from '@/components/cart/CartSidebar'
+import WishlistDropdown from '@/components/layout/WishlistDropdown'
 
 const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [isCartOpen, setIsCartOpen] = useState(false)
+  const [isWishlistOpen, setIsWishlistOpen] = useState(false)
   const [isScrolled, setIsScrolled] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
   const { user, isAuthenticated, logout } = useAuth()
   const { totalItems } = useCart()
+  const { count: wishlistCount } = useWishlist()
   const router = useRouter()
 
   // Debug: Log totalItems in header (commented out for production)
@@ -162,12 +166,23 @@ const Header = () => {
             )}
 
             {/* Wishlist */}
-            <Link
-              href="/wishlist"
-              className="p-2 text-white hover:text-neon-green transition-colors duration-200 relative"
-            >
-              <Heart className="w-5 h-5" />
-            </Link>
+            <div className="relative">
+              <button
+                onClick={() => setIsWishlistOpen(!isWishlistOpen)}
+                className="p-2 text-white hover:text-neon-green transition-colors duration-200 relative"
+              >
+                <Heart className="w-5 h-5" />
+                {wishlistCount > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-neon-green text-dark-900 text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
+                    {wishlistCount}
+                  </span>
+                )}
+              </button>
+              <WishlistDropdown 
+                isOpen={isWishlistOpen} 
+                onClose={() => setIsWishlistOpen(false)} 
+              />
+            </div>
 
             {/* Shopping Cart */}
             <button

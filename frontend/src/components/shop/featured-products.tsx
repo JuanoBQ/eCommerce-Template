@@ -4,14 +4,16 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { Heart, ShoppingCart, Eye, Star } from 'lucide-react'
-import { useCartGlobal as useCart } from '@/hooks/useCartGlobal'
+import { useRouter } from 'next/navigation'
 import { useProducts } from '@/hooks/useProducts'
+import { useWishlist } from '@/hooks/useWishlist'
 import { Product } from '@/types'
 import { formatPrice } from '@/utils/currency'
 
 const FeaturedProducts = () => {
-  const { addToCart } = useCart()
+  const router = useRouter()
   const { products, loadProducts, isLoading } = useProducts()
+  const { addToWishlist, removeFromWishlist, isInWishlist } = useWishlist()
   const [hoveredProduct, setHoveredProduct] = useState<number | null>(null)
 
   // Cargar productos al montar el componente
@@ -24,8 +26,16 @@ const FeaturedProducts = () => {
     product.is_featured && product.status === 'published'
   ).slice(0, 6) // Mostrar máximo 6 productos destacados
 
-  const handleAddToCart = (product: Product) => {
-    addToCart(product, 1)
+  const handleViewDetails = (product: Product) => {
+    router.push(`/producto/${product.slug}`)
+  }
+
+  const handleWishlistToggle = (product: Product) => {
+    if (isInWishlist(product.id)) {
+      removeFromWishlist(product.id)
+    } else {
+      addToWishlist(product)
+    }
   }
 
 
@@ -171,18 +181,23 @@ const FeaturedProducts = () => {
                 {/* Botones */}
                 <div className="flex gap-2">
                   <button
-                    onClick={() => handleAddToCart(product)}
+                    onClick={() => handleWishlistToggle(product)}
+                    className={`p-2 rounded-lg transition-colors ${
+                      isInWishlist(product.id)
+                        ? 'bg-red-600 text-white hover:bg-red-700'
+                        : 'bg-dark-700 text-white hover:bg-dark-600'
+                    }`}
+                    title={isInWishlist(product.id) ? 'Eliminar de lista de deseos' : 'Agregar a lista de deseos'}
+                  >
+                    <Heart className={`w-4 h-4 ${isInWishlist(product.id) ? 'fill-current' : ''}`} />
+                  </button>
+                  <button
+                    onClick={() => handleViewDetails(product)}
                     className="flex-1 bg-neon-green text-dark-900 px-4 py-2 rounded-lg font-semibold hover:bg-neon-green/90 transition-colors flex items-center justify-center gap-2"
                   >
-                    <ShoppingCart className="w-4 h-4" />
-                    Agregar
-                  </button>
-                  <Link
-                    href={`/producto/${product.slug}`}
-                    className="px-4 py-2 border border-dark-600 text-white rounded-lg hover:bg-dark-700 transition-colors flex items-center justify-center"
-                  >
                     <Eye className="w-4 h-4" />
-                  </Link>
+                    Ver detalles
+                  </button>
                 </div>
               </div>
             </div>
