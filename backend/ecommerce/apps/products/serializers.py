@@ -194,12 +194,26 @@ class ProductDetailSerializer(serializers.ModelSerializer):
         return obj.reviews.filter(is_approved=True).count()
 
 
+class ProductVariantWriteSerializer(serializers.ModelSerializer):
+    """
+    Serializer para escribir variantes (crear/actualizar).
+    Permite el campo 'id' para actualizaciones.
+    """
+    class Meta:
+        model = ProductVariant
+        fields = [
+            'id', 'size', 'color', 'inventory_quantity', 
+            'low_stock_threshold', 'is_active', 'weight'
+        ]
+        # No incluir 'id' en read_only_fields para permitir actualizaciones
+
+
 class ProductCreateUpdateSerializer(serializers.ModelSerializer):
     """
     Serializer para crear y actualizar productos.
     """
     images = ProductImageSerializer(many=True, required=False)
-    variants = ProductVariantSerializer(many=True, required=False)
+    variants = ProductVariantWriteSerializer(many=True, required=False)
     
     def is_valid(self, raise_exception=False):
         print("🔍 ProductCreateUpdateSerializer.is_valid - data:", self.initial_data)
@@ -359,18 +373,52 @@ class ProductCreateUpdateSerializer(serializers.ModelSerializer):
         
         # Actualizar variantes si se proporcionan
         if variants_data:
-            instance.variants.all().delete()
+            existing_variant_ids = []
+            
             for variant_data in variants_data:
-                # Generar SKU automáticamente si no se proporciona
-                if 'sku' not in variant_data or not variant_data['sku']:
-                    variant_data['sku'] = self.generate_variant_sku(instance, variant_data)
+                variant_id = variant_data.get('id')
                 
-                # Establecer valores por defecto para campos obligatorios
-                variant_data.setdefault('inventory_quantity', 0)
-                variant_data.setdefault('low_stock_threshold', 5)
-                variant_data.setdefault('is_active', True)
-                
-                ProductVariant.objects.create(product=instance, **variant_data)
+                if variant_id:
+                    # Actualizar variante existente
+                    try:
+                        variant = ProductVariant.objects.get(id=variant_id, product=instance)
+                        for attr, value in variant_data.items():
+                            if attr != 'id':  # No actualizar el ID
+                                setattr(variant, attr, value)
+                        variant.save()
+                        existing_variant_ids.append(variant_id)
+                    except ProductVariant.DoesNotExist:
+                        # Si la variante no existe, crear una nueva
+                        variant_data_copy = variant_data.copy()
+                        variant_data_copy.pop('id', None)  # Remover ID para crear nueva
+                        
+                        # Generar SKU automáticamente si no se proporciona
+                        if 'sku' not in variant_data_copy or not variant_data_copy['sku']:
+                            variant_data_copy['sku'] = self.generate_variant_sku(instance, variant_data_copy)
+                        
+                        # Establecer valores por defecto para campos obligatorios
+                        variant_data_copy.setdefault('inventory_quantity', 0)
+                        variant_data_copy.setdefault('low_stock_threshold', 5)
+                        variant_data_copy.setdefault('is_active', True)
+                        
+                        new_variant = ProductVariant.objects.create(product=instance, **variant_data_copy)
+                        existing_variant_ids.append(new_variant.id)
+                else:
+                    # Crear nueva variante
+                    # Generar SKU automáticamente si no se proporciona
+                    if 'sku' not in variant_data or not variant_data['sku']:
+                        variant_data['sku'] = self.generate_variant_sku(instance, variant_data)
+                    
+                    # Establecer valores por defecto para campos obligatorios
+                    variant_data.setdefault('inventory_quantity', 0)
+                    variant_data.setdefault('low_stock_threshold', 5)
+                    variant_data.setdefault('is_active', True)
+                    
+                    new_variant = ProductVariant.objects.create(product=instance, **variant_data)
+                    existing_variant_ids.append(new_variant.id)
+            
+            # Eliminar variantes que ya no están en la lista
+            instance.variants.exclude(id__in=existing_variant_ids).delete()
         
         return instance
 

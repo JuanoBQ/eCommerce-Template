@@ -9,42 +9,112 @@ class OrderItemSerializer(serializers.ModelSerializer):
     """
     product = ProductListSerializer(read_only=True)
     product_id = serializers.IntegerField(write_only=True)
+    price = serializers.DecimalField(max_digits=10, decimal_places=2, write_only=True)
     
     class Meta:
         model = OrderItem
         fields = [
             'id', 'product', 'product_id', 'quantity', 'price', 
-            'size', 'color', 'created_at'
+            'unit_price', 'total_price', 'product_name', 'product_sku', 'variant_info'
         ]
-        read_only_fields = ['id', 'created_at']
+        read_only_fields = ['id', 'unit_price', 'total_price', 'product_name', 'product_sku', 'variant_info']
 
 
-class OrderSerializer(serializers.ModelSerializer):
+class OrderListSerializer(serializers.ModelSerializer):
     """
-    Serializer para órdenes.
+    Serializer para listar órdenes (versión simplificada).
     """
-    items = OrderItemSerializer(many=True, read_only=True)
     user_email = serializers.EmailField(source='user.email', read_only=True)
-    user_name = serializers.CharField(source='user.get_full_name', read_only=True)
+    user_name = serializers.CharField(source='user.full_name', read_only=True)
+    items_count = serializers.SerializerMethodField()
+    status_display = serializers.CharField(source='get_status_display', read_only=True)
+    payment_status_display = serializers.CharField(source='get_payment_status_display', read_only=True)
     
     class Meta:
         model = Order
         fields = [
-            'id', 'user', 'user_email', 'user_name', 'total_amount', 
-            'status', 'shipping_address', 'billing_address', 
-            'payment_method', 'transaction_id', 'notes', 
-            'items', 'created_at', 'updated_at'
+            'id', 'order_number', 'user_email', 'user_name', 'total_amount', 
+            'status', 'status_display', 'payment_status', 'payment_status_display',
+            'items_count', 'created_at', 'updated_at'
         ]
-        read_only_fields = ['id', 'user', 'created_at', 'updated_at']
+        read_only_fields = ['id', 'order_number', 'created_at', 'updated_at']
+    
+    def get_items_count(self, obj):
+        """Cuenta el número de items en la orden."""
+        return obj.items.count()
+
+
+class OrderDetailSerializer(serializers.ModelSerializer):
+    """
+    Serializer para detalles de órdenes.
+    """
+    items = OrderItemSerializer(many=True, read_only=True)
+    user_email = serializers.EmailField(source='user.email', read_only=True)
+    user_name = serializers.CharField(source='user.full_name', read_only=True)
+    status_display = serializers.CharField(source='get_status_display', read_only=True)
+    payment_status_display = serializers.CharField(source='get_payment_status_display', read_only=True)
+    
+    class Meta:
+        model = Order
+        fields = [
+            'id', 'order_number', 'uuid', 'user', 'user_email', 'user_name', 
+            'status', 'status_display', 'payment_status', 'payment_status_display',
+            'email', 'phone', 'shipping_address', 'billing_address', 
+            'notes', 'total_amount', 'items', 'created_at', 'updated_at'
+        ]
+        read_only_fields = ['id', 'order_number', 'uuid', 'user', 'created_at', 'updated_at']
+
+
+class OrderCreateSerializer(serializers.ModelSerializer):
+    """
+    Serializer para crear órdenes.
+    """
+    items = OrderItemSerializer(many=True, write_only=True)
+    
+    class Meta:
+        model = Order
+        fields = [
+            'email', 'phone', 'shipping_address', 'billing_address', 
+            'notes', 'items'
+        ]
+    
+
     
     def create(self, validated_data):
         """
-        Crea una nueva orden.
+        Crea una nueva orden con sus items.
         """
-        items_data = self.context.get('items', [])
-        order = Order.objects.create(**validated_data)
+        items_data = validated_data.pop('items', [])
         
+        # Calcular totales
+        total_amount = sum(item['quantity'] * item['price'] for item in items_data)
+        
+        # Crear la orden con campos requeridos
+        order = Order.objects.create(
+            email=validated_data['email'],
+            phone=validated_data['phone'],
+            shipping_address=validated_data['shipping_address'],
+            billing_address=validated_data.get('billing_address', validated_data['shipping_address']),
+            notes=validated_data.get('notes', ''),
+            subtotal=total_amount,
+            total_amount=total_amount,
+            shipping_first_name='Usuario',  # Valor por defecto
+            shipping_last_name='Cliente',
+            shipping_city='Bogotá',
+            shipping_state='Cundinamarca',
+            shipping_country='Colombia',
+            shipping_postal_code='110111',
+            user=self.context['request'].user
+        )
+        
+        # Crear los items de la orden
         for item_data in items_data:
-            OrderItem.objects.create(order=order, **item_data)
+            OrderItem.objects.create(
+                order=order,
+                product_id=item_data['product_id'],
+                quantity=item_data['quantity'],
+                unit_price=item_data['price'],
+                total_price=item_data['quantity'] * item_data['price']
+            )
         
         return order

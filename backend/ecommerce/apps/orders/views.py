@@ -1,9 +1,12 @@
-from rest_framework import viewsets, status, permissions
+from rest_framework import viewsets, status, permissions, generics
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from django.db.models import Q
 from .models import Order, OrderItem
-from .serializers import OrderSerializer, OrderItemSerializer
+from .serializers import (
+    OrderListSerializer, OrderDetailSerializer, OrderCreateSerializer, 
+    OrderItemSerializer
+)
 from ecommerce.apps.users.permissions import IsOwnerOrAdmin
 
 
@@ -11,16 +14,28 @@ class OrderViewSet(viewsets.ModelViewSet):
     """
     ViewSet para gestionar órdenes.
     """
-    serializer_class = OrderSerializer
     permission_classes = [permissions.IsAuthenticated, IsOwnerOrAdmin]
+    
+    def get_serializer_class(self):
+        """
+        Retorna el serializer apropiado según la acción.
+        """
+        if self.action == 'list':
+            return OrderListSerializer
+        elif self.action == 'create':
+            return OrderCreateSerializer
+        else:
+            return OrderDetailSerializer
     
     def get_queryset(self):
         """
         Filtra las órdenes según el usuario.
         """
+        queryset = Order.objects.select_related('user').prefetch_related('items__product')
+        
         if self.request.user.is_staff:
-            return Order.objects.all().select_related('user')
-        return Order.objects.filter(user=self.request.user).select_related('user')
+            return queryset.all()
+        return queryset.filter(user=self.request.user)
     
     def perform_create(self, serializer):
         """
@@ -34,7 +49,7 @@ class OrderViewSet(viewsets.ModelViewSet):
         Cancela una orden.
         """
         order = self.get_object()
-        if order.status in ['pending', 'processing']:
+        if order.status in ['pending', 'confirmed']:
             order.status = 'cancelled'
             order.save()
             return Response({'status': 'Order cancelled'})
@@ -44,17 +59,62 @@ class OrderViewSet(viewsets.ModelViewSet):
         )
     
     @action(detail=True, methods=['post'])
-    def complete(self, request, pk=None):
+    def confirm(self, request, pk=None):
         """
-        Marca una orden como completada.
+        Confirma una orden.
+        """
+        order = self.get_object()
+        if order.status == 'pending':
+            order.status = 'confirmed'
+            order.save()
+            return Response({'status': 'Order confirmed'})
+        return Response(
+            {'error': 'Order cannot be confirmed'}, 
+            status=status.HTTP_400_BAD_REQUEST
+        )
+    
+    @action(detail=True, methods=['post'])
+    def process(self, request, pk=None):
+        """
+        Marca una orden como en proceso.
+        """
+        order = self.get_object()
+        if order.status == 'confirmed':
+            order.status = 'processing'
+            order.save()
+            return Response({'status': 'Order processing'})
+        return Response(
+            {'error': 'Order cannot be processed'}, 
+            status=status.HTTP_400_BAD_REQUEST
+        )
+    
+    @action(detail=True, methods=['post'])
+    def ship(self, request, pk=None):
+        """
+        Marca una orden como enviada.
         """
         order = self.get_object()
         if order.status == 'processing':
-            order.status = 'completed'
+            order.status = 'shipped'
             order.save()
-            return Response({'status': 'Order completed'})
+            return Response({'status': 'Order shipped'})
         return Response(
-            {'error': 'Order cannot be completed'}, 
+            {'error': 'Order cannot be shipped'}, 
+            status=status.HTTP_400_BAD_REQUEST
+        )
+    
+    @action(detail=True, methods=['post'])
+    def deliver(self, request, pk=None):
+        """
+        Marca una orden como entregada.
+        """
+        order = self.get_object()
+        if order.status == 'shipped':
+            order.status = 'delivered'
+            order.save()
+            return Response({'status': 'Order delivered'})
+        return Response(
+            {'error': 'Order cannot be delivered'}, 
             status=status.HTTP_400_BAD_REQUEST
         )
 

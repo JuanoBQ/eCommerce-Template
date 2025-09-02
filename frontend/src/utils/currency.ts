@@ -4,12 +4,12 @@
 
 /**
  * Formatea un precio en pesos colombianos
- * @param price - Precio en centavos (desde la base de datos)
+ * @param price - Precio en pesos (desde la base de datos)
  * @param options - Opciones de formateo
  * @returns Precio formateado como string
  */
 export const formatPrice = (
-  price: number, 
+  price: number | null | undefined, 
   options: {
     showCurrency?: boolean;
     showDecimals?: boolean;
@@ -22,8 +22,13 @@ export const formatPrice = (
     compact = false
   } = options;
 
-  // Convertir de centavos a pesos
-  const pesos = price / 100;
+  // Manejar valores nulos o indefinidos
+  if (price == null || isNaN(price)) {
+    return showCurrency ? '$0' : '0';
+  }
+
+  // Los precios ya vienen en pesos, no en centavos
+  const pesos = price;
 
   const formatOptions: Intl.NumberFormatOptions = {
     style: showCurrency ? 'currency' : 'decimal',
@@ -43,12 +48,14 @@ export const formatPrice = (
  * @returns Objeto con precios formateados y porcentaje de descuento
  */
 export const formatPriceWithDiscount = (
-  originalPrice: number,
-  discountPrice: number
+  originalPrice: number | null | undefined,
+  discountPrice: number | null | undefined
 ) => {
   const original = formatPrice(originalPrice);
   const discounted = formatPrice(discountPrice);
-  const discountPercentage = Math.round(((originalPrice - discountPrice) / originalPrice) * 100);
+  const discountPercentage = (originalPrice && discountPrice) 
+    ? Math.round(((originalPrice - discountPrice) / originalPrice) * 100)
+    : 0;
 
   return {
     original,
@@ -63,7 +70,7 @@ export const formatPriceWithDiscount = (
  * @param maxPrice - Precio máximo en centavos
  * @returns Rango de precios formateado
  */
-export const formatPriceRange = (minPrice: number, maxPrice: number): string => {
+export const formatPriceRange = (minPrice: number | null | undefined, maxPrice: number | null | undefined): string => {
   if (minPrice === maxPrice) {
     return formatPrice(minPrice);
   }
@@ -76,7 +83,7 @@ export const formatPriceRange = (minPrice: number, maxPrice: number): string => 
  * @param price - Precio en centavos
  * @returns Precio formateado de forma compacta
  */
-export const formatCompactPrice = (price: number): string => {
+export const formatCompactPrice = (price: number | null | undefined): string => {
   return formatPrice(price, { compact: true });
 };
 
@@ -85,7 +92,7 @@ export const formatCompactPrice = (price: number): string => {
  * @param price - Precio en centavos
  * @returns Precio formateado sin símbolo de moneda
  */
-export const formatPriceWithoutCurrency = (price: number): string => {
+export const formatPriceWithoutCurrency = (price: number | null | undefined): string => {
   return formatPrice(price, { showCurrency: false });
 };
 
@@ -94,6 +101,6 @@ export const formatPriceWithoutCurrency = (price: number): string => {
  * @param price - Precio en centavos
  * @returns Precio formateado con decimales
  */
-export const formatPriceWithDecimals = (price: number): string => {
+export const formatPriceWithDecimals = (price: number | null | undefined): string => {
   return formatPrice(price, { showDecimals: true });
 };

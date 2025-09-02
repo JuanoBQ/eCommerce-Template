@@ -12,8 +12,9 @@ import {
   Trash2
 } from 'lucide-react'
 import { toast } from 'react-hot-toast'
-import { useProducts } from '@/hooks/useProducts'
-import { Product } from '@/types'
+import { useProducts, Size, Color } from '@/hooks/useProducts'
+import { Product, Category, Brand } from '@/types'
+import ProductVariants from '@/components/admin/ProductVariants'
 
 interface ProductFormData {
   name: string
@@ -21,29 +22,41 @@ interface ProductFormData {
   short_description: string
   sku: string
   price: number
-  compare_price: number
-  cost_price: number
-  category: number
-  brand: number
+  compare_price?: number
+  cost_price?: number
+  category: number | null
+  brand: number | null
   gender: 'masculino' | 'femenino' | 'unisex' | ''
   track_inventory: boolean
   inventory_quantity: number
   low_stock_threshold: number
   allow_backorder: boolean
-  status: 'draft' | 'published' | 'archived'
+  status: 'published' | 'draft' | 'archived'
   is_featured: boolean
   is_digital: boolean
   requires_shipping: boolean
-  weight: number
-  meta_title: string
-  meta_description: string
+  weight?: number
+  meta_title?: string
+  meta_description?: string
   images: File[]
+  variants: ProductVariant[]
+}
+
+interface ProductVariant {
+  id?: number
+  size?: number
+  color?: number
+  size_details?: Size
+  color_details?: Color
+  inventory_quantity?: number
+  image?: File
+  image_url?: string
 }
 
 export default function EditProductPage() {
   const params = useParams()
   const router = useRouter()
-  const { getProduct, updateProduct, categories, brands } = useProducts()
+  const { getProduct, updateProduct, categories, brands, sizes, colors, uploadProductImage } = useProducts()
   
   const [product, setProduct] = useState<Product | null>(null)
   const [isLoading, setIsLoading] = useState(true)
@@ -61,12 +74,12 @@ export default function EditProductPage() {
     price: 0,
     compare_price: 0,
     cost_price: 0,
-    category: 0,
-    brand: 0,
+    category: null,
+    brand: null,
     gender: '',
     track_inventory: true,
     inventory_quantity: 0,
-    low_stock_threshold: 5,
+    low_stock_threshold: 10,
     allow_backorder: false,
     status: 'draft',
     is_featured: false,
@@ -75,8 +88,21 @@ export default function EditProductPage() {
     weight: 0,
     meta_title: '',
     meta_description: '',
-    images: []
+    images: [],
+    variants: []
   })
+
+  // Calcular inventario total automáticamente basado en las variantes
+  useEffect(() => {
+    const totalInventory = formData.variants.reduce((sum, variant) => {
+      return sum + (variant.inventory_quantity || 0)
+    }, 0)
+    
+    setFormData(prev => ({
+      ...prev,
+      inventory_quantity: totalInventory
+    }))
+  }, [formData.variants])
 
   useEffect(() => {
     if (productId) {
@@ -96,11 +122,11 @@ export default function EditProductPage() {
         description: productData.description,
         short_description: productData.short_description || '',
         sku: productData.sku,
-        price: productData.price / 100, // Convert from cents
-        compare_price: productData.compare_price ? productData.compare_price / 100 : 0,
-        cost_price: productData.cost_price ? productData.cost_price / 100 : 0,
+        price: productData.price, // Price in COP, no conversion needed
+        compare_price: productData.compare_price || 0,
+        cost_price: productData.cost_price || 0,
         category: productData.category,
-        brand: productData.brand || 0,
+        brand: productData.brand || null,
         gender: productData.gender || '',
         track_inventory: productData.track_inventory,
         inventory_quantity: productData.inventory_quantity,
@@ -113,7 +139,16 @@ export default function EditProductPage() {
         weight: productData.weight || 0,
         meta_title: productData.meta_title || '',
         meta_description: productData.meta_description || '',
-        images: []
+        images: [],
+        variants: productData.variants?.map(variant => ({
+          id: variant.id,
+          size: variant.size?.id,
+          color: variant.color?.id,
+          size_details: variant.size,
+          color_details: variant.color,
+          inventory_quantity: variant.inventory_quantity,
+          image_url: variant.image
+        })) || []
       })
     } catch (error) {
       console.error('Error loading product:', error)
@@ -208,9 +243,9 @@ export default function EditProductPage() {
         description: formData.description || formData.short_description,
         short_description: formData.short_description,
         sku: formData.sku,
-        price: Math.round(formData.price * 100),
-        compare_price: formData.compare_price ? Math.round(formData.compare_price * 100) : null,
-        cost_price: formData.cost_price ? Math.round(formData.cost_price * 100) : null,
+        price: formData.price,
+        compare_price: formData.compare_price || null,
+        cost_price: formData.cost_price || null,
         category: formData.category,
         brand: formData.brand || null,
         gender: formData.gender || 'unisex',
@@ -225,6 +260,12 @@ export default function EditProductPage() {
         weight: formData.weight || null,
         meta_title: formData.meta_title || '',
         meta_description: formData.meta_description || '',
+        variants: formData.variants.map(variant => ({
+          id: variant.id,
+          size: variant.size,
+          color: variant.color,
+          inventory_quantity: variant.inventory_quantity || 0
+        }))
       }
 
       // Update the product
@@ -714,6 +755,18 @@ export default function EditProductPage() {
                   </div>
                 )}
               </div>
+            </div>
+
+            {/* Product Variants */}
+            <div className="bg-dark-800 border border-dark-700 rounded-xl p-6">
+              <h3 className="text-lg font-semibold text-white mb-4">Variantes del Producto</h3>
+              <ProductVariants
+                variants={formData.variants}
+                onVariantsChange={(variants) => setFormData(prev => ({ ...prev, variants }))}
+                sizes={sizes}
+                colors={colors}
+                selectedCategory={formData.category}
+              />
             </div>
 
             {/* SEO */}

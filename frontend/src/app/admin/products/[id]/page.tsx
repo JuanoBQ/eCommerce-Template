@@ -21,6 +21,7 @@ import {
 import { toast } from 'react-hot-toast'
 import { useProducts } from '@/hooks/useProducts'
 import { Product } from '@/types'
+import { formatPrice } from '@/utils/currency'
 
 export default function ProductDetailPage() {
   const params = useParams()
@@ -294,7 +295,7 @@ export default function ProductDetailPage() {
               <div className="flex justify-between">
                 <span className="text-dark-400">Precio</span>
                 <span className="text-white font-semibold">
-                  ${(product.price / 100).toFixed(2)}
+                  {formatPrice(product.price)}
                 </span>
               </div>
               
@@ -302,7 +303,7 @@ export default function ProductDetailPage() {
                 <div className="flex justify-between">
                   <span className="text-dark-400">Precio Comparación</span>
                   <span className="text-white font-semibold">
-                    ${(product.compare_price / 100).toFixed(2)}
+                    {formatPrice(product.compare_price)}
                   </span>
                 </div>
               )}
@@ -311,7 +312,7 @@ export default function ProductDetailPage() {
                 <div className="flex justify-between">
                   <span className="text-dark-400">Precio de Costo</span>
                   <span className="text-white font-semibold">
-                    ${(product.cost_price / 100).toFixed(2)}
+                    {formatPrice(product.cost_price)}
                   </span>
                 </div>
               )}

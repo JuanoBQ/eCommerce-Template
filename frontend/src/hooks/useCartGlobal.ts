@@ -23,6 +23,13 @@ const notifyListeners = () => {
   listeners.forEach(listener => listener())
 }
 
+// Function to calculate totals from items
+const calculateTotals = (items: CartItem[]): { totalItems: number; totalPrice: number } => {
+  const totalItems = items.reduce((sum, item) => sum + (item.quantity || 0), 0)
+  const totalPrice = items.reduce((sum, item) => sum + (item.total_price || 0), 0)
+  return { totalItems, totalPrice }
+}
+
 // Function to update global state
 const updateGlobalState = (newState: CartState) => {
   globalCartState = newState
@@ -44,10 +51,25 @@ export const useCartGlobal = () => {
     if (savedCart) {
       try {
         const cartData = JSON.parse(savedCart)
-        globalCartState = cartData
-        console.log('Cart loaded from storage:', cartData)
+        
+        // Recalcular totales para asegurar consistencia
+        const { totalItems, totalPrice } = calculateTotals(cartData.items || [])
+        
+        globalCartState = {
+          items: cartData.items || [],
+          totalItems,
+          totalPrice,
+        }
+        
+        console.log('Cart loaded from storage:', globalCartState)
       } catch (error) {
         console.error('Error loading cart:', error)
+        // Reset to default state if there's an error
+        globalCartState = {
+          items: [],
+          totalItems: 0,
+          totalPrice: 0,
+        }
       }
     }
 
@@ -102,8 +124,7 @@ export const useCartGlobal = () => {
       console.log('Added new item:', newItem)
     }
 
-    const totalItems = newItems.reduce((sum, item) => sum + item.quantity, 0)
-    const totalPrice = newItems.reduce((sum, item) => sum + (item.total_price || 0), 0)
+    const { totalItems, totalPrice } = calculateTotals(newItems)
 
     const newState = {
       items: newItems,
@@ -129,8 +150,7 @@ export const useCartGlobal = () => {
       return item
     }).filter(item => item.quantity > 0)
 
-    const totalItems = newItems.reduce((sum, item) => sum + item.quantity, 0)
-    const totalPrice = newItems.reduce((sum, item) => sum + (item.total_price || 0), 0)
+    const { totalItems, totalPrice } = calculateTotals(newItems)
 
     const newState = {
       items: newItems,
@@ -144,8 +164,7 @@ export const useCartGlobal = () => {
 
   const removeFromCart = useCallback((itemId: number) => {
     const newItems = globalCartState.items.filter(item => item.id !== itemId)
-    const totalItems = newItems.reduce((sum, item) => sum + item.quantity, 0)
-    const totalPrice = newItems.reduce((sum, item) => sum + (item.total_price || 0), 0)
+    const { totalItems, totalPrice } = calculateTotals(newItems)
 
     const newState = {
       items: newItems,

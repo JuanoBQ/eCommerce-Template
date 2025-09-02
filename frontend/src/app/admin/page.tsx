@@ -113,7 +113,7 @@ export default function AdminDashboard() {
           <p className="text-2xl font-bold text-white mt-2">
             {typeof value === 'number' && value > 1000 
               ? `$${(value / 1000).toFixed(1)}K` 
-              : value.toLocaleString()}
+              : (typeof value === 'number' ? value.toLocaleString() : value)}
           </p>
           <div className="flex items-center mt-2">
             {growth > 0 ? (

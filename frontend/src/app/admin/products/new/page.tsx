@@ -172,9 +172,9 @@ export default function NewProductPage() {
         description: formData.description || formData.short_description, // Ensure description is not empty
         short_description: formData.short_description,
         sku: formData.sku,
-        price: Math.round(formData.price * 100), // Convert to cents and ensure integer
-        compare_price: formData.compare_price ? Math.round(formData.compare_price * 100) : null,
-        cost_price: formData.cost_price ? Math.round(formData.cost_price * 100) : null,
+        price: formData.price, // Price in COP, no conversion needed
+        compare_price: formData.compare_price || null,
+        cost_price: formData.cost_price || null,
         category: formData.category,
         brand: formData.brand || null, // Ensure brand is null if not selected
         gender: formData.gender || 'unisex', // Default to unisex if not selected
