@@ -1,147 +1,206 @@
 "use client"
 
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
-import { Heart, ShoppingCart, Star } from 'lucide-react'
-import Image from 'next/image'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { formatPrice } from '@/lib/utils'
+import Image from 'next/image'
+import { Heart, ShoppingCart, Eye, Star } from 'lucide-react'
+import { useCartGlobal as useCart } from '@/hooks/useCartGlobal'
+import { useProducts } from '@/hooks/useProducts'
+import { Product } from '@/types'
+import { formatPrice } from '@/utils/currency'
 
-// Mock data - En producción esto vendría de la API
-const featuredProducts = [
-  {
-    id: 1,
-    name: 'Camiseta Básica Premium',
-    slug: 'camiseta-basica-premium',
-    price: 45000,
-    compare_price: 60000,
-    image: '/images/products/camiseta-1.jpg',
-    rating: 4.8,
-    reviews: 124,
-    is_featured: true,
-    is_in_stock: true,
-  },
-  {
-    id: 2,
-    name: 'Jeans Slim Fit',
-    slug: 'jeans-slim-fit',
-    price: 120000,
-    compare_price: 150000,
-    image: '/images/products/jeans-1.jpg',
-    rating: 4.6,
-    reviews: 89,
-    is_featured: true,
-    is_in_stock: true,
-  },
-  {
-    id: 3,
-    name: 'Vestido Elegante',
-    slug: 'vestido-elegante',
-    price: 180000,
-    compare_price: 220000,
-    image: '/images/products/vestido-1.jpg',
-    rating: 4.9,
-    reviews: 67,
-    is_featured: true,
-    is_in_stock: true,
-  },
-  {
-    id: 4,
-    name: 'Chaqueta Casual',
-    slug: 'chaqueta-casual',
-    price: 200000,
-    compare_price: 250000,
-    image: '/images/products/chaqueta-1.jpg',
-    rating: 4.7,
-    reviews: 45,
-    is_featured: true,
-    is_in_stock: true,
-  },
-]
+const FeaturedProducts = () => {
+  const { addToCart } = useCart()
+  const { products, loadProducts, isLoading } = useProducts()
+  const [hoveredProduct, setHoveredProduct] = useState<number | null>(null)
 
-export default function FeaturedProducts() {
+  // Cargar productos al montar el componente
+  useEffect(() => {
+    loadProducts()
+  }, [loadProducts])
+
+  // Filtrar productos destacados
+  const featuredProducts = products.filter(product => 
+    product.is_featured && product.status === 'published'
+  ).slice(0, 6) // Mostrar máximo 6 productos destacados
+
+  const handleAddToCart = (product: Product) => {
+    addToCart(product, 1)
+  }
+
+
+
+  if (isLoading) {
+    return (
+      <section className="py-16 bg-dark-900">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-neon-green mx-auto mb-4"></div>
+            <p className="text-white">Cargando productos destacados...</p>
+          </div>
+        </div>
+      </section>
+    )
+  }
+
+  if (featuredProducts.length === 0) {
+    return (
+      <section className="py-16 bg-dark-900">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center">
+            <h2 className="text-3xl font-bold text-white mb-4">Productos Destacados</h2>
+            <p className="text-dark-300">No hay productos destacados disponibles en este momento.</p>
+          </div>
+        </div>
+      </section>
+    )
+  }
+
   return (
-    <section className="py-16 bg-gray-50">
-      <div className="container mx-auto px-4">
+    <section className="py-16 bg-dark-900">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        {/* Header */}
         <div className="text-center mb-12">
-          <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
-            Productos Destacados
+          <h2 className="text-3xl font-bold text-white mb-4">
+            Productos <span className="text-neon-green">Destacados</span>
           </h2>
-          <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-            Descubre nuestra selección de productos más populares y mejor valorados por nuestros clientes.
+          <p className="text-dark-300 text-lg max-w-2xl mx-auto">
+            Descubre nuestra selección de productos más populares y mejor valorados
           </p>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        {/* Grid de productos */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
           {featuredProducts.map((product) => (
-            <Card key={product.id} className="group hover:shadow-lg transition-shadow duration-300">
-              <CardHeader className="p-0">
-                <div className="relative overflow-hidden rounded-t-lg">
-                  <div className="aspect-square bg-gray-200 flex items-center justify-center">
-                    <span className="text-gray-400 text-sm">Imagen del producto</span>
-                  </div>
-                  {product.compare_price && (
-                    <Badge className="absolute top-2 left-2 bg-red-500">
-                      -{Math.round(((product.compare_price - product.price) / product.compare_price) * 100)}%
-                    </Badge>
-                  )}
-                  <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <Button size="icon" variant="secondary" className="h-8 w-8">
-                      <Heart className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </div>
-              </CardHeader>
-              
-              <CardContent className="p-4">
-                <div className="flex items-center gap-1 mb-2">
-                  <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-                  <span className="text-sm font-medium">{product.rating}</span>
-                  <span className="text-sm text-gray-500">({product.reviews})</span>
-                </div>
+            <div
+              key={product.id}
+              className="bg-dark-800 border border-dark-700 rounded-xl overflow-hidden hover:border-neon-green/50 transition-all duration-300 group"
+              onMouseEnter={() => setHoveredProduct(product.id)}
+              onMouseLeave={() => setHoveredProduct(null)}
+            >
+              {/* Imagen del producto */}
+              <div className="aspect-square relative overflow-hidden">
+                <Image
+                  src={product.images?.[0]?.image || '/images/placeholder-product.jpg'}
+                  alt={product.images?.[0]?.alt_text || product.name}
+                  fill
+                  className="object-cover group-hover:scale-105 transition-transform duration-300"
+                />
                 
-                <CardTitle className="text-lg mb-2 line-clamp-2">
-                  <Link 
-                    href={`/shop/products/${product.slug}`}
-                    className="hover:text-primary transition-colors"
+                {/* Badge destacado */}
+                <div className="absolute top-3 left-3 bg-neon-green text-dark-900 px-2 py-1 rounded-full text-xs font-semibold">
+                  Destacado
+                </div>
+
+                {/* Botones de acción */}
+                <div className={`absolute top-3 right-3 flex flex-col gap-2 transition-all duration-300 ${
+                  hoveredProduct === product.id ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2'
+                }`}>
+                  <button
+                    className="p-2 bg-dark-800/80 backdrop-blur-sm border border-dark-600 rounded-full text-white hover:bg-neon-green hover:text-dark-900 transition-colors"
+                    title="Agregar a favoritos"
+                    aria-label="Agregar a favoritos"
                   >
-                    {product.name}
-                  </Link>
-                </CardTitle>
-                
-                <div className="flex items-center gap-2">
-                  <span className="text-lg font-bold text-primary">
-                    {formatPrice(product.price)}
+                    <Heart className="w-4 h-4" />
+                  </button>
+                  <button
+                    className="p-2 bg-dark-800/80 backdrop-blur-sm border border-dark-600 rounded-full text-white hover:bg-neon-green hover:text-dark-900 transition-colors"
+                    title="Vista rápida"
+                    aria-label="Vista rápida"
+                  >
+                    <Eye className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+
+              {/* Información del producto */}
+              <div className="p-6">
+                <div className="mb-2">
+                  <span className="text-neon-green text-sm font-medium">
+                    {product.brand_details?.name || 'Sin marca'}
                   </span>
-                  {product.compare_price && (
-                    <span className="text-sm text-gray-500 line-through">
-                      {formatPrice(product.compare_price)}
+                </div>
+                
+                <h3 className="text-lg font-semibold text-white mb-2 line-clamp-2">
+                  {product.name}
+                </h3>
+                
+                <p className="text-dark-300 text-sm mb-4 line-clamp-2">
+                  {product.short_description || product.description}
+                </p>
+
+                {/* Rating */}
+                <div className="flex items-center gap-1 mb-4">
+                  <div className="flex items-center">
+                    {[...Array(5)].map((_, i) => (
+                      <Star
+                        key={i}
+                        className={`w-4 h-4 ${
+                          i < Math.floor(product.average_rating || 0)
+                            ? 'text-yellow-400 fill-current'
+                            : 'text-dark-400'
+                        }`}
+                      />
+                    ))}
+                  </div>
+                  <span className="text-dark-400 text-sm ml-2">
+                    ({product.total_reviews || 0})
+                  </span>
+                </div>
+
+                {/* Precio */}
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xl font-bold text-white">
+                      {formatPrice(product.price)}
+                    </span>
+                    {product.compare_price && product.compare_price > product.price && (
+                      <span className="text-dark-400 line-through text-sm">
+                        {formatPrice(product.compare_price)}
+                      </span>
+                    )}
+                  </div>
+                  
+                  {product.inventory_quantity <= product.low_stock_threshold && (
+                    <span className="text-orange-400 text-xs">
+                      ¡Pocas unidades!
                     </span>
                   )}
                 </div>
-              </CardContent>
-              
-              <CardFooter className="p-4 pt-0">
-                <Button className="w-full" asChild>
-                  <Link href={`/shop/products/${product.slug}`}>
-                    <ShoppingCart className="mr-2 h-4 w-4" />
-                    Ver Producto
+
+                {/* Botones */}
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => handleAddToCart(product)}
+                    className="flex-1 bg-neon-green text-dark-900 px-4 py-2 rounded-lg font-semibold hover:bg-neon-green/90 transition-colors flex items-center justify-center gap-2"
+                  >
+                    <ShoppingCart className="w-4 h-4" />
+                    Agregar
+                  </button>
+                  <Link
+                    href={`/producto/${product.slug}`}
+                    className="px-4 py-2 border border-dark-600 text-white rounded-lg hover:bg-dark-700 transition-colors flex items-center justify-center"
+                  >
+                    <Eye className="w-4 h-4" />
                   </Link>
-                </Button>
-              </CardFooter>
-            </Card>
+                </div>
+              </div>
+            </div>
           ))}
         </div>
 
+        {/* Botón ver más */}
         <div className="text-center mt-12">
-          <Button asChild size="lg" variant="outline">
-            <Link href="/shop/products">
-              Ver Todos los Productos
-            </Link>
-          </Button>
+          <Link
+            href="/tienda"
+            className="inline-flex items-center px-8 py-3 bg-neon-green text-dark-900 font-semibold rounded-lg hover:bg-neon-green/90 transition-colors"
+          >
+            Ver todos los productos
+          </Link>
         </div>
       </div>
     </section>
   )
 }
+
+export default FeaturedProducts

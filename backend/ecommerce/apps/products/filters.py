@@ -10,6 +10,7 @@ class ProductFilter(django_filters.FilterSet):
     """
     # Filtros básicos
     category = django_filters.ModelChoiceFilter(queryset=Category.objects.filter(is_active=True))
+    gender = django_filters.ChoiceFilter(choices=Product.GENDER_CHOICES)
     
     # Filtros de precio
     min_price = django_filters.NumberFilter(field_name='price', lookup_expr='gte')

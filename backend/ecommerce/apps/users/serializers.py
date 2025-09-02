@@ -42,6 +42,7 @@ class CustomRegisterSerializer(serializers.ModelSerializer):
             'email': {'required': True},
             'first_name': {'required': True},
             'last_name': {'required': True},
+            'terms_accepted': {'required': True},
         }
     
     def validate(self, attrs):
@@ -54,18 +55,31 @@ class CustomRegisterSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("Debes aceptar los términos y condiciones.")
         return value
     
-    def create(self, validated_data):
-        validated_data.pop('password_confirm')
-        validated_data.pop('terms_accepted')
+    def save(self, request=None):
+        # Obtener los datos validados
+        validated_data = self.validated_data.copy()
+        
+        password_confirm = validated_data.pop('password_confirm')
+        terms_accepted = validated_data.pop('terms_accepted')
         password = validated_data.pop('password')
+
+        # Crear usuario con create_user (ya establece la contraseña)
+        user = User.objects.create_user(
+            **validated_data, 
+            password=password
+        )
         
-        user = User.objects.create_user(**validated_data)
-        user.set_password(password)
+        # Establecer términos aceptados después de crear el usuario
+        user.terms_accepted = terms_accepted
         user.save()
-        
-        # Crear perfil de usuario
-        UserProfile.objects.create(user=user)
-        
+
+        # Crear perfil de usuario (solo con campos básicos)
+        # UserProfile.objects.create(
+        #     user=user,
+        #     show_email=False,
+        #     show_phone=False
+        # )
+
         return user
 
 

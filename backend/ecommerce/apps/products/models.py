@@ -38,6 +38,20 @@ class Product(models.Model):
         verbose_name=_('brand')
     )
     
+    # Género
+    GENDER_CHOICES = [
+        ('masculino', _('Masculino')),
+        ('femenino', _('Femenino')),
+        ('unisex', _('Unisex')),
+    ]
+    gender = models.CharField(
+        _('gender'),
+        max_length=20,
+        choices=GENDER_CHOICES,
+        blank=True,
+        help_text=_('Género del producto')
+    )
+    
     # Precios
     price = models.DecimalField(
         _('price'),
@@ -107,7 +121,13 @@ class Product(models.Model):
     
     def save(self, *args, **kwargs):
         if not self.slug:
-            self.slug = slugify(self.name)
+            base_slug = slugify(self.name)
+            slug = base_slug
+            counter = 1
+            while Product.objects.filter(slug=slug).exclude(pk=self.pk).exists():
+                slug = f"{base_slug}-{counter}"
+                counter += 1
+            self.slug = slug
         if self.status == 'published' and not self.published_at:
             from django.utils import timezone
             self.published_at = timezone.now()

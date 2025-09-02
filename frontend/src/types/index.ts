@@ -9,6 +9,10 @@ export interface User {
   avatar?: string
   is_vendor: boolean
   is_customer: boolean
+  is_admin?: boolean
+  is_staff?: boolean
+  is_superuser?: boolean
+  date_joined?: string
   default_address?: string
   default_city?: string
   default_state?: string

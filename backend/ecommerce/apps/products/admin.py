@@ -43,26 +43,25 @@ class ProductAdmin(admin.ModelAdmin):
     list_filter = ['status', 'is_featured', 'brand', 'category', 'created_at']
     search_fields = ['name', 'description', 'sku']
     prepopulated_fields = {'slug': ('name',)}
-    readonly_fields = ['created_at', 'updated_at']
+    readonly_fields = ['created_at', 'updated_at', 'published_at']
     inlines = [ProductImageInline, ProductVariantInline]
     
     fieldsets = (
         (_('Información básica'), {
-            'fields': ('name', 'slug', 'description', 'brand', 'category')
+            'fields': ('name', 'slug', 'description', 'short_description', 'brand', 'category', 'gender')
         }),
         (_('Precios e inventario'), {
-            'fields': ('price', 'compare_price', 'cost_price', 'sku', 'inventory_quantity', 'track_inventory')
+            'fields': ('price', 'compare_price', 'cost_price', 'sku', 'inventory_quantity', 'track_inventory', 'low_stock_threshold', 'allow_backorder')
         }),
         (_('Configuración'), {
-            'fields': ('status', 'is_featured', 'requires_shipping', 'is_taxable')
+            'fields': ('status', 'is_featured', 'is_digital', 'requires_shipping', 'weight')
         }),
         (_('SEO'), {
             'fields': ('meta_title', 'meta_description'),
             'classes': ('collapse',)
         }),
-
         (_('Fechas'), {
-            'fields': ('created_at', 'updated_at'),
+            'fields': ('created_at', 'updated_at', 'published_at'),
             'classes': ('collapse',)
         }),
     )

@@ -135,7 +135,7 @@ REST_FRAMEWORK = {
         'rest_framework_simplejwt.authentication.JWTAuthentication',
     ],
     'DEFAULT_PERMISSION_CLASSES': [
-        'rest_framework.permissions.IsAuthenticated',
+        'rest_framework.permissions.AllowAny',  # Cambiado para permitir registro
     ],
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
     'PAGE_SIZE': 20,
@@ -183,6 +183,7 @@ REST_AUTH = {
     'JWT_AUTH_SAMESITE': 'Lax',
     'USER_DETAILS_SERIALIZER': 'ecommerce.apps.users.serializers.UserSerializer',
     'REGISTER_SERIALIZER': 'ecommerce.apps.users.serializers.CustomRegisterSerializer',
+    'REGISTER_PERMISSION_CLASSES': ('rest_framework.permissions.AllowAny',),
 }
 
 # CORS Configuration
@@ -204,7 +205,7 @@ SITE_ID = 1
 ACCOUNT_EMAIL_REQUIRED = True
 ACCOUNT_USERNAME_REQUIRED = False
 ACCOUNT_AUTHENTICATION_METHOD = 'email'
-ACCOUNT_EMAIL_VERIFICATION = 'mandatory'
+ACCOUNT_EMAIL_VERIFICATION = 'none'  # Cambiado a 'none' para desarrollo
 ACCOUNT_CONFIRM_EMAIL_ON_GET = True
 ACCOUNT_LOGIN_ON_EMAIL_CONFIRMATION = True
 

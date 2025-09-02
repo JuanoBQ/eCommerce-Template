@@ -29,6 +29,9 @@ class User(AbstractUser):
     email_notifications = models.BooleanField(_('email notifications'), default=True)
     sms_notifications = models.BooleanField(_('sms notifications'), default=False)
     
+    # Términos y condiciones
+    terms_accepted = models.BooleanField(_('terms accepted'), default=False)
+    
     # Timestamps
     created_at = models.DateTimeField(_('created at'), auto_now_add=True)
     updated_at = models.DateTimeField(_('updated at'), auto_now=True)

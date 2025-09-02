@@ -8,6 +8,8 @@ from django.conf.urls.static import static
 from rest_framework import permissions
 from drf_yasg.views import get_schema_view
 from drf_yasg import openapi
+from ecommerce.apps.users.views import CustomRegisterView
+import dj_rest_auth.registration
 
 schema_view = get_schema_view(
     openapi.Info(
@@ -56,7 +58,11 @@ urlpatterns = [
     
     # Authentication
     path('api/auth/', include('dj_rest_auth.urls')),
-    path('api/auth/registration/', include('dj_rest_auth.registration.urls')),
+    path('api/auth/registration/', include([
+        path('', CustomRegisterView.as_view(), name='rest_register'),
+        path('verify-email/', dj_rest_auth.registration.views.VerifyEmailView.as_view(), name='rest_verify_email'),
+        path('resend-email/', dj_rest_auth.registration.views.ResendEmailVerificationView.as_view(), name='rest_resend_email'),
+    ])),
     path('api/auth/social/', include('allauth.socialaccount.urls')),
     
     # Apps

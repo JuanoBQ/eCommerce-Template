@@ -20,13 +20,24 @@ class ProductListView(generics.ListCreateAPIView):
     """
     Vista para listar y crear productos.
     """
-    queryset = Product.objects.filter(status='published').select_related('category', 'brand').prefetch_related('images')
+    queryset = Product.objects.select_related('category', 'brand').prefetch_related('images')
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
     filterset_class = ProductFilter
     search_fields = ['name', 'description', 'short_description', 'sku']
     ordering_fields = ['name', 'price', 'created_at', 'is_featured']
     ordering = ['-is_featured', '-created_at']
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+    
+    def get_queryset(self):
+        """
+        Devolver todos los productos si el usuario está autenticado (para admin),
+        solo productos publicados si no está autenticado (para tienda pública).
+        """
+        queryset = super().get_queryset()
+        if not self.request.user.is_authenticated:
+            # Para usuarios no autenticados, solo productos publicados
+            queryset = queryset.filter(status='published')
+        return queryset
     
     def get_serializer_class(self):
         if self.request.method == 'POST':
@@ -35,7 +46,7 @@ class ProductListView(generics.ListCreateAPIView):
     
     def get_permissions(self):
         if self.request.method == 'POST':
-            return [permissions.IsAuthenticated(), IsVendorOrReadOnly()]
+            return [permissions.IsAuthenticated()]
         return [permissions.AllowAny()]
 
 
@@ -44,9 +55,9 @@ class ProductDetailView(generics.RetrieveUpdateDestroyAPIView):
     Vista para obtener, actualizar y eliminar un producto específico.
     """
     queryset = Product.objects.select_related('category', 'brand').prefetch_related(
-        'images', 'variants', 'reviews', 'tags'
+        'images', 'variants', 'reviews'
     )
-    permission_classes = [permissions.IsAuthenticatedOrReadOnly, IsVendorOrReadOnly]
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
     
     def get_serializer_class(self):
         if self.request.method in ['PUT', 'PATCH']:
@@ -96,6 +107,10 @@ class ProductSearchView(generics.ListAPIView):
                 Q(track_inventory=False) | Q(inventory_quantity__gt=0)
             )
         
+        gender = self.request.query_params.get('gender')
+        if gender:
+            queryset = queryset.filter(gender=gender)
+        
         return queryset
 
 
@@ -104,7 +119,7 @@ class ProductImageView(generics.ListCreateAPIView):
     Vista para listar y crear imágenes de productos.
     """
     serializer_class = ProductImageSerializer
-    permission_classes = [permissions.IsAuthenticated, IsVendorOrReadOnly]
+    permission_classes = [permissions.IsAuthenticated]
     
     def get_queryset(self):
         product_id = self.kwargs['product_id']
@@ -121,7 +136,7 @@ class ProductImageDetailView(generics.RetrieveUpdateDestroyAPIView):
     Vista para obtener, actualizar y eliminar una imagen específica.
     """
     serializer_class = ProductImageSerializer
-    permission_classes = [permissions.IsAuthenticated, IsVendorOrReadOnly]
+    permission_classes = [permissions.IsAuthenticated]
     
     def get_queryset(self):
         product_id = self.kwargs['product_id']
@@ -133,7 +148,7 @@ class ProductVariantView(generics.ListCreateAPIView):
     Vista para listar y crear variantes de productos.
     """
     serializer_class = ProductVariantSerializer
-    permission_classes = [permissions.IsAuthenticated, IsVendorOrReadOnly]
+    permission_classes = [permissions.IsAuthenticated]
     
     def get_queryset(self):
         product_id = self.kwargs['product_id']
@@ -150,7 +165,7 @@ class ProductVariantDetailView(generics.RetrieveUpdateDestroyAPIView):
     Vista para obtener, actualizar y eliminar una variante específica.
     """
     serializer_class = ProductVariantSerializer
-    permission_classes = [permissions.IsAuthenticated, IsVendorOrReadOnly]
+    permission_classes = [permissions.IsAuthenticated]
     
     def get_queryset(self):
         product_id = self.kwargs['product_id']

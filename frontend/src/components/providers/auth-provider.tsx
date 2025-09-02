@@ -15,8 +15,8 @@ interface AuthContextType {
   isAuthenticated: boolean
   isLoading: boolean
   error: string | null
-  login: (credentials: LoginCredentials) => Promise<void>
-  register: (data: any) => Promise<void>
+  login: (credentials: LoginCredentials) => Promise<{ success: boolean }>
+  register: (data: any) => Promise<{ success: boolean; message: string }>
   logout: () => Promise<void>
   updateProfile: (data: Partial<User>) => Promise<void>
   resetPassword: (email: string) => Promise<void>

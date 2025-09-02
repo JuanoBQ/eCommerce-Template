@@ -1,4 +1,5 @@
 from rest_framework import serializers
+from django.db.models import Avg
 from .models import Product, ProductImage, ProductVariant, ProductReview, ProductTag, ProductTagRelation
 from ecommerce.apps.categories.models import Category, Brand, Size, Color
 from ecommerce.apps.users.models import User
@@ -84,9 +85,10 @@ class ProductListSerializer(serializers.ModelSerializer):
         model = Product
         fields = [
             'id', 'name', 'slug', 'short_description', 'sku', 'category',
-            'brand', 'price', 'compare_price', 'status', 'is_featured',
-            'is_digital', 'requires_shipping', 'created_at', 'updated_at',
-            'category_details', 'brand_details', 'primary_image',
+            'brand', 'gender', 'price', 'compare_price', 'status', 'is_featured',
+            'is_digital', 'requires_shipping', 'inventory_quantity', 'track_inventory',
+            'low_stock_threshold', 'allow_backorder', 'created_at', 'updated_at',
+            'category_details', 'brand_details', 'primary_image', 'variants',
             'discount_percentage', 'is_in_stock', 'is_low_stock',
             'average_rating', 'total_reviews'
         ]
@@ -100,7 +102,7 @@ class ProductListSerializer(serializers.ModelSerializer):
     def get_average_rating(self, obj):
         reviews = obj.reviews.filter(is_approved=True)
         if reviews.exists():
-            return round(reviews.aggregate(avg_rating=serializers.Avg('rating'))['avg_rating'], 1)
+            return round(reviews.aggregate(avg_rating=Avg('rating'))['avg_rating'], 1)
         return 0
     
     def get_total_reviews(self, obj):
@@ -114,7 +116,6 @@ class ProductDetailSerializer(serializers.ModelSerializer):
     images = ProductImageSerializer(many=True, read_only=True)
     variants = ProductVariantSerializer(many=True, read_only=True)
     reviews = ProductReviewSerializer(many=True, read_only=True)
-    tags = ProductTagSerializer(many=True, read_only=True)
     category_details = serializers.StringRelatedField(source='category', read_only=True)
     brand_details = serializers.StringRelatedField(source='brand', read_only=True)
     discount_percentage = serializers.ReadOnlyField()
@@ -128,12 +129,12 @@ class ProductDetailSerializer(serializers.ModelSerializer):
         model = Product
         fields = [
             'id', 'name', 'slug', 'description', 'short_description', 'sku',
-            'category', 'brand', 'price', 'compare_price', 'cost_price',
+            'category', 'brand', 'gender', 'price', 'compare_price', 'cost_price',
             'track_inventory', 'inventory_quantity', 'low_stock_threshold',
             'allow_backorder', 'status', 'is_featured', 'is_digital',
             'requires_shipping', 'weight', 'meta_title', 'meta_description',
             'created_at', 'updated_at', 'published_at', 'images', 'variants',
-            'reviews', 'tags', 'category_details', 'brand_details',
+            'reviews', 'category_details', 'brand_details',
             'discount_percentage', 'margin_percentage', 'is_in_stock',
             'is_low_stock', 'average_rating', 'total_reviews'
         ]
@@ -142,7 +143,7 @@ class ProductDetailSerializer(serializers.ModelSerializer):
     def get_average_rating(self, obj):
         reviews = obj.reviews.filter(is_approved=True)
         if reviews.exists():
-            return round(reviews.aggregate(avg_rating=serializers.Avg('rating'))['avg_rating'], 1)
+            return round(reviews.aggregate(avg_rating=Avg('rating'))['avg_rating'], 1)
         return 0
     
     def get_total_reviews(self, obj):
@@ -156,21 +157,33 @@ class ProductCreateUpdateSerializer(serializers.ModelSerializer):
     images = ProductImageSerializer(many=True, required=False)
     variants = ProductVariantSerializer(many=True, required=False)
     
+    def is_valid(self, raise_exception=False):
+        print("🔍 ProductCreateUpdateSerializer.is_valid - data:", self.initial_data)
+        is_valid = super().is_valid(raise_exception=raise_exception)
+        if not is_valid:
+            print("❌ Validation errors:", self.errors)
+        else:
+            print("✅ Validation successful")
+        return is_valid
+    
     class Meta:
         model = Product
         fields = [
             'name', 'description', 'short_description', 'sku', 'category',
-            'brand', 'price', 'compare_price', 'cost_price', 'track_inventory',
+            'brand', 'gender', 'price', 'compare_price', 'cost_price', 'track_inventory',
             'inventory_quantity', 'low_stock_threshold', 'allow_backorder',
             'status', 'is_featured', 'is_digital', 'requires_shipping',
             'weight', 'meta_title', 'meta_description', 'images', 'variants'
         ]
     
     def create(self, validated_data):
+        print("🔍 ProductCreateUpdateSerializer.create - validated_data:", validated_data)
         images_data = validated_data.pop('images', [])
         variants_data = validated_data.pop('variants', [])
         
+        print("🔍 Creating product with data:", validated_data)
         product = Product.objects.create(**validated_data)
+        print("✅ Product created successfully:", product.id)
         
         # Crear imágenes
         for image_data in images_data:

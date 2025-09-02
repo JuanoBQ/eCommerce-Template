@@ -4,24 +4,26 @@ import './globals.css'
 import { Toaster } from 'react-hot-toast'
 import { ThemeProvider } from '@/components/providers/theme-provider'
 import { AuthProvider } from '@/components/providers/auth-provider'
+import Header from '@/components/layout/header'
+import Footer from '@/components/layout/footer'
 
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
-  title: 'Ecommerce de Ropa - Tienda Online',
-  description: 'Descubre las últimas tendencias en moda. Ropa de calidad para hombres, mujeres y niños.',
-  keywords: 'ropa, moda, tienda online, ecommerce, fashion',
-  authors: [{ name: 'Ecommerce Team' }],
+  title: 'FitStore - Ropa Deportiva Premium',
+  description: 'Descubre la mejor ropa deportiva diseñada para atletas que buscan superar sus límites. Calidad premium, tecnología avanzada y estilo único.',
+  keywords: 'ropa deportiva, fitness, gym, atletas, entrenamiento, moda deportiva, gymshark, nike, adidas',
+  authors: [{ name: 'FitStore Team' }],
   openGraph: {
-    title: 'Ecommerce de Ropa - Tienda Online',
-    description: 'Descubre las últimas tendencias en moda. Ropa de calidad para hombres, mujeres y niños.',
+    title: 'FitStore - Ropa Deportiva Premium',
+    description: 'Descubre la mejor ropa deportiva diseñada para atletas que buscan superar sus límites.',
     type: 'website',
     locale: 'es_ES',
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Ecommerce de Ropa - Tienda Online',
-    description: 'Descubre las últimas tendencias en moda. Ropa de calidad para hombres, mujeres y niños.',
+    title: 'FitStore - Ropa Deportiva Premium',
+    description: 'Descubre la mejor ropa deportiva diseñada para atletas que buscan superar sus límites.',
   },
 }
 
@@ -35,25 +37,32 @@ export default function RootLayout({
       <body className={inter.className}>
         <ThemeProvider
           attribute="class"
-          defaultTheme="light"
+          defaultTheme="dark"
           enableSystem
           disableTransitionOnChange
         >
           <AuthProvider>
-            {children}
+            <div className="min-h-screen flex flex-col">
+              <Header />
+              <main className="flex-1">
+                {children}
+              </main>
+              <Footer />
+            </div>
             <Toaster
               position="top-right"
               toastOptions={{
                 duration: 4000,
                 style: {
-                  background: '#363636',
+                  background: '#1e293b',
                   color: '#fff',
+                  border: '1px solid #334155',
                 },
                 success: {
                   duration: 3000,
                   iconTheme: {
-                    primary: '#4ade80',
-                    secondary: '#fff',
+                    primary: '#00ff88',
+                    secondary: '#0f172a',
                   },
                 },
                 error: {

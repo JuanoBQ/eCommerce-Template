@@ -14,13 +14,12 @@ interface AuthState {
 interface LoginCredentials {
   email: string
   password: string
-  remember_me?: boolean
 }
 
 interface RegisterData {
   email: string
-  password: string
-  password_confirm: string
+  password1: string
+  password2: string
   first_name: string
   last_name: string
   phone?: string
@@ -50,12 +49,13 @@ export const useAuth = () => {
         return
       }
 
-      // Verify token
-      await authApi.verifyToken(token)
+      console.log('🔍 Verificando autenticación...')
       
-      // Get user profile
-      const userData = await usersApi.getProfile()
+      // Get user profile to verify token
+      const userData = await usersApi.getProfile() as any
+      console.log('✅ Usuario autenticado:', userData)
       const user = userData as User
+      
       setAuthState({
         user,
         isAuthenticated: true,
@@ -63,7 +63,7 @@ export const useAuth = () => {
         error: null,
       })
     } catch (error) {
-      console.error('Auth check failed:', error)
+      console.error('❌ Auth check failed:', error)
       localStorage.removeItem('access_token')
       localStorage.removeItem('refresh_token')
       setAuthState({
@@ -78,19 +78,33 @@ export const useAuth = () => {
   const login = useCallback(async (credentials: LoginCredentials) => {
     try {
       setAuthState(prev => ({ ...prev, isLoading: true, error: null }))
-      
+
       const response = await authApi.login(credentials.email, credentials.password) as any
 
       // Store tokens
-      if (response?.access && response?.refresh) {
+      if (response?.access_token && response?.refresh_token) {
+        localStorage.setItem('access_token', response.access_token)
+        localStorage.setItem('refresh_token', response.refresh_token)
+        console.log('🔑 Tokens guardados (access_token/refresh_token):', {
+          access: response.access_token.substring(0, 20) + '...',
+          refresh: response.refresh_token.substring(0, 20) + '...'
+        })
+      } else if (response?.access && response?.refresh) {
         localStorage.setItem('access_token', response.access)
         localStorage.setItem('refresh_token', response.refresh)
+        console.log('🔑 Tokens guardados (access/refresh):', {
+          access: response.access.substring(0, 20) + '...',
+          refresh: response.refresh.substring(0, 20) + '...'
+        })
       } else {
+        console.error('❌ Respuesta de login inválida:', response)
         throw new Error('Invalid login response')
       }
-      
+
       // Get user profile
+      console.log('👤 Obteniendo perfil de usuario...')
       const userData = await usersApi.getProfile() as any
+      console.log('✅ Perfil obtenido:', userData)
       const user = userData as User
 
       setAuthState({
@@ -100,75 +114,93 @@ export const useAuth = () => {
         error: null,
       })
 
-      toast.success('¡Bienvenido!')
-      router.push('/')
+      return { success: true }
     } catch (error: any) {
-      const errorMessage = error.response?.data?.detail || 'Error al iniciar sesión'
+      console.error('Login error:', error)
+      const errorMessage = error.response?.data?.detail ||
+                          error.response?.data?.non_field_errors?.[0] ||
+                          error.response?.data?.email?.[0] ||
+                          error.response?.data?.password?.[0] ||
+                          'Error al iniciar sesión. Verifica tus credenciales.'
+
       setAuthState(prev => ({
         ...prev,
+        isAuthenticated: false,
         isLoading: false,
         error: errorMessage,
       }))
-      toast.error(errorMessage)
+
+      throw new Error(errorMessage)
     }
   }, [router])
 
   const register = useCallback(async (data: RegisterData) => {
     try {
       setAuthState(prev => ({ ...prev, isLoading: true, error: null }))
-      
-      const response = await authApi.register(data) as any
 
-      // Store tokens if registration includes login
-      if (response?.access && response?.refresh) {
-        localStorage.setItem('access_token', response.access)
-        localStorage.setItem('refresh_token', response.refresh)
-        
-        // Get user profile
-        const profileData = await usersApi.getProfile() as any
-        const user = profileData as User
-
-        setAuthState({
-          user,
-          isAuthenticated: true,
-          isLoading: false,
-          error: null,
-        })
-      } else {
-        setAuthState(prev => ({ ...prev, isLoading: false }))
+      // Transformar los datos para que coincidan con el backend
+      const registerData = {
+        email: data.email,
+        username: data.email, // Usar email como username
+        password: data.password1,
+        password_confirm: data.password2,
+        first_name: data.first_name,
+        last_name: data.last_name,
+        phone: data.phone,
+        terms_accepted: data.terms_accepted
       }
 
-      toast.success('¡Cuenta creada exitosamente!')
-      router.push('/auth/verify-email')
+      const response = await authApi.register(registerData) as any
+
+      setAuthState(prev => ({ ...prev, isLoading: false }))
+
+      return { success: true, message: 'Cuenta creada exitosamente. Revisa tu correo para verificar tu cuenta.' }
     } catch (error: any) {
-      const errorMessage = error.response?.data?.detail || 'Error al crear la cuenta'
+      console.error('Register error:', error)
+
+      const errorMessage = error.response?.data?.detail ||
+                          error.response?.data?.email?.[0] ||
+                          error.response?.data?.password?.[0] ||
+                          error.response?.data?.password_confirm?.[0] ||
+                          error.response?.data?.first_name?.[0] ||
+                          error.response?.data?.last_name?.[0] ||
+                          error.response?.data?.phone?.[0] ||
+                          error.response?.data?.terms_accepted?.[0] ||
+                          error.response?.data?.non_field_errors?.[0] ||
+                          'Error al crear la cuenta'
+
       setAuthState(prev => ({
         ...prev,
         isLoading: false,
         error: errorMessage,
       }))
-      toast.error(errorMessage)
+
+      throw new Error(errorMessage)
     }
-  }, [router])
+  }, [])
 
   const logout = useCallback(async () => {
     try {
+      // Try to logout from server first
       await authApi.logout()
     } catch (error) {
-      console.error('Logout error:', error)
-    } finally {
-      // Clear tokens and state regardless of API call success
-      localStorage.removeItem('access_token')
-      localStorage.removeItem('refresh_token')
-      setAuthState({
-        user: null,
-        isAuthenticated: false,
-        isLoading: false,
-        error: null,
-      })
-      toast.success('Sesión cerrada')
-      router.push('/auth/login')
+      console.error('Server logout error:', error)
+      // Continue with client-side logout even if server logout fails
     }
+
+    // Always clear client-side tokens and state
+    localStorage.removeItem('access_token')
+    localStorage.removeItem('refresh_token')
+
+    setAuthState({
+      user: null,
+      isAuthenticated: false,
+      isLoading: false,
+      error: null,
+    })
+
+    toast.success('Sesión cerrada exitosamente')
+    router.push('/auth/login')
   }, [router])
 
   const updateProfile = useCallback(async (data: Partial<User>) => {
