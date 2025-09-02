@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
-import { authApi } from '@/lib/api'
+import { authApi, usersApi } from '@/lib/api'
 import { User } from '@/types'
 import toast from 'react-hot-toast'
 
@@ -54,7 +54,8 @@ export const useAuth = () => {
       await authApi.verifyToken(token)
       
       // Get user profile
-      const user = await authApi.getProfile()
+      const userData = await usersApi.getProfile()
+      const user = userData as User
       setAuthState({
         user,
         isAuthenticated: true,
@@ -78,15 +79,20 @@ export const useAuth = () => {
     try {
       setAuthState(prev => ({ ...prev, isLoading: true, error: null }))
       
-      const response = await authApi.login(credentials.email, credentials.password)
-      
+      const response = await authApi.login(credentials.email, credentials.password) as any
+
       // Store tokens
-      localStorage.setItem('access_token', response.access)
-      localStorage.setItem('refresh_token', response.refresh)
+      if (response?.access && response?.refresh) {
+        localStorage.setItem('access_token', response.access)
+        localStorage.setItem('refresh_token', response.refresh)
+      } else {
+        throw new Error('Invalid login response')
+      }
       
       // Get user profile
-      const user = await authApi.getProfile()
-      
+      const userData = await usersApi.getProfile() as any
+      const user = userData as User
+
       setAuthState({
         user,
         isAuthenticated: true,
@@ -111,16 +117,17 @@ export const useAuth = () => {
     try {
       setAuthState(prev => ({ ...prev, isLoading: true, error: null }))
       
-      const response = await authApi.register(data)
-      
+      const response = await authApi.register(data) as any
+
       // Store tokens if registration includes login
-      if (response.access) {
+      if (response?.access && response?.refresh) {
         localStorage.setItem('access_token', response.access)
         localStorage.setItem('refresh_token', response.refresh)
         
         // Get user profile
-        const user = await authApi.getProfile()
-        
+        const profileData = await usersApi.getProfile() as any
+        const user = profileData as User
+
         setAuthState({
           user,
           isAuthenticated: true,
@@ -168,8 +175,9 @@ export const useAuth = () => {
     try {
       setAuthState(prev => ({ ...prev, isLoading: true, error: null }))
       
-      const updatedUser = await authApi.updateProfile(data)
-      
+      const updatedUserData = await usersApi.updateProfile(data) as any
+      const updatedUser = updatedUserData as User
+
       setAuthState(prev => ({
         ...prev,
         user: updatedUser,
@@ -220,9 +228,13 @@ export const useAuth = () => {
         throw new Error('No refresh token available')
       }
 
-      const response = await authApi.refreshToken(refreshToken)
-      localStorage.setItem('access_token', response.access)
-      
+      const response = await authApi.refreshToken(refreshToken) as any
+      if (response?.access) {
+        localStorage.setItem('access_token', response.access)
+      } else {
+        throw new Error('Invalid refresh response')
+      }
+
       return response.access
     } catch (error) {
       console.error('Token refresh failed:', error)

@@ -22,7 +22,31 @@ schema_view = get_schema_view(
     permission_classes=[permissions.AllowAny],
 )
 
+from django.http import JsonResponse
+
+def api_root(request):
+    return JsonResponse({
+        "message": "Ecommerce API",
+        "version": "1.0.0",
+        "documentation": {
+            "swagger": request.build_absolute_uri('/swagger/'),
+            "redoc": request.build_absolute_uri('/redoc/')
+        },
+        "endpoints": {
+            "products": request.build_absolute_uri('/api/products/'),
+            "categories": request.build_absolute_uri('/api/categories/'),
+            "users": request.build_absolute_uri('/api/users/'),
+            "cart": request.build_absolute_uri('/api/cart/'),
+            "orders": request.build_absolute_uri('/api/orders/'),
+            "payments": request.build_absolute_uri('/api/payments/'),
+            "auth": request.build_absolute_uri('/api/auth/')
+        }
+    })
+
 urlpatterns = [
+    # Root API
+    path('', api_root, name='api-root'),
+
     # Admin
     path('admin/', admin.site.urls),
     

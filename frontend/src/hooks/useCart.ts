@@ -31,8 +31,9 @@ export const useCart = () => {
     try {
       setCartState(prev => ({ ...prev, isLoading: true, error: null }))
       
-      const cart = await cartApi.getCart()
-      
+      const cartData = await cartApi.getCart() as any
+      const cart = cartData as Cart
+
       setCartState({
         cart,
         items: cart.items || [],
@@ -169,8 +170,8 @@ export const useCart = () => {
 
   const getWishlist = useCallback(async () => {
     try {
-      const wishlist = await cartApi.getWishlist()
-      return wishlist
+      const wishlistData = await cartApi.getWishlist() as any
+      return wishlistData
     } catch (error: any) {
       console.error('Failed to load wishlist:', error)
       toast.error('Error al cargar favoritos')

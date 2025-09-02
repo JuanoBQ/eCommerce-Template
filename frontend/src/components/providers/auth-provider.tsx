@@ -4,12 +4,18 @@ import React, { createContext, useContext, ReactNode } from 'react'
 import { useAuth } from '@/hooks/useAuth'
 import { User } from '@/types'
 
+interface LoginCredentials {
+  email: string
+  password: string
+  remember_me?: boolean
+}
+
 interface AuthContextType {
   user: User | null
   isAuthenticated: boolean
   isLoading: boolean
   error: string | null
-  login: (email: string, password: string, remember_me?: boolean) => Promise<void>
+  login: (credentials: LoginCredentials) => Promise<void>
   register: (data: any) => Promise<void>
   logout: () => Promise<void>
   updateProfile: (data: Partial<User>) => Promise<void>

@@ -239,7 +239,7 @@ class OrderNote(models.Model):
     order = models.ForeignKey(
         Order,
         on_delete=models.CASCADE,
-        related_name='notes',
+        related_name='order_notes',
         verbose_name=_('order')
     )
     note = models.TextField(_('note'))

@@ -2,7 +2,7 @@
 
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Shirt, Baby, Shoe, Watch, Bag, Glasses } from 'lucide-react'
+import { Shirt, Baby, Footprints, Clock, ShoppingBag, Package } from 'lucide-react'
 import Link from 'next/link'
 
 // Mock data - En producción esto vendría de la API
@@ -39,7 +39,7 @@ const categories = [
     name: 'Zapatos',
     slug: 'zapatos',
     description: 'Zapatos para toda la familia',
-    icon: Shoe,
+    icon: Footprints,
     image: '/images/categories/zapatos.jpg',
     product_count: 67,
   },
@@ -48,7 +48,7 @@ const categories = [
     name: 'Accesorios',
     slug: 'accesorios',
     description: 'Bolsos, relojes, gafas y más',
-    icon: Watch,
+    icon: Clock,
     image: '/images/categories/accesorios.jpg',
     product_count: 45,
   },
@@ -57,7 +57,7 @@ const categories = [
     name: 'Bolsos',
     slug: 'bolsos',
     description: 'Bolsos y carteras de moda',
-    icon: Bag,
+    icon: ShoppingBag,
     image: '/images/categories/bolsos.jpg',
     product_count: 34,
   },

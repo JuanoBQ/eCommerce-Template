@@ -3,58 +3,11 @@
 @tailwind utilities;
 
 @layer base {
-  :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
-    --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
-    --primary: 221.2 83.2% 53.3%;
-    --primary-foreground: 210 40% 98%;
-    --secondary: 210 40% 96%;
-    --secondary-foreground: 222.2 84% 4.9%;
-    --muted: 210 40% 96%;
-    --muted-foreground: 215.4 16.3% 46.9%;
-    --accent: 210 40% 96%;
-    --accent-foreground: 222.2 84% 4.9%;
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 221.2 83.2% 53.3%;
-    --radius: 0.5rem;
-  }
-
-  .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
-    --primary: 217.2 91.2% 59.8%;
-    --primary-foreground: 222.2 84% 4.9%;
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 224.3 76.3% 94.1%;
-  }
-}
-
-@layer base {
   * {
-    @apply border-border;
+    @apply border-gray-200;
   }
   body {
-    @apply bg-background text-foreground;
+    @apply bg-white text-gray-900;
   }
 }
 
@@ -64,15 +17,15 @@
 }
 
 ::-webkit-scrollbar-track {
-  @apply bg-secondary;
+  @apply bg-gray-100;
 }
 
 ::-webkit-scrollbar-thumb {
-  @apply bg-muted-foreground rounded-full;
+  @apply bg-gray-400 rounded-full;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  @apply bg-foreground;
+  @apply bg-gray-600;
 }
 
 /* Loading animations */
@@ -116,7 +69,7 @@
 
 /* Custom utilities */
 .text-gradient {
-  @apply bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent;
+  @apply bg-gradient-to-r from-blue-600 to-blue-400 bg-clip-text text-transparent;
 }
 
 .glass-effect {
@@ -148,7 +101,7 @@
 
 /* Admin sidebar */
 .admin-sidebar {
-  @apply fixed left-0 top-0 h-full w-64 bg-card border-r border-border z-40;
+  @apply fixed left-0 top-0 h-full w-64 bg-white border-r border-gray-200 z-40;
 }
 
 .admin-main {
@@ -171,45 +124,45 @@
 
 /* Form styles */
 .form-input {
-  @apply w-full px-3 py-2 border border-input rounded-md bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent;
+  @apply w-full px-3 py-2 border border-gray-300 rounded-md bg-white text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent;
 }
 
 .form-label {
-  @apply block text-sm font-medium text-foreground mb-1;
+  @apply block text-sm font-medium text-gray-900 mb-1;
 }
 
 .form-error {
-  @apply text-sm text-destructive mt-1;
+  @apply text-sm text-red-600 mt-1;
 }
 
 /* Button variants */
 .btn-primary {
-  @apply bg-primary text-primary-foreground hover:bg-primary/90 focus:ring-2 focus:ring-ring focus:ring-offset-2;
+  @apply bg-blue-600 text-white hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2;
 }
 
 .btn-secondary {
-  @apply bg-secondary text-secondary-foreground hover:bg-secondary/80 focus:ring-2 focus:ring-ring focus:ring-offset-2;
+  @apply bg-gray-100 text-gray-900 hover:bg-gray-200 focus:ring-2 focus:ring-gray-500 focus:ring-offset-2;
 }
 
 .btn-destructive {
-  @apply bg-destructive text-destructive-foreground hover:bg-destructive/90 focus:ring-2 focus:ring-ring focus:ring-offset-2;
+  @apply bg-red-600 text-white hover:bg-red-700 focus:ring-2 focus:ring-red-500 focus:ring-offset-2;
 }
 
 .btn-outline {
-  @apply border border-input bg-background hover:bg-accent hover:text-accent-foreground focus:ring-2 focus:ring-ring focus:ring-offset-2;
+  @apply border border-gray-300 bg-white hover:bg-gray-50 hover:text-gray-900 focus:ring-2 focus:ring-gray-500 focus:ring-offset-2;
 }
 
 .btn-ghost {
-  @apply hover:bg-accent hover:text-accent-foreground focus:ring-2 focus:ring-ring focus:ring-offset-2;
+  @apply hover:bg-gray-100 hover:text-gray-900 focus:ring-2 focus:ring-gray-500 focus:ring-offset-2;
 }
 
 /* Loading states */
 .skeleton {
-  @apply animate-pulse bg-muted rounded;
+  @apply animate-pulse bg-gray-200 rounded;
 }
 
 .loading-spinner {
-  @apply animate-spin rounded-full border-2 border-muted border-t-primary;
+  @apply animate-spin rounded-full border-2 border-gray-200 border-t-blue-600;
 }
 
 /* Toast notifications */
@@ -218,7 +171,7 @@
 }
 
 .toast-error {
-  @apply bg-destructive text-destructive-foreground;
+  @apply bg-red-600 text-white;
 }
 
 .toast-warning {
@@ -226,5 +179,5 @@
 }
 
 .toast-info {
-  @apply bg-primary text-primary-foreground;
+  @apply bg-blue-600 text-white;
 }

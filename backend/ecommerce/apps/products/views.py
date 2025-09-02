@@ -12,7 +12,7 @@ from .serializers import (
     ProductSearchSerializer
 )
 from .filters import ProductFilter
-from .permissions import IsVendorOrReadOnly, IsOwnerOrAdmin
+from .permissions import IsVendorOrReadOnly, IsProductOwnerOrReadOnly
 from ecommerce.apps.categories.models import Category, Brand, Size, Color
 
 
@@ -184,7 +184,7 @@ class ProductReviewDetailView(generics.RetrieveUpdateDestroyAPIView):
     Vista para obtener, actualizar y eliminar una reseña específica.
     """
     serializer_class = ProductReviewSerializer
-    permission_classes = [permissions.IsAuthenticated, IsOwnerOrAdmin]
+    permission_classes = [permissions.IsAuthenticated, IsProductOwnerOrReadOnly]
     
     def get_queryset(self):
         product_id = self.kwargs['product_id']
