@@ -1,6 +1,7 @@
 from rest_framework import serializers
 from django.db.models import Avg
-from .models import Product, ProductImage, ProductVariant, ProductReview, ProductTag, ProductTagRelation
+from django.db import IntegrityError
+from .models import Product, ProductImage, ProductVariant, ProductReview
 from ecommerce.apps.categories.models import Category, Brand, Size, Color
 from ecommerce.apps.users.models import User
 
@@ -76,17 +77,17 @@ class ProductReviewSerializer(serializers.ModelSerializer):
     
     def create(self, validated_data):
         validated_data['user'] = self.context['request'].user
-        return super().create(validated_data)
+        try:
+            return super().create(validated_data)
+        except IntegrityError as e:
+            if 'UNIQUE constraint failed: product_reviews.product_id, product_reviews.user_id' in str(e):
+                raise serializers.ValidationError({
+                    'non_field_errors': ['Ya has escrito una reseña para este producto. Solo puedes escribir una reseña por producto.']
+                })
+            raise
 
 
-class ProductTagSerializer(serializers.ModelSerializer):
-    """
-    Serializer para etiquetas de productos.
-    """
-    class Meta:
-        model = ProductTag
-        fields = ['id', 'name', 'slug', 'color', 'is_active', 'created_at', 'updated_at']
-        read_only_fields = ['id', 'created_at', 'updated_at']
+
 
 
 class ProductListSerializer(serializers.ModelSerializer):
@@ -214,6 +215,11 @@ class ProductCreateUpdateSerializer(serializers.ModelSerializer):
     """
     images = ProductImageSerializer(many=True, required=False)
     variants = ProductVariantWriteSerializer(many=True, required=False)
+    variants_to_delete = serializers.ListField(
+        child=serializers.IntegerField(),
+        required=False,
+        allow_empty=True
+    )
     
     def is_valid(self, raise_exception=False):
         print("🔍 ProductCreateUpdateSerializer.is_valid - data:", self.initial_data)
@@ -231,7 +237,7 @@ class ProductCreateUpdateSerializer(serializers.ModelSerializer):
             'brand', 'gender', 'price', 'compare_price', 'cost_price', 'track_inventory',
             'inventory_quantity', 'low_stock_threshold', 'allow_backorder',
             'status', 'is_featured', 'is_digital', 'requires_shipping',
-            'weight', 'meta_title', 'meta_description', 'images', 'variants'
+            'weight', 'meta_title', 'meta_description', 'images', 'variants', 'variants_to_delete'
         ]
         extra_kwargs = {
             'sku': {'required': False, 'allow_blank': True}
@@ -354,6 +360,7 @@ class ProductCreateUpdateSerializer(serializers.ModelSerializer):
     def update(self, instance, validated_data):
         images_data = validated_data.pop('images', [])
         variants_data = validated_data.pop('variants', [])
+        variants_to_delete = validated_data.pop('variants_to_delete', [])
         
         # Verificar SKU único si se está actualizando
         if 'sku' in validated_data and validated_data['sku']:
@@ -365,6 +372,10 @@ class ProductCreateUpdateSerializer(serializers.ModelSerializer):
             setattr(instance, attr, value)
         instance.save()
         
+        # Eliminar variantes marcadas para eliminación
+        if variants_to_delete:
+            instance.variants.filter(id__in=variants_to_delete).delete()
+        
         # Actualizar imágenes si se proporcionan
         if images_data:
             instance.images.all().delete()
@@ -373,6 +384,7 @@ class ProductCreateUpdateSerializer(serializers.ModelSerializer):
         
         # Actualizar variantes si se proporcionan
         if variants_data:
+            print(f"🔍 Actualizando variantes: {variants_data}")
             existing_variant_ids = []
             
             for variant_data in variants_data:
@@ -409,6 +421,16 @@ class ProductCreateUpdateSerializer(serializers.ModelSerializer):
                     if 'sku' not in variant_data or not variant_data['sku']:
                         variant_data['sku'] = self.generate_variant_sku(instance, variant_data)
                     
+                    # Verificar si el SKU ya existe y generar uno único
+                    original_sku = variant_data['sku']
+                    counter = 1
+                    while ProductVariant.objects.filter(sku=variant_data['sku']).exists():
+                        variant_data['sku'] = f"{original_sku}-{counter}"
+                        counter += 1
+                        if counter > 100:  # Prevenir bucle infinito
+                            variant_data['sku'] = self.generate_variant_sku(instance, variant_data)
+                            break
+                    
                     # Establecer valores por defecto para campos obligatorios
                     variant_data.setdefault('inventory_quantity', 0)
                     variant_data.setdefault('low_stock_threshold', 5)
@@ -417,8 +439,9 @@ class ProductCreateUpdateSerializer(serializers.ModelSerializer):
                     new_variant = ProductVariant.objects.create(product=instance, **variant_data)
                     existing_variant_ids.append(new_variant.id)
             
-            # Eliminar variantes que ya no están en la lista
-            instance.variants.exclude(id__in=existing_variant_ids).delete()
+            # Solo eliminar variantes si se especifica explícitamente
+            # (Por ahora, no eliminamos variantes automáticamente)
+            # instance.variants.exclude(id__in=existing_variant_ids).delete()
         
         return instance
 

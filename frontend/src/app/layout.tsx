@@ -4,8 +4,7 @@ import './globals.css'
 import { Toaster } from 'react-hot-toast'
 import { ThemeProvider } from '@/components/providers/theme-provider'
 import { AuthProvider } from '@/components/providers/auth-provider'
-import Header from '@/components/layout/header'
-import Footer from '@/components/layout/footer'
+import ConditionalLayout from '@/components/layout/conditional-layout'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -42,13 +41,9 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           <AuthProvider>
-            <div className="min-h-screen flex flex-col">
-              <Header />
-              <main className="flex-1">
-                {children}
-              </main>
-              <Footer />
-            </div>
+            <ConditionalLayout>
+              {children}
+            </ConditionalLayout>
             <Toaster
               position="top-right"
               toastOptions={{

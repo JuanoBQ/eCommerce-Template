@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { 
@@ -63,8 +63,27 @@ export default function EditProductPage() {
   const [isSaving, setIsSaving] = useState(false)
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [uploadProgress, setUploadProgress] = useState<Record<number, number>>({})
+  const variantsFunctionsRef = useRef<{
+    getVariantsToDelete: () => number[]
+    getActiveVariants: () => any[]
+    clearVariantsToDelete: () => void
+  } | null>(null)
 
   const productId = params.id as string
+
+  // Función estable para manejar cambios de variantes
+  const handleVariantsChange = useCallback((variants: any[]) => {
+    setFormData(prev => ({ ...prev, variants }))
+  }, [])
+
+  // Función para registrar las funciones de variantes
+  const registerVariantsFunctions = useCallback((functions: {
+    getVariantsToDelete: () => number[]
+    getActiveVariants: () => any[]
+    clearVariantsToDelete: () => void
+  }) => {
+    variantsFunctionsRef.current = functions
+  }, [])
 
   const [formData, setFormData] = useState<ProductFormData>({
     name: '',
@@ -260,13 +279,19 @@ export default function EditProductPage() {
         weight: formData.weight || null,
         meta_title: formData.meta_title || '',
         meta_description: formData.meta_description || '',
-        variants: formData.variants.map(variant => ({
-          id: variant.id,
-          size: variant.size,
-          color: variant.color,
-          inventory_quantity: variant.inventory_quantity || 0
-        }))
+        variants: (() => {
+          const activeVariants = variantsFunctionsRef.current?.getActiveVariants() || []
+          return activeVariants.map(variant => ({
+            id: variant.id,
+            size: variant.size,
+            color: variant.color,
+            inventory_quantity: variant.inventory_quantity || 0
+          }))
+        })(),
+        variants_to_delete: variantsFunctionsRef.current?.getVariantsToDelete() || []
       }
+
+
 
       // Update the product
       await updateProduct(parseInt(productId), productData)
@@ -284,6 +309,9 @@ export default function EditProductPage() {
         }
       }
 
+      // Limpiar variantes marcadas para eliminación
+      variantsFunctionsRef.current?.clearVariantsToDelete()
+      
       toast.success('Producto actualizado exitosamente')
       router.push('/admin/products')
     } catch (error: any) {
@@ -663,7 +691,7 @@ export default function EditProductPage() {
                     title="Seleccionar estado"
                     aria-label="Seleccionar estado"
                   >
-                    <option value="draft">Borrador</option>
+                    <option value="draft">No Publicado</option>
                     <option value="published">Publicado</option>
                     <option value="archived">Archivado</option>
                   </select>
@@ -762,7 +790,8 @@ export default function EditProductPage() {
               <h3 className="text-lg font-semibold text-white mb-4">Variantes del Producto</h3>
               <ProductVariants
                 variants={formData.variants}
-                onVariantsChange={(variants) => setFormData(prev => ({ ...prev, variants }))}
+                onVariantsChange={handleVariantsChange}
+                onRegisterFunctions={registerVariantsFunctions}
                 sizes={sizes}
                 colors={colors}
                 selectedCategory={formData.category}

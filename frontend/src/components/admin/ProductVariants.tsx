@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react'
 import { Plus, Trash2, Edit2, Save, X } from 'lucide-react'
-import { Size, Color } from '@/hooks/useProducts'
+import { Size, Color } from '@/hooks/useSizesAndColors'
 import { formatPrice } from '@/utils/currency'
 
 interface ProductVariant {
@@ -21,6 +21,11 @@ interface ProductVariantsProps {
   sizes: Size[]
   colors: Color[]
   onVariantsChange: (variants: ProductVariant[]) => void
+  onRegisterFunctions?: (functions: {
+    getVariantsToDelete: () => number[]
+    getActiveVariants: () => ProductVariant[]
+    clearVariantsToDelete: () => void
+  }) => void
   selectedCategory?: number // ID de la categoría seleccionada
 }
 
@@ -29,6 +34,7 @@ export default function ProductVariants({
   sizes,
   colors,
   onVariantsChange,
+  onRegisterFunctions,
   selectedCategory
 }: ProductVariantsProps) {
   const [editingVariant, setEditingVariant] = useState<number | null>(null)
@@ -40,33 +46,14 @@ export default function ProductVariants({
   })
 
   const [showAddForm, setShowAddForm] = useState(false)
+  const [selectedSizeType, setSelectedSizeType] = useState<'clothing' | 'shoes' | 'accessories' | undefined>(undefined)
+  const [variantsToDelete, setVariantsToDelete] = useState<number[]>([])
 
-  // Mapeo de categorías a tipos de talla
-  const getSizeTypeForCategory = (categoryId?: number): 'clothing' | 'shoes' | 'accessories' => {
-    if (!categoryId) return 'clothing'
-    
-    // Mapeo específico de categorías a tipos de talla
-    const categorySizeMapping: Record<number, 'clothing' | 'shoes' | 'accessories'> = {
-      1: 'clothing', // Ropa Deportiva
-      2: 'shoes',    // Calzado
-      3: 'accessories', // Accesorios
-      4: 'accessories', // Equipamiento
-      5: 'clothing', // Ropa Casual
-      6: 'clothing', // Ropa Formal
-      7: 'clothing', // Ropa Interior
-    }
-    
-    return categorySizeMapping[categoryId] || 'clothing'
-  }
-
-  // Filtrar tallas basado en la categoría seleccionada
-  const getFilteredSizes = (): Size[] => {
-    if (!selectedCategory) {
-      // Si no hay categoría seleccionada, mostrar todas las tallas
+  // Filtrar tallas basado en el tipo seleccionado
+  const getFilteredSizes = (sizeType?: 'clothing' | 'shoes' | 'accessories'): Size[] => {
+    if (!sizeType) {
       return sizes
     }
-    
-    const sizeType = getSizeTypeForCategory(selectedCategory)
     return sizes.filter(size => size.type === sizeType)
   }
 
@@ -103,6 +90,7 @@ export default function ProductVariants({
       inventory_quantity: 0,
       image: undefined
     })
+    setSelectedSizeType(undefined)
     setShowAddForm(false)
   }
 
@@ -115,8 +103,15 @@ export default function ProductVariants({
 
   const handleDeleteVariant = (index: number) => {
     if (confirm('¿Está seguro de que desea eliminar esta variante?')) {
-      const newVariants = variants.filter((_, i) => i !== index)
-      onVariantsChange(newVariants)
+      const variant = variants[index]
+      if (variant.id) {
+        // Marcar variante existente para eliminación
+        setVariantsToDelete(prev => [...prev, variant.id!])
+      } else {
+        // Eliminar variante nueva inmediatamente (no tiene ID)
+        const newVariants = variants.filter((_, i) => i !== index)
+        onVariantsChange(newVariants)
+      }
     }
   }
 
@@ -127,6 +122,80 @@ export default function ProductVariants({
     return parts.length > 0 ? parts.join(' - ') : 'Sin variantes'
   }
 
+  // Función para obtener los detalles de talla basándose en el ID
+  const getSizeDetails = (sizeId: number | undefined) => {
+    if (!sizeId) return null
+    const found = sizes.find(size => size.id === sizeId)
+    return found || null
+  }
+
+  // Función para obtener los detalles de color basándose en el ID
+  const getColorDetails = (colorId: number | undefined) => {
+    if (!colorId) return null
+    const found = colors.find(color => color.id === colorId)
+    return found || null
+  }
+
+  // Función para obtener los detalles de talla desde variant.size_details
+  const getSizeDetailsFromVariant = (variant: ProductVariant) => {
+    // Si size_details es un objeto completo, lo devolvemos
+    if (variant.size_details && typeof variant.size_details === 'object' && variant.size_details.name) {
+      return variant.size_details
+    }
+    // Si size_details es un ID (número), lo buscamos
+    if (variant.size_details && typeof variant.size_details === 'number') {
+      return getSizeDetails(variant.size_details)
+    }
+    // Si tenemos size ID, lo buscamos
+    if (variant.size) {
+      return getSizeDetails(variant.size)
+    }
+    return null
+  }
+
+  // Función para obtener los detalles de color desde variant.color_details
+  const getColorDetailsFromVariant = (variant: ProductVariant) => {
+    // Si color_details es un objeto completo, lo devolvemos
+    if (variant.color_details && typeof variant.color_details === 'object' && variant.color_details.name) {
+      return variant.color_details
+    }
+    // Si color_details es un ID (número), lo buscamos
+    if (variant.color_details && typeof variant.color_details === 'number') {
+      return getColorDetails(variant.color_details)
+    }
+    // Si tenemos color ID, lo buscamos
+    if (variant.color) {
+      return getColorDetails(variant.color)
+    }
+    return null
+  }
+
+  // Función para obtener las variantes que deben eliminarse
+  const getVariantsToDelete = () => {
+    return variantsToDelete
+  }
+
+  // Función para obtener las variantes activas (sin las marcadas para eliminación)
+  const getActiveVariants = () => {
+    return variants.filter(variant => !variant.id || !variantsToDelete.includes(variant.id))
+  }
+
+  // Función para limpiar las variantes marcadas para eliminación
+  const clearVariantsToDelete = () => {
+    setVariantsToDelete([])
+  }
+
+  // Registrar las funciones con el componente padre
+  React.useEffect(() => {
+    if (onRegisterFunctions) {
+      onRegisterFunctions({
+        getVariantsToDelete,
+        getActiveVariants,
+        clearVariantsToDelete
+      })
+    }
+  }, [onRegisterFunctions, getVariantsToDelete, getActiveVariants, clearVariantsToDelete])
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -134,27 +203,14 @@ export default function ProductVariants({
           <h3 className="text-lg font-semibold text-gray-900">
             Variantes del Producto
           </h3>
-          {!selectedCategory && (
-            <p className="text-sm text-amber-600 mt-1">
-              ⚠️ Selecciona una categoría para ver las tallas disponibles
-            </p>
-          )}
-          {selectedCategory && (
-            <p className="text-sm text-green-600 mt-1">
-              ✅ Mostrando tallas para: {getSizeTypeForCategory(selectedCategory) === 'clothing' ? 'Ropa' : 
-                getSizeTypeForCategory(selectedCategory) === 'shoes' ? 'Calzado' : 'Accesorios'}
-            </p>
-          )}
+          <p className="text-sm text-gray-600 mt-1">
+            Selecciona tallas y colores para crear variantes del producto
+          </p>
         </div>
         <button
           type="button"
           onClick={() => setShowAddForm(true)}
-          disabled={!selectedCategory}
-          className={`inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 ${
-            selectedCategory 
-              ? 'text-white bg-indigo-600 hover:bg-indigo-700 focus:ring-indigo-500' 
-              : 'text-gray-400 bg-gray-300 cursor-not-allowed'
-          }`}
+          className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
         >
           <Plus className="w-4 h-4 mr-1" />
           Agregar Variante
@@ -168,15 +224,32 @@ export default function ProductVariants({
             Nueva Variante
           </h4>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700">
-                Talla {selectedCategory && (
-                  <span className="text-xs text-gray-500">
-                    ({getSizeTypeForCategory(selectedCategory) === 'clothing' ? 'Ropa' : 
-                      getSizeTypeForCategory(selectedCategory) === 'shoes' ? 'Calzado' : 'Accesorios'})
-                  </span>
-                )}
+                Tipo de Talla
+              </label>
+              <select
+                value={selectedSizeType || ''}
+                onChange={(e) => {
+                  const type = e.target.value as 'clothing' | 'shoes' | 'accessories' | ''
+                  setSelectedSizeType(type || undefined)
+                  setNewVariant({ ...newVariant, size: undefined }) // Reset size when type changes
+                }}
+                className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                title="Seleccionar tipo de talla"
+                aria-label="Seleccionar tipo de talla"
+              >
+                <option value="">Seleccionar tipo de talla</option>
+                <option value="clothing">Ropa (S, M, L, XL)</option>
+                <option value="shoes">Calzado (35, 36, 37...)</option>
+                <option value="accessories">Accesorios (Talla Única)</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700">
+                Talla
               </label>
               <select
                 value={newVariant.size || ''}
@@ -184,14 +257,15 @@ export default function ProductVariants({
                   ...newVariant,
                   size: e.target.value ? parseInt(e.target.value) : undefined
                 })}
-                className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                disabled={!selectedSizeType}
+                className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm disabled:bg-gray-100"
                 title="Seleccionar talla"
                 aria-label="Seleccionar talla"
               >
                 <option value="">Seleccionar talla</option>
-                {getFilteredSizes().map((size) => (
+                {getFilteredSizes(selectedSizeType).map((size) => (
                   <option key={size.id} value={size.id}>
-                    {size.name} ({size.type_display})
+                    {size.name}
                   </option>
                 ))}
               </select>
@@ -269,7 +343,16 @@ export default function ProductVariants({
           <div className="flex justify-end space-x-2 mt-4">
             <button
               type="button"
-              onClick={() => setShowAddForm(false)}
+              onClick={() => {
+                setShowAddForm(false)
+                setSelectedSizeType(undefined)
+                setNewVariant({
+                  size: undefined,
+                  color: undefined,
+                  inventory_quantity: 0,
+                  image: undefined
+                })
+              }}
               className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50"
             >
               Cancelar
@@ -292,8 +375,19 @@ export default function ProductVariants({
             No hay variantes agregadas. Agregue al menos una variante para este producto.
           </div>
         ) : (
-          variants.map((variant, index) => (
-            <div key={index} className="bg-white border rounded-lg p-4">
+          <>
+            <div className="text-sm text-gray-600 mb-4">
+              Total de variantes: {variants.length} | Marcadas para eliminación: {variantsToDelete.length}
+            </div>
+            {          variants.map((variant, index) => {
+            const isMarkedForDeletion = variant.id && variantsToDelete.includes(variant.id)
+
+            return (
+            <div key={index} className={`border rounded-lg p-4 ${
+              isMarkedForDeletion 
+                ? 'bg-red-50 border-red-200 opacity-60' 
+                : 'bg-white border-gray-200'
+            }`}>
               {editingVariant === index ? (
                 <VariantEditForm
                   variant={variant}
@@ -309,12 +403,80 @@ export default function ProductVariants({
                     <div className="flex items-center space-x-4">
                       <div>
                         <h4 className="text-sm font-medium text-gray-900">
-                          {getVariantDisplayName(variant)}
+                          {(() => {
+                            const sizeDetails = getSizeDetailsFromVariant(variant)
+                            const colorDetails = getColorDetailsFromVariant(variant)
+                            
+                            if (sizeDetails && colorDetails) {
+                              return `${sizeDetails.name} - ${colorDetails.name}`
+                            } else if (sizeDetails) {
+                              return sizeDetails.name
+                            } else if (colorDetails) {
+                              return colorDetails.name
+                            } else {
+                              return 'Variante sin especificar'
+                            }
+                          })()}
                         </h4>
                       </div>
                       
                       <div className="text-sm text-gray-600">
-                        <div>Variante: {getVariantDisplayName(variant)}</div>
+                        <div className="grid grid-cols-2 gap-2">
+                          {(() => {
+                            const sizeDetails = getSizeDetailsFromVariant(variant)
+                            return sizeDetails && (
+                              <div>
+                                <span className="font-medium">Talla:</span> {sizeDetails.name}
+                                <span className={`text-xs px-2 py-1 rounded-full ml-2 ${
+                                  sizeDetails.type === 'clothing' 
+                                    ? 'bg-blue-100 text-blue-800' 
+                                    : sizeDetails.type === 'shoes'
+                                    ? 'bg-green-100 text-green-800'
+                                    : 'bg-purple-100 text-purple-800'
+                                }`}>
+                                  {sizeDetails.type === 'clothing' ? 'Ropa' : 
+                                   sizeDetails.type === 'shoes' ? 'Calzado' : 'Accesorios'}
+                                </span>
+                              </div>
+                            )
+                          })()}
+                          {(() => {
+                            const colorDetails = getColorDetailsFromVariant(variant)
+                            return colorDetails && (
+                              <div>
+                                <span className="font-medium">Color:</span> {colorDetails.name}
+                              </div>
+                            )
+                          })()}
+                          <div>
+                            <span className="font-medium">Stock:</span> 
+                            <span className={`ml-1 ${
+                              (variant.inventory_quantity || 0) === 0 
+                                ? 'text-red-600 font-medium' 
+                                : (variant.inventory_quantity || 0) <= (variant.low_stock_threshold || 5)
+                                ? 'text-yellow-600 font-medium'
+                                : 'text-green-600 font-medium'
+                            }`}>
+                              {variant.inventory_quantity || 0}
+                            </span>
+                            {(variant.inventory_quantity || 0) === 0 && (
+                              <span className="text-xs text-red-500 ml-1">(Sin stock)</span>
+                            )}
+                            {(variant.inventory_quantity || 0) > 0 && (variant.inventory_quantity || 0) <= (variant.low_stock_threshold || 5) && (
+                              <span className="text-xs text-yellow-500 ml-1">(Bajo stock)</span>
+                            )}
+                          </div>
+                          {variant.sku && (
+                            <div>
+                              <span className="font-medium">SKU:</span> {variant.sku}
+                            </div>
+                          )}
+                        </div>
+                        {isMarkedForDeletion && (
+                          <div className="text-red-600 font-medium text-xs mt-2">
+                            ⚠️ Marcada para eliminación
+                          </div>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -340,7 +502,9 @@ export default function ProductVariants({
                 </div>
               )}
             </div>
-          ))
+            )
+            })}
+          </>
         )}
       </div>
     </div>
@@ -371,14 +535,15 @@ function VariantEditForm({
   const getSizeTypeForCategory = (categoryId?: number): 'clothing' | 'shoes' | 'accessories' => {
     if (!categoryId) return 'clothing'
     
+    // Mapeo específico de categorías a tipos de talla basado en los datos reales de la DB
     const categorySizeMapping: Record<number, 'clothing' | 'shoes' | 'accessories'> = {
-      1: 'clothing', // Ropa Deportiva
-      2: 'shoes',    // Calzado
+      1: 'clothing',    // Ropa Deportiva
+      2: 'shoes',       // Calzado  
       3: 'accessories', // Accesorios
       4: 'accessories', // Equipamiento
-      5: 'clothing', // Ropa Casual
-      6: 'clothing', // Ropa Formal
-      7: 'clothing', // Ropa Interior
+      5: 'clothing',    // Ropa Casual
+      6: 'clothing',    // Ropa Formal
+      7: 'clothing',    // Ropa Interior
     }
     
     return categorySizeMapping[categoryId] || 'clothing'

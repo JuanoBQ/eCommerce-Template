@@ -327,6 +327,12 @@ export default function AdminOrderDetailPage() {
                             {item.product.category_details && (
                               <span>Categoría: {item.product.category_details.name}</span>
                             )}
+                            {item.product_sku && (
+                              <span>SKU: {item.product_sku}</span>
+                            )}
+                            {item.variant_info && (
+                              <span>Variante: {item.variant_info}</span>
+                            )}
                             {item.size && <span>Talla: {item.size}</span>}
                             {item.color && <span>Color: {item.color}</span>}
                           </div>

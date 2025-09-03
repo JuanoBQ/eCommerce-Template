@@ -3,6 +3,157 @@ from django.utils.translation import gettext_lazy as _
 from ecommerce.apps.users.models import User
 
 
+class Claim(models.Model):
+    """
+    Modelo para reclamos de usuarios.
+    """
+    CLAIM_TYPES = [
+        ('product_issue', _('Product Issue')),
+        ('shipping_issue', _('Shipping Issue')),
+        ('payment_issue', _('Payment Issue')),
+        ('service_issue', _('Service Issue')),
+        ('other', _('Other')),
+    ]
+    
+    CLAIM_STATUS = [
+        ('pending', _('Pending')),
+        ('in_review', _('In Review')),
+        ('resolved', _('Resolved')),
+        ('rejected', _('Rejected')),
+    ]
+    
+    PRIORITY_LEVELS = [
+        ('low', _('Low')),
+        ('medium', _('Medium')),
+        ('high', _('High')),
+        ('urgent', _('Urgent')),
+    ]
+    
+    # Información básica
+    user = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name='claims',
+        verbose_name=_('user')
+    )
+    claim_type = models.CharField(
+        _('claim type'),
+        max_length=20,
+        choices=CLAIM_TYPES
+    )
+    title = models.CharField(_('title'), max_length=200)
+    description = models.TextField(_('description'))
+    
+    # Estado y prioridad
+    status = models.CharField(
+        _('status'),
+        max_length=20,
+        choices=CLAIM_STATUS,
+        default='pending'
+    )
+    priority = models.CharField(
+        _('priority'),
+        max_length=10,
+        choices=PRIORITY_LEVELS,
+        default='medium'
+    )
+    
+    # Relaciones opcionales
+    order = models.ForeignKey(
+        'orders.Order',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='claims',
+        verbose_name=_('order')
+    )
+    product = models.ForeignKey(
+        'products.Product',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='claims',
+        verbose_name=_('product')
+    )
+    
+    # Respuesta del admin
+    admin_response = models.TextField(
+        _('admin response'),
+        blank=True,
+        null=True
+    )
+    resolved_by = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='resolved_claims',
+        verbose_name=_('resolved by')
+    )
+    resolved_at = models.DateTimeField(
+        _('resolved at'),
+        null=True,
+        blank=True
+    )
+    
+    # Timestamps
+    created_at = models.DateTimeField(_('created at'), auto_now_add=True)
+    updated_at = models.DateTimeField(_('updated at'), auto_now=True)
+    
+    class Meta:
+        verbose_name = _('Claim')
+        verbose_name_plural = _('Claims')
+        db_table = 'claims'
+        ordering = ['-created_at']
+    
+    def __str__(self):
+        return f"{self.user.full_name} - {self.title} ({self.get_status_display()})"
+
+
+class ClaimMessage(models.Model):
+    """
+    Modelo para mensajes adjuntos a reclamos.
+    """
+    MESSAGE_TYPES = [
+        ('user_message', _('User Message')),
+        ('admin_response', _('Admin Response')),
+        ('system_notification', _('System Notification')),
+    ]
+    
+    claim = models.ForeignKey(
+        Claim,
+        on_delete=models.CASCADE,
+        related_name='messages',
+        verbose_name=_('claim')
+    )
+    message_type = models.CharField(
+        _('message type'),
+        max_length=20,
+        choices=MESSAGE_TYPES,
+        default='user_message'
+    )
+    content = models.TextField(_('content'))
+    author = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name='claim_messages',
+        verbose_name=_('author')
+    )
+    
+    # Timestamps
+    created_at = models.DateTimeField(_('created at'), auto_now_add=True)
+    updated_at = models.DateTimeField(_('updated at'), auto_now=True)
+    
+    class Meta:
+        verbose_name = _('Claim Message')
+        verbose_name_plural = _('Claim Messages')
+        db_table = 'claim_messages'
+        ordering = ['created_at']
+    
+    def __str__(self):
+        return f"{self.claim.title} - {self.get_message_type_display()}"
+
+
 class Report(models.Model):
     """
     Modelo para reportes del sistema.

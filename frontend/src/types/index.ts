@@ -24,37 +24,7 @@ export interface User {
   updated_at: string
 }
 
-export interface UserProfile {
-  id: number
-  user: number
-  bio?: string
-  website?: string
-  favorite_categories: number[]
-  preferred_size?: string
-  preferred_brand?: string
-  show_email: boolean
-  show_phone: boolean
-  created_at: string
-  updated_at: string
-}
 
-export interface Address {
-  id: number
-  user: number
-  type: 'home' | 'work' | 'other'
-  is_default: boolean
-  street_address: string
-  apartment?: string
-  city: string
-  state: string
-  country: string
-  postal_code: string
-  contact_name: string
-  contact_phone: string
-  delivery_instructions?: string
-  created_at: string
-  updated_at: string
-}
 
 // Category Types
 export interface Category {
@@ -119,6 +89,7 @@ export interface Product {
   sku: string
   category: number
   brand?: number
+  gender?: 'masculino' | 'femenino' | 'unisex' | string
   price: number
   compare_price?: number
   cost_price?: number
@@ -186,15 +157,7 @@ export interface ProductReview {
   user_details?: User
 }
 
-export interface ProductTag {
-  id: number
-  name: string
-  slug: string
-  color: string
-  is_active: boolean
-  created_at: string
-  updated_at: string
-}
+
 
 // Cart Types
 export interface Cart {

@@ -29,6 +29,9 @@ export interface OrderItem {
   size?: string
   color?: string
   total_price: number
+  product_name: string
+  product_sku: string
+  variant_info?: string
   created_at: string
 }
 

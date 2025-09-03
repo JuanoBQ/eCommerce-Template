@@ -572,7 +572,7 @@ export default function NewProductPage() {
                     title="Seleccionar estado"
                     aria-label="Seleccionar estado del producto"
                   >
-                    <option value="draft">Borrador</option>
+                    <option value="draft">No Publicado</option>
                     <option value="published">Publicado</option>
                     <option value="archived">Archivado</option>
                   </select>
@@ -774,7 +774,7 @@ export default function NewProductPage() {
                     SKU: {formData.sku || 'N/A'}
                   </p>
                   <p className="text-dark-400 text-sm">
-                    Estado: {formData.status === 'published' ? 'Publicado' : formData.status === 'draft' ? 'Borrador' : 'Archivado'}
+                    Estado: {formData.status === 'published' ? 'Publicado' : formData.status === 'draft' ? 'No Publicado' : 'Archivado'}
                   </p>
                 </div>
               </div>

@@ -5,7 +5,7 @@ from rest_framework.views import APIView
 from django_filters.rest_framework import DjangoFilterBackend
 from django.db.models import Q, Avg, Count
 from django.db import transaction
-from .models import Product, ProductImage, ProductVariant, ProductReview, ProductTag
+from .models import Product, ProductImage, ProductVariant, ProductReview
 from .serializers import (
     ProductListSerializer, ProductDetailSerializer, ProductCreateUpdateSerializer,
     ProductImageSerializer, ProductVariantSerializer, ProductReviewSerializer,

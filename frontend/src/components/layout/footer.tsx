@@ -2,39 +2,71 @@
 
 import Link from 'next/link'
 import { Facebook, Instagram, Twitter, Youtube, Mail, Phone, MapPin } from 'lucide-react'
+import { useState } from 'react'
+import toast from 'react-hot-toast'
 
 const Footer = () => {
   const currentYear = new Date().getFullYear()
+  const [email, setEmail] = useState('')
+  const [isSubscribing, setIsSubscribing] = useState(false)
+
+  const handleNewsletterSubscribe = async (e: React.FormEvent) => {
+    e.preventDefault()
+    
+    if (!email) {
+      toast.error('Por favor ingresa tu email')
+      return
+    }
+
+    if (!email.includes('@')) {
+      toast.error('Por favor ingresa un email válido')
+      return
+    }
+
+    setIsSubscribing(true)
+    
+    try {
+      // Simular suscripción (aquí podrías hacer una llamada a la API)
+      await new Promise(resolve => setTimeout(resolve, 1000))
+      
+      toast.success('¡Te has suscrito exitosamente!')
+      setEmail('')
+    } catch (error) {
+      toast.error('Error al suscribirse. Inténtalo de nuevo.')
+    } finally {
+      setIsSubscribing(false)
+    }
+  }
 
   const footerLinks = {
     shop: [
-      { name: 'Hombres', href: '/shop/men' },
-      { name: 'Mujeres', href: '/shop/women' },
-      { name: 'Accesorios', href: '/shop/accessories' },
-      { name: 'Nuevos', href: '/shop/new' },
-      { name: 'Ofertas', href: '/shop/sale' },
+      { name: 'Hombres', href: '/tienda?gender=men&from_nav=true' },
+      { name: 'Mujeres', href: '/tienda?gender=women&from_nav=true' },
+      { name: 'Accesorios', href: '/tienda?category=accesorios&from_nav=true' },
+      { name: 'Nuevos', href: '/tienda?featured=true&from_nav=true' },
+      { name: 'Ofertas', href: '/tienda?sale=true&from_nav=true' },
     ],
     support: [
-      { name: 'Centro de Ayuda', href: '/help' },
-      { name: 'Guía de Tallas', href: '/size-guide' },
-      { name: 'Envíos y Devoluciones', href: '/shipping' },
-      { name: 'Política de Privacidad', href: '/privacy' },
-      { name: 'Términos y Condiciones', href: '/terms' },
+      { name: 'Centro de Ayuda', href: '/ayuda' },
+      { name: 'Guía de Tallas', href: '/guia-tallas' },
+      { name: 'Envíos y Devoluciones', href: '/envios' },
+      { name: 'Política de Privacidad', href: '/privacidad' },
+      { name: 'Términos y Condiciones', href: '/terminos' },
     ],
     company: [
-      { name: 'Sobre Nosotros', href: '/about' },
-      { name: 'Carreras', href: '/careers' },
-      { name: 'Prensa', href: '/press' },
-      { name: 'Sostenibilidad', href: '/sustainability' },
-      { name: 'Contacto', href: '/contact' },
+      { name: 'Sobre Nosotros', href: '/nosotros' },
+      { name: 'Carreras', href: '/carreras' },
+      { name: 'Prensa', href: '/prensa' },
+      { name: 'Sostenibilidad', href: '/sostenibilidad' },
+      { name: 'Contacto', href: '/contacto' },
     ],
   }
 
   const socialLinks = [
-    { name: 'Instagram', href: '#', icon: Instagram },
-    { name: 'Facebook', href: '#', icon: Facebook },
-    { name: 'Twitter', href: '#', icon: Twitter },
-    { name: 'YouTube', href: '#', icon: Youtube },
+    { name: 'Instagram', href: 'https://instagram.com/fitstore', icon: Instagram },
+    { name: 'Facebook', href: 'https://facebook.com/fitstore', icon: Facebook },
+    { name: 'Twitter', href: 'https://twitter.com/fitstore', icon: Twitter },
+    { name: 'YouTube', href: 'https://youtube.com/fitstore', icon: Youtube },
   ]
 
   return (
@@ -134,16 +166,23 @@ const Footer = () => {
             <p className="text-white/70 mb-4">
               Recibe las últimas noticias y ofertas exclusivas
             </p>
-            <div className="flex space-x-3">
+            <form onSubmit={handleNewsletterSubscribe} className="flex space-x-3">
               <input
                 type="email"
                 placeholder="tu@email.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
                 className="flex-1 px-4 py-2 bg-dark-800 border border-dark-600 rounded-lg text-white placeholder:text-dark-400 focus:outline-none focus:ring-2 focus:ring-neon-green focus:border-neon-green"
+                disabled={isSubscribing}
               />
-              <button className="btn-primary px-6 py-2">
-                Suscribirse
+              <button 
+                type="submit"
+                disabled={isSubscribing}
+                className="btn-primary px-6 py-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isSubscribing ? 'Suscribiendo...' : 'Suscribirse'}
               </button>
-            </div>
+            </form>
           </div>
         </div>
       </div>
@@ -165,6 +204,8 @@ const Footer = () => {
                   <Link
                     key={social.name}
                     href={social.href}
+                    target="_blank"
+                    rel="noopener noreferrer"
                     className="p-2 text-white/50 hover:text-neon-green transition-colors duration-200"
                     aria-label={social.name}
                   >

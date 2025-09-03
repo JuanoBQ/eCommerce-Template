@@ -347,46 +347,4 @@ class ProductReview(models.Model):
         return f"{self.user.full_name} - {self.product.name} ({self.rating}/5)"
 
 
-class ProductTag(models.Model):
-    """
-    Etiquetas para productos.
-    """
-    name = models.CharField(_('name'), max_length=50, unique=True)
-    slug = models.SlugField(_('slug'), max_length=60, unique=True, blank=True)
-    color = models.CharField(_('color'), max_length=7, default='#000000')  # Hex color
-    is_active = models.BooleanField(_('is active'), default=True)
-    
-    # Timestamps
-    created_at = models.DateTimeField(_('created at'), auto_now_add=True)
-    updated_at = models.DateTimeField(_('updated at'), auto_now=True)
-    
-    class Meta:
-        verbose_name = _('Product Tag')
-        verbose_name_plural = _('Product Tags')
-        db_table = 'product_tags'
-        ordering = ['name']
-    
-    def __str__(self):
-        return self.name
-    
-    def save(self, *args, **kwargs):
-        if not self.slug:
-            self.slug = slugify(self.name)
-        super().save(*args, **kwargs)
 
-
-class ProductTagRelation(models.Model):
-    """
-    Relación entre productos y etiquetas.
-    """
-    product = models.ForeignKey(Product, on_delete=models.CASCADE)
-    tag = models.ForeignKey(ProductTag, on_delete=models.CASCADE)
-    
-    class Meta:
-        verbose_name = _('Product Tag Relation')
-        verbose_name_plural = _('Product Tag Relations')
-        db_table = 'product_tag_relations'
-        unique_together = ['product', 'tag']
-    
-    def __str__(self):
-        return f"{self.product.name} - {self.tag.name}"

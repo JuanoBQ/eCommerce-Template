@@ -6,10 +6,14 @@ import { Heart, Share2, Star, Truck, Shield, RotateCcw, Plus, Minus, ShoppingCar
 import { useCartGlobal as useCart } from '@/hooks/useCartGlobal'
 import { useAuth } from '@/hooks/useAuth'
 import { useProducts } from '@/hooks/useProducts'
+import { useWishlist } from '@/hooks/useWishlist'
+import { useSizesAndColors } from '@/hooks/useSizesAndColors'
 import { Product, ProductVariant } from '@/types'
 import { formatPrice, formatPriceWithDiscount } from '@/utils/currency'
 import toast from 'react-hot-toast'
 import Link from 'next/link'
+import ProductReviews from '@/components/product/ProductReviews'
+import StarRating from '@/components/ui/StarRating'
 
 export default function ProductDetailPage() {
   const params = useParams()
@@ -17,6 +21,12 @@ export default function ProductDetailPage() {
   const { addToCart } = useCart()
   const { isAuthenticated } = useAuth()
   const { products, loadProducts, isLoading: productsLoading } = useProducts()
+  const { wishlistItems, addToWishlist, removeFromWishlist, isInWishlist } = useWishlist()
+  const { sizes, colors } = useSizesAndColors()
+  
+  // Debug logs
+  console.log('🔍 Sizes in product detail:', sizes)
+  console.log('🔍 Colors in product detail:', colors)
   
   const [product, setProduct] = useState<Product | null>(null)
   const [selectedImage, setSelectedImage] = useState(0)
@@ -97,6 +107,24 @@ export default function ProductDetailPage() {
         const foundProduct = products.find(p => p.slug === slug)
         
         if (foundProduct) {
+          console.log('🔍 Product found:', foundProduct)
+          console.log('🔍 Product variants:', foundProduct.variants)
+          
+          // Log detallado de cada variante
+          if (foundProduct.variants && foundProduct.variants.length > 0) {
+            foundProduct.variants.forEach((variant, index) => {
+              console.log(`🔍 Variant ${index}:`, {
+                id: variant.id,
+                sku: variant.sku,
+                size: variant.size,
+                color: variant.color,
+                size_details: variant.size_details,
+                color_details: variant.color_details,
+                inventory_quantity: variant.inventory_quantity
+              })
+            })
+          }
+          
           setProduct(foundProduct)
         } else {
           setError('Producto no encontrado')
@@ -124,10 +152,21 @@ export default function ProductDetailPage() {
 
   // Obtener tallas únicas disponibles
   const getAvailableSizes = () => {
-    if (!product?.variants) return []
+    console.log('🔍 getAvailableSizes called')
+    if (!product?.variants) {
+      console.log('🔍 No product variants, returning empty array')
+      return []
+    }
     
+    console.log('🔍 Product variants for sizes:', product.variants)
     const sizes = new Map()
-    product.variants.forEach(variant => {
+    product.variants.forEach((variant, index) => {
+      console.log(`🔍 Processing variant ${index} for sizes:`, {
+        size_details: variant.size_details,
+        inventory_quantity: variant.inventory_quantity,
+        selectedColor
+      })
+      
       if (variant.size_details && variant.inventory_quantity > 0) {
         // Si hay un color seleccionado, solo mostrar tallas de ese color
         if (selectedColor) {
@@ -136,22 +175,39 @@ export default function ProductDetailPage() {
           )
           if (hasColorVariant) {
             sizes.set(variant.size, variant.size_details)
+            console.log(`🔍 Added size ${variant.size} to available sizes`)
           }
         } else {
           sizes.set(variant.size, variant.size_details)
+          console.log(`🔍 Added size ${variant.size} to available sizes (no color filter)`)
         }
+      } else {
+        console.log(`🔍 Skipped variant ${index} - no size_details or no inventory`)
       }
     })
     
-    return Array.from(sizes.values())
+    const result = Array.from(sizes.values())
+    console.log('🔍 Available sizes result:', result)
+    return result
   }
 
   // Obtener colores únicos disponibles
   const getAvailableColors = () => {
-    if (!product?.variants) return []
+    console.log('🔍 getAvailableColors called')
+    if (!product?.variants) {
+      console.log('🔍 No product variants, returning empty array')
+      return []
+    }
     
+    console.log('🔍 Product variants for colors:', product.variants)
     const colors = new Map()
-    product.variants.forEach(variant => {
+    product.variants.forEach((variant, index) => {
+      console.log(`🔍 Processing variant ${index} for colors:`, {
+        color_details: variant.color_details,
+        inventory_quantity: variant.inventory_quantity,
+        selectedSize
+      })
+      
       if (variant.color_details && variant.inventory_quantity > 0) {
         // Si hay una talla seleccionada, solo mostrar colores de esa talla
         if (selectedSize) {
@@ -160,14 +216,20 @@ export default function ProductDetailPage() {
           )
           if (hasSizeVariant) {
             colors.set(variant.color, variant.color_details)
+            console.log(`🔍 Added color ${variant.color} to available colors`)
           }
         } else {
           colors.set(variant.color, variant.color_details)
+          console.log(`🔍 Added color ${variant.color} to available colors (no size filter)`)
         }
+      } else {
+        console.log(`🔍 Skipped variant ${index} - no color_details or no inventory`)
       }
     })
     
-    return Array.from(colors.values())
+    const result = Array.from(colors.values())
+    console.log('🔍 Available colors result:', result)
+    return result
   }
 
   // Manejar selección de talla
@@ -304,6 +366,18 @@ export default function ProductDetailPage() {
       // Fallback: copiar URL al portapapeles
       navigator.clipboard.writeText(window.location.href)
       toast.success('Enlace copiado al portapapeles')
+    }
+  }
+
+  const handleToggleFavorite = () => {
+    if (!product) return
+
+    if (isInWishlist(product.id)) {
+      removeFromWishlist(product.id)
+      toast.success('Eliminado de favoritos')
+    } else {
+      addToWishlist(product)
+      toast.success('Agregado a favoritos')
     }
   }
 
@@ -446,20 +520,9 @@ export default function ProductDetailPage() {
               {/* Rating */}
               {product.reviews && product.reviews.length > 0 && (
                 <div className="flex items-center gap-2 mb-4">
-                  <div className="flex items-center">
-                    {[1, 2, 3, 4, 5].map((star) => (
-                      <Star
-                        key={star}
-                        className={`w-4 h-4 ${
-                          star <= averageRating 
-                            ? 'text-yellow-400 fill-current' 
-                            : 'text-dark-600'
-                        }`}
-                      />
-                    ))}
-                  </div>
+                  <StarRating rating={averageRating} showValue={false} />
                   <span className="text-dark-300 text-sm">
-                    ({product.reviews.length} reseñas)
+                    ({product.reviews.length} {product.reviews.length === 1 ? 'reseña' : 'reseñas'})
                   </span>
                 </div>
               )}
@@ -651,9 +714,16 @@ export default function ProductDetailPage() {
                   <Share2 className="w-4 h-4" />
                   Compartir
                 </button>
-                <button className="flex-1 border border-dark-600 text-white py-3 rounded-lg font-semibold hover:bg-dark-800 transition-colors flex items-center justify-center gap-2">
-                  <Heart className="w-4 h-4" />
-                  Favoritos
+                <button 
+                  onClick={handleToggleFavorite}
+                  className={`flex-1 border py-3 rounded-lg font-semibold transition-colors flex items-center justify-center gap-2 ${
+                    isInWishlist(product.id)
+                      ? 'border-red-500 text-red-500 bg-red-500/10 hover:bg-red-500/20'
+                      : 'border-dark-600 text-white hover:bg-dark-800'
+                  }`}
+                >
+                  <Heart className={`w-4 h-4 ${isInWishlist(product.id) ? 'fill-current' : ''}`} />
+                  {isInWishlist(product.id) ? 'En Favoritos' : 'Favoritos'}
                 </button>
               </div>
             </div>
@@ -686,48 +756,12 @@ export default function ProductDetailPage() {
         </div>
 
         {/* Reseñas */}
-        {product.reviews && product.reviews.length > 0 && (
-          <div className="mt-16">
-            <h2 className="text-2xl font-bold text-white mb-8">Reseñas de clientes</h2>
-            <div className="space-y-6">
-              {product.reviews.map((review) => (
-                <div key={review.id} className="bg-dark-800 border border-dark-700 rounded-xl p-6">
-                  <div className="flex items-start justify-between mb-4">
-                    <div>
-                      <h4 className="text-white font-semibold">
-                        {review.user_details?.first_name} {review.user_details?.last_name}
-                      </h4>
-                      <div className="flex items-center gap-2 mt-1">
-                        <div className="flex items-center">
-                          {[1, 2, 3, 4, 5].map((star) => (
-                            <Star
-                              key={star}
-                              className={`w-4 h-4 ${
-                                star <= review.rating 
-                                  ? 'text-yellow-400 fill-current' 
-                                  : 'text-dark-600'
-                              }`}
-                            />
-                          ))}
-                        </div>
-                        <span className="text-dark-300 text-sm">
-                          {new Date(review.created_at).toLocaleDateString('es-CO')}
-                        </span>
-                      </div>
-                    </div>
-                    {review.is_verified_purchase && (
-                      <span className="bg-neon-green text-dark-900 px-2 py-1 rounded text-xs font-semibold">
-                        Compra verificada
-                      </span>
-                    )}
-                  </div>
-                  <h5 className="text-white font-medium mb-2">{review.title}</h5>
-                  <p className="text-dark-300">{review.comment}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
+        <div className="mt-16">
+          <ProductReviews 
+            productId={product.id} 
+            productName={product.name} 
+          />
+        </div>
       </div>
     </div>
   )

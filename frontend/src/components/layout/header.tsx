@@ -9,6 +9,7 @@ import { useCartGlobal as useCart } from '@/hooks/useCartGlobal'
 import { useWishlist } from '@/hooks/useWishlist'
 import CartSidebar from '@/components/cart/CartSidebar'
 import WishlistDropdown from '@/components/layout/WishlistDropdown'
+import NavigationDropdown from '@/components/layout/NavigationDropdown'
 
 const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
@@ -16,13 +17,13 @@ const Header = () => {
   const [isWishlistOpen, setIsWishlistOpen] = useState(false)
   const [isScrolled, setIsScrolled] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
-  const { user, isAuthenticated, logout } = useAuth()
+  const { user, isAuthenticated, isLoading, logout } = useAuth()
   const { totalItems } = useCart()
   const { count: wishlistCount } = useWishlist()
   const router = useRouter()
 
-  // Debug: Log totalItems in header (commented out for production)
-  // console.log('Header totalItems:', totalItems)
+  // Debug: Log auth state in header
+  console.log('🔍 Header - Auth state:', { isAuthenticated, user: user?.first_name, isLoading })
 
   useEffect(() => {
     const handleScroll = () => {
@@ -46,9 +47,7 @@ const Header = () => {
 
   const navigation = [
     { name: 'Tienda', href: '/tienda' },
-    { name: 'Hombres', href: '/shop/men' },
-    { name: 'Mujeres', href: '/shop/women' },
-    { name: 'Accesorios', href: '/shop/accessories' },
+    { name: 'Accesorios', href: '/tienda?category=accesorios' },
   ]
 
   return (
@@ -72,7 +71,7 @@ const Header = () => {
           </div>
 
           {/* Desktop Navigation */}
-          <nav className="hidden md:flex space-x-8">
+          <nav className="hidden md:flex items-center space-x-8">
             {navigation.map((item) => (
               <Link
                 key={item.name}
@@ -82,6 +81,10 @@ const Header = () => {
                 {item.name}
               </Link>
             ))}
+            
+            {/* Dropdown Menus */}
+            <NavigationDropdown title="Hombres" gender="men" />
+            <NavigationDropdown title="Mujeres" gender="women" />
           </nav>
 
           {/* Search Bar */}
@@ -107,9 +110,13 @@ const Header = () => {
             {isAuthenticated ? (
               <div className="relative group">
                 <button className="flex items-center space-x-2 p-2 text-white hover:text-neon-green transition-colors duration-200">
-                  <User className="w-5 h-5" />
+                  {isLoading ? (
+                    <div className="w-5 h-5 border border-white border-t-transparent rounded-full animate-spin" />
+                  ) : (
+                    <User className="w-5 h-5" />
+                  )}
                   <span className="text-sm font-medium hidden sm:block">
-                    {user?.first_name || 'Cuenta'}
+                    {isLoading ? 'Cargando...' : (user?.first_name || 'Cuenta')}
                   </span>
                 </button>
                 <div className="absolute right-0 mt-2 w-56 bg-dark-800 rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 border border-dark-700">
@@ -129,6 +136,12 @@ const Header = () => {
                       className="block px-4 py-3 text-sm text-white hover:bg-dark-700 transition-colors duration-200"
                     >
                       Mis Pedidos
+                    </Link>
+                    <Link
+                      href="/account/tickets"
+                      className="block px-4 py-3 text-sm text-white hover:bg-dark-700 transition-colors duration-200"
+                    >
+                      Mis Tickets
                     </Link>
                     <Link
                       href="/wishlist"
@@ -221,6 +234,22 @@ const Header = () => {
                   {item.name}
                 </Link>
               ))}
+              
+              {/* Gender Navigation */}
+              <Link
+                href="/tienda?gender=men&from_nav=true"
+                className="block px-3 py-2 text-white hover:text-neon-green transition-colors duration-200 font-medium"
+                onClick={() => setIsMenuOpen(false)}
+              >
+                Hombres
+              </Link>
+              <Link
+                href="/tienda?gender=women&from_nav=true"
+                className="block px-3 py-2 text-white hover:text-neon-green transition-colors duration-200 font-medium"
+                onClick={() => setIsMenuOpen(false)}
+              >
+                Mujeres
+              </Link>
               {!isAuthenticated && (
                 <div className="border-t border-dark-700 pt-2 mt-2">
                   <Link

@@ -6,7 +6,9 @@ import Link from 'next/link'
 import Image from 'next/image'
 import ProtectedRoute from '@/components/auth/ProtectedRoute'
 import { useOrders, Order } from '@/hooks/useOrders'
+import { useClaims } from '@/hooks/useClaims'
 import { formatPrice } from '@/utils/currency'
+import { toast } from 'react-hot-toast'
 import { 
   ArrowLeft, 
   Package, 
@@ -18,7 +20,10 @@ import {
   MapPin,
   Phone,
   Mail,
-  Calendar
+  Calendar,
+  MessageSquare,
+  Send,
+  X
 } from 'lucide-react'
 
 const getStatusIcon = (status: string) => {
@@ -84,13 +89,65 @@ export default function OrderDetailPage() {
   const orderId = parseInt(params.id as string)
   
   const { currentOrder, isLoading, error, loadOrderDetails } = useOrders()
+  const { createClaim } = useClaims()
   const [order, setOrder] = useState<Order | null>(null)
+  
+  // Estados para el formulario de reclamo
+  const [showClaimForm, setShowClaimForm] = useState(false)
+  const [claimData, setClaimData] = useState({
+    claim_type: 'product_issue',
+    title: '',
+    description: '',
+    priority: 'medium'
+  })
+  const [isSubmittingClaim, setIsSubmittingClaim] = useState(false)
 
   useEffect(() => {
     if (orderId) {
       loadOrderDetails(orderId).then(setOrder)
     }
   }, [orderId, loadOrderDetails])
+
+  // Función para manejar el envío del reclamo
+  const handleSubmitClaim = async (e: React.FormEvent) => {
+    e.preventDefault()
+    
+    if (!claimData.title.trim() || !claimData.description.trim()) {
+      toast.error('Por favor completa todos los campos obligatorios')
+      return
+    }
+
+    setIsSubmittingClaim(true)
+    
+    try {
+      await createClaim({
+        ...claimData,
+        order: orderId
+      })
+      
+      toast.success('Reclamo enviado correctamente. Te contactaremos pronto.')
+      setShowClaimForm(false)
+      setClaimData({
+        claim_type: 'product_issue',
+        title: '',
+        description: '',
+        priority: 'medium'
+      })
+    } catch (error) {
+      console.error('Error al enviar reclamo:', error)
+      toast.error('Error al enviar el reclamo. Inténtalo de nuevo.')
+    } finally {
+      setIsSubmittingClaim(false)
+    }
+  }
+
+  // Función para manejar cambios en el formulario
+  const handleClaimDataChange = (field: string, value: string) => {
+    setClaimData(prev => ({
+      ...prev,
+      [field]: value
+    }))
+  }
 
   if (isLoading) {
     return (
@@ -243,6 +300,12 @@ export default function OrderDetailPage() {
                             {item.product.category_details && (
                               <span>Categoría: {item.product.category_details.name}</span>
                             )}
+                            {item.product_sku && (
+                              <span>SKU: {item.product_sku}</span>
+                            )}
+                            {item.variant_info && (
+                              <span>Variante: {item.variant_info}</span>
+                            )}
                             {item.size && <span>Talla: {item.size}</span>}
                             {item.color && <span>Color: {item.color}</span>}
                           </div>
@@ -323,6 +386,116 @@ export default function OrderDetailPage() {
                   <p className="text-white/70">{order.notes}</p>
                 </div>
               )}
+
+              {/* Reclamo o Devolución */}
+              <div className="bg-dark-800/50 backdrop-blur-md rounded-2xl p-6 border border-dark-700/50">
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-xl font-semibold text-white">Reclamo o Devolución</h2>
+                  <button
+                    onClick={() => setShowClaimForm(!showClaimForm)}
+                    className="flex items-center gap-2 px-4 py-2 bg-neon-green text-dark-900 rounded-lg font-semibold hover:bg-neon-green/90 transition-colors"
+                  >
+                    <MessageSquare className="w-4 h-4" />
+                    {showClaimForm ? 'Cancelar' : 'Crear Reclamo'}
+                  </button>
+                </div>
+                
+                {showClaimForm ? (
+                  <form onSubmit={handleSubmitClaim} className="space-y-4">
+                    <div>
+                      <label className="block text-white font-medium mb-2">Tipo de Reclamo</label>
+                      <select
+                        value={claimData.claim_type}
+                        onChange={(e) => handleClaimDataChange('claim_type', e.target.value)}
+                        className="w-full px-4 py-3 bg-dark-700 border border-dark-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-neon-green focus:border-transparent"
+                        aria-label="Tipo de reclamo"
+                      >
+                        <option value="product_issue">Problema con el Producto</option>
+                        <option value="shipping_issue">Problema con el Envío</option>
+                        <option value="payment_issue">Problema con el Pago</option>
+                        <option value="service_issue">Problema con el Servicio</option>
+                        <option value="other">Otro</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-white font-medium mb-2">Prioridad</label>
+                      <select
+                        value={claimData.priority}
+                        onChange={(e) => handleClaimDataChange('priority', e.target.value)}
+                        className="w-full px-4 py-3 bg-dark-700 border border-dark-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-neon-green focus:border-transparent"
+                        aria-label="Prioridad del reclamo"
+                      >
+                        <option value="low">Baja</option>
+                        <option value="medium">Media</option>
+                        <option value="high">Alta</option>
+                        <option value="urgent">Urgente</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-white font-medium mb-2">Título del Reclamo *</label>
+                      <input
+                        type="text"
+                        value={claimData.title}
+                        onChange={(e) => handleClaimDataChange('title', e.target.value)}
+                        placeholder="Describe brevemente el problema"
+                        className="w-full px-4 py-3 bg-dark-700 border border-dark-600 rounded-lg text-white placeholder-dark-400 focus:outline-none focus:ring-2 focus:ring-neon-green focus:border-transparent"
+                        required
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-white font-medium mb-2">Descripción Detallada *</label>
+                      <textarea
+                        value={claimData.description}
+                        onChange={(e) => handleClaimDataChange('description', e.target.value)}
+                        placeholder="Proporciona todos los detalles del problema, incluyendo cualquier información relevante que pueda ayudar a resolver tu reclamo"
+                        rows={4}
+                        className="w-full px-4 py-3 bg-dark-700 border border-dark-600 rounded-lg text-white placeholder-dark-400 focus:outline-none focus:ring-2 focus:ring-neon-green focus:border-transparent resize-none"
+                        required
+                      />
+                    </div>
+
+                    <div className="flex gap-3 pt-4">
+                      <button
+                        type="submit"
+                        disabled={isSubmittingClaim}
+                        className="flex-1 flex items-center justify-center gap-2 bg-neon-green text-dark-900 py-3 rounded-lg font-semibold hover:bg-neon-green/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {isSubmittingClaim ? (
+                          <>
+                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-dark-900"></div>
+                            Enviando...
+                          </>
+                        ) : (
+                          <>
+                            <Send className="w-4 h-4" />
+                            Enviar Reclamo
+                          </>
+                        )}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setShowClaimForm(false)}
+                        className="flex-1 border border-dark-600 text-white py-3 rounded-lg font-semibold hover:bg-dark-700 transition-colors"
+                      >
+                        Cancelar
+                      </button>
+                    </div>
+                  </form>
+                ) : (
+                  <div className="text-center py-8">
+                    <MessageSquare className="w-12 h-12 text-dark-400 mx-auto mb-4" />
+                    <p className="text-white/70 mb-4">
+                      ¿Tienes algún problema con tu pedido? 
+                    </p>
+                    <p className="text-white/50 text-sm">
+                      Puedes crear un reclamo o solicitar una devolución haciendo clic en el botón de arriba.
+                    </p>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </div>

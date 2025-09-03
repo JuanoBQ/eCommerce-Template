@@ -18,11 +18,13 @@ interface Filters {
   search: string
   category: number | null
   brand: number | null
+  gender: 'men' | 'women' | null
   minPrice: number | null
   maxPrice: number | null
   sortBy: 'name' | 'price' | 'created_at' | 'popularity'
   sortOrder: 'asc' | 'desc'
   viewMode: 'grid' | 'list'
+  sale: boolean
 }
 
 function TiendaContent() {
@@ -33,28 +35,105 @@ function TiendaContent() {
   const [filteredProducts, setFilteredProducts] = useState<Product[]>([])
   const [filters, setFilters] = useState<Filters>({
     search: searchParams.get('search') || '',
-    category: null,
+    category: searchParams.get('category') ? categories.find(c => c.slug === searchParams.get('category'))?.id || null : null,
     brand: null,
+    gender: (searchParams.get('gender') as 'men' | 'women') || null,
     minPrice: null,
     maxPrice: null,
     sortBy: 'name',
     sortOrder: 'asc',
-    viewMode: 'grid'
+    viewMode: 'grid',
+    sale: searchParams.get('sale') === 'true'
   })
   const [showFilters, setShowFilters] = useState(false)
+  
+  // Detectar si viene de navegación para ocultar barra de filtros
+  const isFromNavigation = searchParams.get('from_nav') === 'true'
 
   // Cargar productos al montar el componente
   useEffect(() => {
-    loadProducts()
+    loadProducts({}, true) // true indica que es vista pública
   }, [loadProducts])
+
+  // Recargar productos cuando cambie el género (para "Ver Todo")
+  useEffect(() => {
+    const genderParam = searchParams.get('gender') as 'men' | 'women' | null
+    const clearFiltersParam = searchParams.get('clear_filters')
+    
+    // Si es "Ver Todo" (clear_filters=true), recargar productos
+    if (clearFiltersParam === 'true' && genderParam) {
+      loadProducts({}, true)
+    }
+  }, [searchParams.get('gender'), searchParams.get('clear_filters')])
 
   // Manejar parámetros de búsqueda de la URL
   useEffect(() => {
     const searchParam = searchParams.get('search')
-    if (searchParam && searchParam !== filters.search) {
-      setFilters(prev => ({ ...prev, search: searchParam }))
+    const genderParam = searchParams.get('gender') as 'men' | 'women' | null
+    const categoryParam = searchParams.get('category')
+    const saleParam = searchParams.get('sale') === 'true'
+    const fromNavParam = searchParams.get('from_nav') // Detectar si viene de navegación
+    const clearFiltersParam = searchParams.get('clear_filters') // Detectar si debe limpiar filtros
+    
+    // Si viene de navegación, resetear todos los filtros primero
+    if (fromNavParam === 'true') {
+      setFilters({
+        search: searchParam || '',
+        category: categoryParam ? categories.find(c => c.slug === categoryParam)?.id || null : null,
+        brand: null,
+        gender: genderParam,
+        minPrice: null,
+        maxPrice: null,
+        sortBy: 'name',
+        sortOrder: 'asc',
+        viewMode: 'grid',
+        sale: saleParam
+      })
+      return
     }
-  }, [searchParams, filters.search])
+    
+    // Si debe limpiar filtros (Ver Todo), solo mantener género
+    if (clearFiltersParam === 'true') {
+      setFilters({
+        search: '',
+        category: null,
+        brand: null,
+        gender: genderParam,
+        minPrice: null,
+        maxPrice: null,
+        sortBy: 'name',
+        sortOrder: 'asc',
+        viewMode: 'grid',
+        sale: false
+      })
+      return
+    }
+    
+    const updates: Partial<Filters> = {}
+    
+    if (searchParam !== filters.search) {
+      updates.search = searchParam || ''
+    }
+    
+    if (genderParam !== filters.gender) {
+      updates.gender = genderParam
+    }
+    
+    if (categoryParam) {
+      const categoryId = categories.find(c => c.slug === categoryParam)?.id || null
+      if (categoryId !== filters.category) {
+        updates.category = categoryId
+      }
+    }
+    
+    if (saleParam !== filters.sale) {
+      updates.sale = saleParam
+    }
+    
+    if (Object.keys(updates).length > 0) {
+      setFilters(prev => ({ ...prev, ...updates }))
+    }
+  }, [searchParams, categories, filters.search, filters.gender, filters.category, filters.sale])
 
   // Aplicar filtros
   useEffect(() => {
@@ -78,12 +157,50 @@ function TiendaContent() {
       filtered = filtered.filter(product => product.brand === filters.brand)
     }
 
+    // Filtro de género
+    if (filters.gender) {
+      filtered = filtered.filter(product => {
+        // Si el producto tiene campo gender específico, usarlo
+        if (product.gender) {
+          const productGender = product.gender.toLowerCase()
+          
+          // Los productos unisex se muestran en ambas categorías
+          if (productGender === 'unisex') {
+            return true
+          }
+          
+          // Filtrar por género específico
+          if (filters.gender === 'men') {
+            return productGender === 'masculino' || productGender === 'male' || productGender === 'hombre'
+          } else if (filters.gender === 'women') {
+            return productGender === 'femenino' || productGender === 'female' || productGender === 'mujer'
+          }
+        }
+        
+        // Fallback: buscar por keywords en nombre y descripción
+        const genderKeywords = filters.gender === 'men' 
+          ? ['hombre', 'masculino', 'men', 'male'] 
+          : ['mujer', 'femenino', 'women', 'female']
+        
+        const searchText = `${product.name} ${product.description} ${product.category_details?.name || ''}`.toLowerCase()
+        return genderKeywords.some(keyword => searchText.includes(keyword)) || 
+               searchText.includes('unisex') // Incluir productos unisex
+      })
+    }
+
     // Filtro de precio
     if (filters.minPrice !== null) {
       filtered = filtered.filter(product => product.price >= filters.minPrice!)
     }
     if (filters.maxPrice !== null) {
       filtered = filtered.filter(product => product.price <= filters.maxPrice!)
+    }
+
+    // Filtro de ofertas
+    if (filters.sale) {
+      filtered = filtered.filter(product => 
+        product.compare_price && product.compare_price > product.price
+      )
     }
 
     // Ordenamiento
@@ -120,7 +237,7 @@ function TiendaContent() {
     })
 
     setFilteredProducts(filtered)
-  }, [products, filters.search, filters.category, filters.brand, filters.minPrice, filters.maxPrice, filters.sortBy, filters.sortOrder])
+  }, [products, filters.search, filters.category, filters.brand, filters.gender, filters.minPrice, filters.maxPrice, filters.sale, filters.sortBy, filters.sortOrder])
 
   const handleViewDetails = (product: Product) => {
     router.push(`/producto/${product.slug}`)
@@ -166,6 +283,12 @@ function TiendaContent() {
     }))
   ]
 
+  const genderOptions = [
+    { value: null, label: 'Todos los géneros' },
+    { value: 'men', label: 'Hombres' },
+    { value: 'women', label: 'Mujeres' }
+  ]
+
   const sortOptions = [
     { value: 'name-asc', label: 'Nombre A-Z' },
     { value: 'name-desc', label: 'Nombre Z-A' },
@@ -195,8 +318,9 @@ function TiendaContent() {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="flex flex-col gap-8">
-          {/* Filtros horizontales */}
-          <div className="bg-dark-800 border border-dark-700 rounded-xl p-6">
+          {/* Filtros horizontales - Solo mostrar si no viene de navegación */}
+          {!isFromNavigation && (
+            <div className="bg-dark-800 border border-dark-700 rounded-xl p-6">
             <div className="flex items-center justify-between mb-6">
               <h3 className="text-lg font-semibold text-white">Filtros</h3>
               <button
@@ -207,7 +331,7 @@ function TiendaContent() {
               </button>
             </div>
             
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
               <Dropdown
                 label="Categoría"
                 options={categoryOptions}
@@ -222,6 +346,14 @@ function TiendaContent() {
                 value={filters.brand}
                 onChange={(value) => setFilters({ ...filters, brand: value as number | null })}
                 placeholder="Todas las marcas"
+              />
+              
+              <Dropdown
+                label="Género"
+                options={genderOptions}
+                value={filters.gender}
+                onChange={(value) => setFilters({ ...filters, gender: value as 'men' | 'women' | null })}
+                placeholder="Todos los géneros"
               />
               
               <Dropdown
@@ -288,9 +420,34 @@ function TiendaContent() {
               </div>
             )}
           </div>
+          )}
 
           {/* Contenido principal */}
           <div>
+            {/* Mensaje informativo cuando se ocultan filtros */}
+            {isFromNavigation && (
+              <div className="mb-6 p-4 bg-neon-green/10 border border-neon-green/30 rounded-lg">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="w-2 h-2 bg-neon-green rounded-full"></div>
+                    <p className="text-white font-medium">
+                      {filters.sale ? 'Ofertas' : 
+                       filters.gender === 'men' ? 'Productos para Hombres' : 
+                       filters.gender === 'women' ? 'Productos para Mujeres' : 'Productos Filtrados'}
+                      {filters.category && categories.find(c => c.id === filters.category) && 
+                       ` - ${categories.find(c => c.id === filters.category)?.name}`}
+                    </p>
+                  </div>
+                  <Link 
+                    href="/tienda" 
+                    className="text-neon-green hover:text-white text-sm font-medium transition-colors"
+                  >
+                    Ver todos los productos
+                  </Link>
+                </div>
+              </div>
+            )}
+
             {/* Barra de herramientas */}
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
               <div className="flex items-center gap-4">
@@ -360,6 +517,11 @@ function TiendaContent() {
                       {product.is_featured && (
                         <div className="absolute top-3 left-3 bg-neon-green text-dark-900 px-2 py-1 rounded-full text-xs font-semibold">
                           Destacado
+                        </div>
+                      )}
+                      {product.compare_price && product.compare_price > product.price && (
+                        <div className="absolute top-3 right-3 bg-red-600 text-white px-2 py-1 rounded-full text-xs font-bold">
+                          -{Math.round(((product.compare_price - product.price) / product.compare_price) * 100)}%
                         </div>
                       )}
                     </div>

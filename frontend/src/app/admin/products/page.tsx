@@ -45,7 +45,8 @@ export default function ProductsPage() {
   const filteredProducts = products.filter(product => {
     const matchesSearch = (product.name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
                          (product.description || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         (product.short_description || '').toLowerCase().includes(searchTerm.toLowerCase())
+                         (product.short_description || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         (product.sku || '').toLowerCase().includes(searchTerm.toLowerCase())
     const matchesStatus = statusFilter === 'all' || product.status === statusFilter
     const matchesCategory = categoryFilter === 'all' || 
                            (product.category_details && product.category_details.name === categoryFilter)
@@ -66,12 +67,12 @@ export default function ProductsPage() {
     const labels = {
       published: 'Publicado',
       archived: 'Archivado',
-      draft: 'Borrador'
+      draft: 'No Publicado'
     }
     
     return (
       <span className={`px-2 py-1 text-xs font-medium rounded-full border ${styles[status as keyof typeof styles] || styles.draft}`}>
-        {labels[status as keyof typeof labels] || 'Borrador'}
+        {labels[status as keyof typeof labels] || 'No Publicado'}
       </span>
     )
   }
@@ -181,7 +182,7 @@ export default function ProductsPage() {
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-dark-400" />
             <input
               type="text"
-              placeholder="Buscar productos..."
+              placeholder="Buscar por nombre, descripción o SKU..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full pl-10 pr-4 py-2 bg-dark-700 border border-dark-600 rounded-lg text-white placeholder-dark-400 focus:outline-none focus:ring-2 focus:ring-neon-green focus:border-transparent"
@@ -200,7 +201,7 @@ export default function ProductsPage() {
               <option value="all">Todos los estados</option>
               <option value="published">Publicado</option>
               <option value="archived">Archivado</option>
-              <option value="draft">Borrador</option>
+              <option value="draft">No Publicado</option>
             </select>
             
             <select
@@ -276,6 +277,9 @@ export default function ProductsPage() {
                   Producto
                 </th>
                 <th className="px-6 py-4 text-left text-xs font-medium text-dark-300 uppercase tracking-wider">
+                  SKU
+                </th>
+                <th className="px-6 py-4 text-left text-xs font-medium text-dark-300 uppercase tracking-wider">
                   Categoría
                 </th>
                 <th className="px-6 py-4 text-left text-xs font-medium text-dark-300 uppercase tracking-wider">
@@ -318,6 +322,9 @@ export default function ProductsPage() {
                         </div>
                       </div>
                     </div>
+                  </td>
+                  <td className="px-6 py-4 text-sm text-dark-300 font-mono">
+                    {product.sku || 'Sin SKU'}
                   </td>
                   <td className="px-6 py-4 text-sm text-dark-300">
                     {product.category_details?.name || 'Sin categoría'}

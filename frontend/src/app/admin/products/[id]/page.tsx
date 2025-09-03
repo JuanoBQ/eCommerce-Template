@@ -81,12 +81,12 @@ export default function ProductDetailPage() {
     const labels = {
       published: 'Publicado',
       archived: 'Archivado',
-      draft: 'Borrador'
+      draft: 'No Publicado'
     }
     
     return (
       <span className={`px-3 py-1 text-sm font-medium rounded-full border ${styles[status as keyof typeof styles] || styles.draft}`}>
-        {labels[status as keyof typeof labels] || 'Borrador'}
+        {labels[status as keyof typeof labels] || 'No Publicado'}
       </span>
     )
   }

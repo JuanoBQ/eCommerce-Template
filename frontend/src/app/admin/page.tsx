@@ -1,6 +1,5 @@
 "use client"
 
-import { useState, useEffect } from 'react'
 import { 
   TrendingUp, 
   Users, 
@@ -11,87 +10,26 @@ import {
   Star,
   ArrowUpRight,
   ArrowDownRight,
-  BarChart3
+  BarChart3,
+  RefreshCw
 } from 'lucide-react'
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, PieChart, Pie, Cell } from 'recharts'
-
-interface DashboardStats {
-  totalRevenue: number
-  totalOrders: number
-  totalProducts: number
-  totalUsers: number
-  revenueGrowth: number
-  ordersGrowth: number
-  productsGrowth: number
-  usersGrowth: number
-}
-
-interface ChartData {
-  name: string
-  value: number
-  revenue?: number
-  orders?: number
-}
+import { useDashboard } from '@/hooks/useDashboard'
+import { formatPrice } from '@/utils/currency'
+import Link from 'next/link'
 
 export default function AdminDashboard() {
-  const [stats, setStats] = useState<DashboardStats>({
-    totalRevenue: 0,
-    totalOrders: 0,
-    totalProducts: 0,
-    totalUsers: 0,
-    revenueGrowth: 0,
-    ordersGrowth: 0,
-    productsGrowth: 0,
-    usersGrowth: 0
-  })
-  const [isLoading, setIsLoading] = useState(true)
-
-  // Datos de ejemplo para los gráficos
-  const revenueData: ChartData[] = [
-    { name: 'Ene', value: 4000, revenue: 4000, orders: 24 },
-    { name: 'Feb', value: 3000, revenue: 3000, orders: 13 },
-    { name: 'Mar', value: 2000, revenue: 2000, orders: 98 },
-    { name: 'Abr', value: 2780, revenue: 2780, orders: 39 },
-    { name: 'May', value: 1890, revenue: 1890, orders: 48 },
-    { name: 'Jun', value: 2390, revenue: 2390, orders: 38 },
-    { name: 'Jul', value: 3490, revenue: 3490, orders: 43 },
-  ]
-
-  const categoryData: ChartData[] = [
-    { name: 'Ropa Deportiva', value: 35 },
-    { name: 'Accesorios', value: 25 },
-    { name: 'Calzado', value: 20 },
-    { name: 'Equipamiento', value: 20 },
-  ]
+  const { 
+    stats, 
+    recentActivity, 
+    categoryData, 
+    revenueData, 
+    isLoading, 
+    error, 
+    refreshData 
+  } = useDashboard()
 
   const COLORS = ['#00ff88', '#00d4aa', '#00b4d8', '#7209b7']
-
-  useEffect(() => {
-    // Simular carga de datos
-    const loadDashboardData = async () => {
-      try {
-        // Aquí harías las llamadas a la API real
-        await new Promise(resolve => setTimeout(resolve, 1000))
-        
-        setStats({
-          totalRevenue: 125430,
-          totalOrders: 1247,
-          totalProducts: 89,
-          totalUsers: 2341,
-          revenueGrowth: 12.5,
-          ordersGrowth: 8.2,
-          productsGrowth: 15.3,
-          usersGrowth: 23.1
-        })
-      } catch (error) {
-        console.error('Error loading dashboard data:', error)
-      } finally {
-        setIsLoading(false)
-      }
-    }
-
-    loadDashboardData()
-  }, [])
 
   const StatCard = ({ 
     title, 
@@ -111,9 +49,11 @@ export default function AdminDashboard() {
         <div>
           <p className="text-dark-400 text-sm font-medium">{title}</p>
           <p className="text-2xl font-bold text-white mt-2">
-            {typeof value === 'number' && value > 1000 
-              ? `$${(value / 1000).toFixed(1)}K` 
-              : (typeof value === 'number' ? value.toLocaleString() : value)}
+            {title === 'Ingresos Totales' 
+              ? formatPrice(value)
+              : typeof value === 'number' && value > 1000 
+                ? `${(value / 1000).toFixed(1)}K` 
+                : (typeof value === 'number' ? value.toLocaleString() : value)}
           </p>
           <div className="flex items-center mt-2">
             {growth > 0 ? (
@@ -138,6 +78,20 @@ export default function AdminDashboard() {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-neon-green"></div>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center h-64">
+        <p className="text-red-400 mb-4">{error}</p>
+        <button
+          onClick={refreshData}
+          className="px-4 py-2 bg-neon-green text-dark-900 rounded-lg hover:bg-neon-green/90 transition-colors"
+        >
+          Reintentar
+        </button>
       </div>
     )
   }
@@ -262,7 +216,10 @@ export default function AdminDashboard() {
                 dataKey="value"
               >
                 {categoryData.map((entry, index) => (
-                  <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                  <Cell 
+                    key={`cell-${index}`} 
+                    fill={COLORS[index % COLORS.length]} 
+                  />
                 ))}
               </Pie>
               <Tooltip 
@@ -293,27 +250,41 @@ export default function AdminDashboard() {
 
         {/* Recent Activity */}
         <div className="bg-dark-800 border border-dark-700 rounded-xl p-6">
-          <h3 className="text-lg font-semibold text-white mb-6">Actividad Reciente</h3>
+          <div className="flex items-center justify-between mb-6">
+            <h3 className="text-lg font-semibold text-white">Actividad Reciente</h3>
+            <button
+              onClick={refreshData}
+              className="p-2 text-dark-400 hover:text-white hover:bg-dark-700 rounded-lg transition-colors"
+              title="Actualizar datos"
+            >
+              <RefreshCw className="w-4 h-4" />
+            </button>
+          </div>
           <div className="space-y-4">
-            {[
-              { action: 'Nuevo pedido', user: 'Juan Pérez', time: '2 min', amount: '$89.99' },
-              { action: 'Producto actualizado', user: 'María García', time: '15 min', amount: 'Camiseta Nike' },
-              { action: 'Usuario registrado', user: 'Carlos López', time: '1 hora', amount: '' },
-              { action: 'Pedido completado', user: 'Ana Martínez', time: '2 horas', amount: '$156.50' },
-            ].map((activity, index) => (
-              <div key={index} className="flex items-center justify-between p-3 bg-dark-700 rounded-lg">
-                <div className="flex items-center">
-                  <div className="w-2 h-2 bg-neon-green rounded-full mr-3" />
-                  <div>
-                    <p className="text-white text-sm font-medium">{activity.action}</p>
-                    <p className="text-dark-400 text-xs">{activity.user} • {activity.time}</p>
+            {recentActivity.length > 0 ? (
+              recentActivity.map((activity) => (
+                <div key={activity.id} className="flex items-center justify-between p-3 bg-dark-700 rounded-lg">
+                  <div className="flex items-center">
+                    <div className={`w-2 h-2 rounded-full mr-3 ${
+                      activity.type === 'order' ? 'bg-neon-green' :
+                      activity.type === 'product' ? 'bg-neon-blue' :
+                      activity.type === 'user' ? 'bg-neon-purple' : 'bg-neon-pink'
+                    }`} />
+                    <div>
+                      <p className="text-white text-sm font-medium">{activity.action}</p>
+                      <p className="text-dark-400 text-xs">{activity.user} • {activity.time}</p>
+                    </div>
                   </div>
+                  {activity.amount && (
+                    <span className="text-neon-green text-sm font-medium">{activity.amount}</span>
+                  )}
                 </div>
-                {activity.amount && (
-                  <span className="text-neon-green text-sm font-medium">{activity.amount}</span>
-                )}
+              ))
+            ) : (
+              <div className="text-center py-8">
+                <p className="text-dark-400">No hay actividad reciente</p>
               </div>
-            ))}
+            )}
           </div>
         </div>
 
@@ -324,17 +295,17 @@ export default function AdminDashboard() {
             {[
               { label: 'Agregar Producto', icon: Package, href: '/admin/products/new' },
               { label: 'Ver Pedidos', icon: ShoppingCart, href: '/admin/orders' },
-              { label: 'Gestionar Usuarios', icon: Users, href: '/admin/users' },
+              { label: 'Gestionar Categorías', icon: BarChart3, href: '/admin/categories' },
               { label: 'Ver Reportes', icon: BarChart3, href: '/admin/reports' },
             ].map((action, index) => (
-              <a
+              <Link
                 key={index}
                 href={action.href}
                 className="flex items-center p-3 bg-dark-700 hover:bg-dark-600 rounded-lg transition-colors group"
               >
                 <action.icon className="w-5 h-5 text-dark-400 group-hover:text-neon-green mr-3" />
                 <span className="text-white text-sm font-medium">{action.label}</span>
-              </a>
+              </Link>
             ))}
           </div>
         </div>

@@ -1,7 +1,7 @@
 from rest_framework import serializers
 from django.contrib.auth import get_user_model
 from django.contrib.auth.password_validation import validate_password
-from .models import User, UserProfile, Address
+from .models import User
 
 User = get_user_model()
 
@@ -73,44 +73,12 @@ class CustomRegisterSerializer(serializers.ModelSerializer):
         user.terms_accepted = terms_accepted
         user.save()
 
-        # Crear perfil de usuario (solo con campos básicos)
-        # UserProfile.objects.create(
-        #     user=user,
-        #     show_email=False,
-        #     show_phone=False
-        # )
+
 
         return user
 
 
-class UserProfileSerializer(serializers.ModelSerializer):
-    """
-    Serializer para el perfil de usuario.
-    """
-    user = UserSerializer(read_only=True)
-    
-    class Meta:
-        model = UserProfile
-        fields = [
-            'id', 'user', 'bio', 'website', 'favorite_categories',
-            'preferred_size', 'preferred_brand', 'show_email', 'show_phone',
-            'created_at', 'updated_at'
-        ]
-        read_only_fields = ['id', 'user', 'created_at', 'updated_at']
 
-
-class AddressSerializer(serializers.ModelSerializer):
-    """
-    Serializer para direcciones de usuario.
-    """
-    class Meta:
-        model = Address
-        fields = [
-            'id', 'user', 'type', 'is_default', 'street_address', 'apartment',
-            'city', 'state', 'country', 'postal_code', 'contact_name',
-            'contact_phone', 'delivery_instructions', 'created_at', 'updated_at'
-        ]
-        read_only_fields = ['id', 'user', 'created_at', 'updated_at']
     
     def create(self, validated_data):
         validated_data['user'] = self.context['request'].user
@@ -137,6 +105,75 @@ class ChangePasswordSerializer(serializers.Serializer):
         return value
 
 
+class UserProfileUpdateSerializer(serializers.ModelSerializer):
+    """
+    Serializer para actualizar el perfil del usuario.
+    """
+    class Meta:
+        model = User
+        fields = [
+            'first_name', 'last_name', 'phone', 'birth_date', 'avatar',
+            'default_address', 'default_city', 'default_state', 'default_country',
+            'default_postal_code', 'email_notifications', 'sms_notifications'
+        ]
+        extra_kwargs = {
+            'first_name': {'required': True},
+            'last_name': {'required': True},
+            'phone': {'required': False, 'allow_null': True},
+            'birth_date': {'required': False, 'allow_null': True},
+            'avatar': {'required': False, 'allow_null': True},
+            'default_address': {'required': False, 'allow_null': True},
+            'default_city': {'required': False, 'allow_null': True},
+            'default_state': {'required': False, 'allow_null': True},
+            'default_country': {'required': False, 'allow_null': True},
+            'default_postal_code': {'required': False, 'allow_null': True},
+            'email_notifications': {'required': False},
+            'sms_notifications': {'required': False},
+        }
+
+    def validate_first_name(self, value):
+        if not value or (isinstance(value, str) and len(value.strip()) < 1):
+            raise serializers.ValidationError("El nombre es requerido.")
+        return value.strip() if value else value
+
+    def validate_last_name(self, value):
+        if not value or (isinstance(value, str) and len(value.strip()) < 1):
+            raise serializers.ValidationError("Los apellidos son requeridos.")
+        return value.strip() if value else value
+
+    def validate_phone(self, value):
+        if value and value.strip() == '':
+            return None
+        return value.strip() if value else None
+
+    def validate_birth_date(self, value):
+        if value and str(value).strip() == '':
+            return None
+        return value
+
+    def validate_default_postal_code(self, value):
+        if value and value.strip() == '':
+            return None
+        return value.strip() if value else None
+
+    def update(self, instance, validated_data):
+        print(f"🔄 Actualizando usuario: {instance}")
+        print(f"📊 Datos validados: {validated_data}")
+        
+        # Actualizar solo los campos permitidos
+        for attr, value in validated_data.items():
+            print(f"🔧 Actualizando campo {attr}: {value} (tipo: {type(value)})")
+            if value is not None:
+                setattr(instance, attr, value)
+            else:
+                print(f"⚠️ Saltando campo {attr} porque es None")
+        
+        print("💾 Guardando instancia...")
+        instance.save()
+        print("✅ Instancia guardada exitosamente")
+        return instance
+
+
 class UserListSerializer(serializers.ModelSerializer):
     """
     Serializer simplificado para listado de usuarios (admin).
@@ -144,17 +181,17 @@ class UserListSerializer(serializers.ModelSerializer):
     full_name = serializers.ReadOnlyField()
     total_orders = serializers.SerializerMethodField()
     total_spent = serializers.SerializerMethodField()
-    
+
     class Meta:
         model = User
         fields = [
             'id', 'email', 'full_name', 'is_vendor', 'is_customer',
             'is_active', 'total_orders', 'total_spent', 'created_at'
         ]
-    
+
     def get_total_orders(self, obj):
         return obj.orders.count()
-    
+
     def get_total_spent(self, obj):
         from django.db.models import Sum
         return obj.orders.filter(payment_status='paid').aggregate(

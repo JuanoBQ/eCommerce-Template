@@ -2,38 +2,19 @@ import { useState, useEffect, useCallback } from 'react'
 import { productsApi, categoriesApi } from '@/lib/api'
 import { Product, Category, Brand } from '@/types'
 import { getMockCategories, getMockBrands } from '@/data/mockData'
+import { useSizesAndColors, Size, Color } from './useSizesAndColors'
 import toast from 'react-hot-toast'
-
-// Tipos para tallas y colores
-export interface Size {
-  id: number
-  name: string
-  type: 'clothing' | 'shoes' | 'accessories'
-  type_display: string
-  sort_order: number
-  is_active: boolean
-  created_at: string
-  updated_at: string
-}
-
-export interface Color {
-  id: number
-  name: string
-  hex_code: string
-  is_active: boolean
-  sort_order: number
-  created_at: string
-  updated_at: string
-}
+import axios from 'axios'
 
 export const useProducts = () => {
   const [products, setProducts] = useState<Product[]>([])
   const [categories, setCategories] = useState<Category[]>([])
   const [brands, setBrands] = useState<Brand[]>([])
-  const [sizes, setSizes] = useState<Size[]>([])
-  const [colors, setColors] = useState<Color[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  
+  // Usar el hook de tallas y colores
+  const { sizes, colors } = useSizesAndColors()
 
 
 
@@ -68,25 +49,7 @@ export const useProducts = () => {
     }
   }, [])
 
-  const loadSizes = useCallback(async (type: 'clothing' | 'shoes' | 'accessories' = 'clothing') => {
-    try {
-      const response = await categoriesApi.getSizes(type)
-      setSizes(response.results || response)
-    } catch (err) {
-      console.error('Error loading sizes:', err)
-      setSizes([])
-    }
-  }, [])
 
-  const loadColors = useCallback(async () => {
-    try {
-      const response = await categoriesApi.getColors()
-      setColors(response.results || response)
-    } catch (err) {
-      console.error('Error loading colors:', err)
-      setColors([])
-    }
-  }, [])
 
   // Load mock data immediately
   const loadMockData = useCallback(() => {
@@ -97,13 +60,32 @@ export const useProducts = () => {
   }, [])
 
   // Load products
-  const loadProducts = useCallback(async (params?: any) => {
+  const loadProducts = useCallback(async (params?: any, isPublicView: boolean = false) => {
     setIsLoading(true)
     setError(null)
     try {
-      // Para el dashboard de admin, cargar todos los productos (no solo publicados)
-      // No enviamos el parámetro status para obtener todos los productos
-      const response = await productsApi.getProducts(params)
+      // Para la tienda pública, solo cargar productos publicados
+      // Para el dashboard de admin, cargar todos los productos
+      const requestParams = { ...params }
+      
+      let response
+      if (isPublicView) {
+        // Para vista pública, hacer petición sin token de autenticación
+        // Esto asegura que el backend filtre solo productos publicados
+        const publicApi = axios.create({
+          baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api',
+          timeout: 10000,
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        })
+        response = await publicApi.get('/products/', { params: requestParams })
+        response = response.data
+      } else {
+        // Para admin, usar la API normal con autenticación
+        response = await productsApi.getProducts(requestParams)
+      }
+      
       setProducts(response.results || response)
     } catch (err) {
       console.error('Error loading products:', err)
@@ -119,16 +101,12 @@ export const useProducts = () => {
     try {
       await Promise.all([
         loadCategories(),
-        loadBrands(),
-        loadSizes('clothing'),
-        loadSizes('shoes'),
-        loadSizes('accessories'),
-        loadColors()
+        loadBrands()
       ])
     } catch (err) {
       console.error('Error loading real data:', err)
     }
-  }, [loadCategories, loadBrands, loadSizes, loadColors])
+  }, [loadCategories, loadBrands])
 
   // Create product
   const createProduct = useCallback(async (productData: any): Promise<Product> => {
@@ -313,8 +291,6 @@ export const useProducts = () => {
     uploadVariantImage,
     loadCategories,
     loadBrands,
-    loadSizes,
-    loadColors,
   }
 }
 

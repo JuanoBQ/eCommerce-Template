@@ -21,22 +21,31 @@ export default function ProtectedRoute({
   const [isChecking, setIsChecking] = useState(true)
 
   useEffect(() => {
-    if (isLoading) return
+    // Si está cargando, mantener isChecking en true
+    if (isLoading) {
+      setIsChecking(true)
+      return
+    }
 
+    // Si no está autenticado, redirigir
     if (!isAuthenticated) {
       console.log('❌ Usuario no autenticado, redirigiendo al login')
       toast.error('Debes iniciar sesión para acceder a esta página')
       router.push(`${redirectTo}?redirect=${encodeURIComponent(window.location.pathname)}`)
+      setIsChecking(false)
       return
     }
 
+    // Verificar permisos de admin si es requerido
     if (requireAdmin && user && !user.is_admin && !user.is_staff && !user.is_superuser) {
       console.log('❌ Usuario sin permisos de admin:', user)
       toast.error('No tienes permisos para acceder al panel administrativo')
       router.push('/')
+      setIsChecking(false)
       return
     }
 
+    // Usuario autorizado
     console.log('✅ Usuario autorizado:', user)
     setIsChecking(false)
   }, [isAuthenticated, user, isLoading, requireAdmin, redirectTo, router])

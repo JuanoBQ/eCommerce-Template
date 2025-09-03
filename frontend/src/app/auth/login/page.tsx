@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from 'react'
+import React, { useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { Eye, EyeOff, Mail, Lock, ArrowRight } from 'lucide-react'
@@ -16,7 +16,7 @@ export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false)
   const [errors, setErrors] = useState<Record<string, string>>({})
 
-  const { login } = useAuth()
+  const { login, refreshAuthState, waitForAuthUpdate, isAuthenticated, isLoading: authLoading } = useAuth()
   const router = useRouter()
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -55,18 +55,26 @@ export default function LoginPage() {
     setIsLoading(true)
 
     try {
-      await login({ email: formData.email, password: formData.password })
-      toast.success('¡Inicio de sesión exitoso!')
-      
-      // Esperar un momento para que el estado se actualice
-      setTimeout(() => {
-        // Redirigir a la página desde donde vino el usuario o al dashboard
-        const redirectTo = new URLSearchParams(window.location.search).get('redirect') || '/'
-        console.log('🔄 Redirigiendo a:', redirectTo)
-        router.push(redirectTo)
-      }, 100)
+      console.log('🔐 Iniciando login...')
+      const result = await login({ email: formData.email, password: formData.password })
+
+      if (result.success) {
+        console.log('✅ Login exitoso, esperando actualización del estado...')
+
+        // Refrescar estado inmediatamente para asegurar que se propague
+        await refreshAuthState()
+
+        // Esperar a que el estado se actualice completamente
+        await waitForAuthUpdate()
+
+        toast.success('¡Inicio de sesión exitoso!')
+
+        // Forzar re-renderizado de la página para actualizar el Header
+        console.log('🔄 Forzando re-renderizado de la página...')
+        window.location.href = new URLSearchParams(window.location.search).get('redirect') || '/'
+      }
     } catch (error: any) {
-      console.error('Error de login:', error)
+      console.error('❌ Error de login:', error)
       const errorMessage = error.response?.data?.detail ||
                           error.response?.data?.email ||
                           error.response?.data?.password ||
@@ -76,6 +84,15 @@ export default function LoginPage() {
       setIsLoading(false)
     }
   }
+
+  // Redirigir si ya está autenticado
+  React.useEffect(() => {
+    if (isAuthenticated && !authLoading) {
+      const redirectTo = new URLSearchParams(window.location.search).get('redirect') || '/'
+      console.log('🔄 Usuario ya autenticado, redirigiendo a:', redirectTo)
+      router.push(redirectTo)
+    }
+  }, [isAuthenticated, authLoading, router])
 
   return (
     <div className="min-h-screen bg-dark-900 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
@@ -174,10 +191,10 @@ export default function LoginPage() {
             {/* Submit Button */}
             <button
               type="submit"
-              disabled={isLoading}
+              disabled={isLoading || authLoading}
               className="btn-primary w-full flex items-center justify-center group"
             >
-              {isLoading ? (
+              {(isLoading || authLoading) ? (
                 <div className="loading-spinner w-5 h-5" />
               ) : (
                 <>
