@@ -10,6 +10,7 @@ import { useWishlist } from '@/hooks/useWishlist'
 import CartSidebar from '@/components/cart/CartSidebar'
 import WishlistDropdown from '@/components/layout/WishlistDropdown'
 import NavigationDropdown from '@/components/layout/NavigationDropdown'
+import { Button } from '@/components/ui/button'
 
 const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
@@ -53,30 +54,31 @@ const Header = () => {
   return (
     <header className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
       isScrolled 
-        ? 'bg-dark-900/95 backdrop-blur-md border-b border-dark-700/50' 
-        : 'bg-transparent'
+        ? 'bg-white/95 backdrop-blur-md border-b border-gray-200 shadow-sm' 
+        : 'bg-white'
     }`}>
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-16">
+      {/* Main Navigation Bar */}
+      <div className="w-full px-6 lg:px-8">
+        <div className="flex items-center justify-between h-14">
           {/* Logo */}
           <div className="flex-shrink-0">
             <Link href="/" className="flex items-center space-x-2">
-              <div className="w-8 h-8 bg-gradient-to-r from-neon-green to-neon-blue rounded-lg flex items-center justify-center">
-                <span className="text-dark-900 font-bold text-lg">G</span>
+              <div className="w-7 h-7 bg-black rounded-sm flex items-center justify-center">
+                <span className="text-white font-bold text-sm">F</span>
               </div>
-              <span className="text-xl font-display font-bold text-gradient">
+              <span className="text-lg font-display font-bold text-black">
                 FitStore
               </span>
             </Link>
           </div>
 
-          {/* Desktop Navigation */}
-          <nav className="hidden md:flex items-center space-x-8">
+          {/* Desktop Navigation - Centered */}
+          <nav className="hidden lg:flex items-center space-x-8">
             {navigation.map((item) => (
               <Link
                 key={item.name}
                 href={item.href}
-                className="text-white hover:text-neon-green transition-colors duration-200 font-medium"
+                className="text-sm text-gray-700 hover:text-black transition-colors duration-200 font-medium uppercase tracking-wide"
               >
                 {item.name}
               </Link>
@@ -87,72 +89,72 @@ const Header = () => {
             <NavigationDropdown title="Mujeres" gender="women" />
           </nav>
 
-          {/* Search Bar */}
-          <div className="hidden md:block flex-1 max-w-md mx-8">
+          {/* Search Bar - More compact */}
+          <div className="hidden md:block flex-1 max-w-sm mx-6">
             <form onSubmit={handleSearch} className="relative">
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-dark-400 w-4 h-4" />
+                <Search className="absolute left-2.5 top-1/2 transform -translate-y-1/2 text-gray-400 w-3.5 h-3.5" />
                 <input
                   type="text"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Buscar productos..."
-                  className="w-full pl-10 pr-4 py-2 bg-dark-800/50 border border-dark-700/50 rounded-lg text-white placeholder-dark-400 focus:outline-none focus:ring-2 focus:ring-neon-green/50 focus:border-neon-green/50 backdrop-blur-sm"
+                  placeholder="Buscar..."
+                  className="w-full pl-8 pr-3 py-1.5 bg-gray-50 border border-gray-200 rounded-sm text-sm text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-primary-500 focus:border-transparent"
                 />
               </div>
             </form>
           </div>
 
-          {/* Right side actions */}
-          <div className="flex items-center space-x-4">
+          {/* Right side actions - More compact */}
+          <div className="flex items-center space-x-2">
 
             {/* User Account */}
             {isAuthenticated ? (
               <div className="relative group">
-                <button className="flex items-center space-x-2 p-2 text-white hover:text-neon-green transition-colors duration-200">
+                <button className="flex items-center space-x-1.5 p-1.5 text-gray-700 hover:text-black transition-colors duration-200">
                   {isLoading ? (
-                    <div className="w-5 h-5 border border-white border-t-transparent rounded-full animate-spin" />
+                    <div className="w-4 h-4 border border-gray-700 border-t-transparent rounded-full animate-spin" />
                   ) : (
-                    <User className="w-5 h-5" />
+                    <User className="w-4 h-4" />
                   )}
-                  <span className="text-sm font-medium hidden sm:block">
-                    {isLoading ? 'Cargando...' : (user?.first_name || 'Cuenta')}
+                  <span className="text-xs font-medium hidden sm:block">
+                    {isLoading ? '...' : (user?.first_name || 'Cuenta')}
                   </span>
                 </button>
-                <div className="absolute right-0 mt-2 w-56 bg-dark-800 rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 border border-dark-700">
-                  <div className="py-2">
-                    <div className="px-4 py-3 text-sm text-white border-b border-dark-700">
+                <div className="absolute right-0 mt-1 w-48 bg-white rounded-md shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 border border-gray-200">
+                  <div className="py-1">
+                    <div className="px-3 py-2 text-xs text-gray-900 border-b border-gray-200">
                       <div className="font-medium">{user?.first_name} {user?.last_name}</div>
-                      <div className="text-white/70 text-xs">{user?.email}</div>
+                      <div className="text-gray-500 text-xs truncate">{user?.email}</div>
                     </div>
                     <Link
-                      href="/account/profile"
-                      className="block px-4 py-3 text-sm text-white hover:bg-dark-700 transition-colors duration-200"
+                      href="/account"
+                      className="block px-3 py-2 text-xs text-gray-700 hover:bg-gray-50 transition-colors duration-200"
                     >
                       Mi Perfil
                     </Link>
                     <Link
                       href="/account/orders"
-                      className="block px-4 py-3 text-sm text-white hover:bg-dark-700 transition-colors duration-200"
+                      className="block px-3 py-2 text-xs text-gray-700 hover:bg-gray-50 transition-colors duration-200"
                     >
                       Mis Pedidos
                     </Link>
                     <Link
                       href="/account/tickets"
-                      className="block px-4 py-3 text-sm text-white hover:bg-dark-700 transition-colors duration-200"
+                      className="block px-3 py-2 text-xs text-gray-700 hover:bg-gray-50 transition-colors duration-200"
                     >
                       Mis Tickets
                     </Link>
                     <Link
                       href="/wishlist"
-                      className="block px-4 py-3 text-sm text-white hover:bg-dark-700 transition-colors duration-200"
+                      className="block px-3 py-2 text-xs text-gray-700 hover:bg-gray-50 transition-colors duration-200"
                     >
                       Lista de Deseos
                     </Link>
-                    <div className="border-t border-dark-700 mt-2 pt-2">
+                    <div className="border-t border-gray-200 mt-1 pt-1">
                       <button
                         onClick={handleLogout}
-                        className="block w-full text-left px-4 py-3 text-sm text-white hover:bg-dark-700 transition-colors duration-200"
+                        className="block w-full text-left px-3 py-2 text-xs text-gray-700 hover:bg-gray-50 transition-colors duration-200"
                       >
                         Cerrar Sesión
                       </button>
@@ -164,17 +166,15 @@ const Header = () => {
               <div className="flex items-center space-x-2">
                 <Link
                   href="/auth/login"
-                  className="text-white hover:text-neon-green transition-colors duration-200 font-medium"
+                  className="text-xs text-gray-700 hover:text-black transition-colors duration-200 font-medium"
                 >
                   Iniciar Sesión
                 </Link>
-                <span className="text-white/50">|</span>
-                <Link
-                  href="/auth/register"
-                  className="text-neon-green hover:text-neon-blue transition-colors duration-200 font-medium"
-                >
-                  Registrarse
-                </Link>
+                <Button variant="black" size="sm" className="px-3 py-1 text-xs">
+                  <Link href="/auth/register">
+                    Registrarse
+                  </Link>
+                </Button>
               </div>
             )}
 
@@ -182,11 +182,11 @@ const Header = () => {
             <div className="relative">
               <button
                 onClick={() => setIsWishlistOpen(!isWishlistOpen)}
-                className="p-2 text-white hover:text-neon-green transition-colors duration-200 relative"
+                className="p-1.5 text-gray-700 hover:text-black transition-colors duration-200 relative"
               >
-                <Heart className="w-5 h-5" />
+                <Heart className="w-4 h-4" />
                 {wishlistCount > 0 && (
-                  <span className="absolute -top-1 -right-1 bg-neon-green text-dark-900 text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
+                  <span className="absolute -top-0.5 -right-0.5 bg-primary-500 text-white text-xs font-bold rounded-full h-4 w-4 flex items-center justify-center text-xs">
                     {wishlistCount}
                   </span>
                 )}
@@ -200,11 +200,11 @@ const Header = () => {
             {/* Shopping Cart */}
             <button
               onClick={() => setIsCartOpen(true)}
-              className="p-2 text-white hover:text-neon-green transition-colors duration-200 relative"
+              className="p-1.5 text-gray-700 hover:text-black transition-colors duration-200 relative"
             >
-              <ShoppingCart className="w-5 h-5" />
+              <ShoppingCart className="w-4 h-4" />
               {totalItems > 0 && (
-                <span className="absolute -top-1 -right-1 bg-neon-green text-dark-900 text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
+                <span className="absolute -top-0.5 -right-0.5 bg-primary-500 text-white text-xs font-bold rounded-full h-4 w-4 flex items-center justify-center text-xs">
                   {totalItems}
                 </span>
               )}
@@ -213,9 +213,9 @@ const Header = () => {
             {/* Mobile menu button */}
             <button
               onClick={() => setIsMenuOpen(!isMenuOpen)}
-              className="md:hidden p-2 text-white hover:text-neon-green transition-colors duration-200"
+              className="md:hidden p-1.5 text-gray-700 hover:text-black transition-colors duration-200"
             >
-              {isMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+              {isMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
             </button>
           </div>
         </div>
@@ -223,12 +223,12 @@ const Header = () => {
         {/* Mobile Navigation */}
         {isMenuOpen && (
           <div className="md:hidden">
-            <div className="px-2 pt-2 pb-3 space-y-1 bg-dark-800/95 backdrop-blur-md rounded-lg mt-2 border border-dark-700/50">
+            <div className="px-2 pt-1 pb-2 space-y-0.5 bg-white rounded-md mt-1 border border-gray-200 shadow-lg">
               {navigation.map((item) => (
                 <Link
                   key={item.name}
                   href={item.href}
-                  className="block px-3 py-2 text-white hover:text-neon-green transition-colors duration-200 font-medium"
+                  className="block px-3 py-1.5 text-sm text-gray-700 hover:text-black transition-colors duration-200 font-medium uppercase tracking-wide"
                   onClick={() => setIsMenuOpen(false)}
                 >
                   {item.name}
@@ -238,30 +238,30 @@ const Header = () => {
               {/* Gender Navigation */}
               <Link
                 href="/tienda?gender=men&from_nav=true"
-                className="block px-3 py-2 text-white hover:text-neon-green transition-colors duration-200 font-medium"
+                className="block px-3 py-1.5 text-sm text-gray-700 hover:text-black transition-colors duration-200 font-medium uppercase tracking-wide"
                 onClick={() => setIsMenuOpen(false)}
               >
                 Hombres
               </Link>
               <Link
                 href="/tienda?gender=women&from_nav=true"
-                className="block px-3 py-2 text-white hover:text-neon-green transition-colors duration-200 font-medium"
+                className="block px-3 py-1.5 text-sm text-gray-700 hover:text-black transition-colors duration-200 font-medium uppercase tracking-wide"
                 onClick={() => setIsMenuOpen(false)}
               >
                 Mujeres
               </Link>
               {!isAuthenticated && (
-                <div className="border-t border-dark-700 pt-2 mt-2">
+                <div className="border-t border-gray-200 pt-1 mt-1">
                   <Link
                     href="/auth/login"
-                    className="block px-3 py-2 text-white hover:text-neon-green transition-colors duration-200"
+                    className="block px-3 py-1.5 text-xs text-gray-700 hover:text-black transition-colors duration-200"
                     onClick={() => setIsMenuOpen(false)}
                   >
                     Iniciar Sesión
                   </Link>
                   <Link
                     href="/auth/register"
-                    className="block px-3 py-2 text-white hover:text-neon-green transition-colors duration-200"
+                    className="block px-3 py-1.5 text-xs text-gray-700 hover:text-black transition-colors duration-200"
                     onClick={() => setIsMenuOpen(false)}
                   >
                     Registrarse

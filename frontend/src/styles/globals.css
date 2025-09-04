@@ -10,17 +10,17 @@
   }
   
   .color-swatch.selected {
-    @apply border-neon-green;
+    @apply border-primary-500;
   }
   
   .color-swatch:not(.selected) {
-    @apply border-dark-600 hover:border-dark-500;
+    @apply border-gray-300 hover:border-gray-400;
   }
 }
 
 @layer base {
   * {
-    @apply border-dark-200;
+    @apply border-gray-200;
   }
   
   html {
@@ -28,11 +28,7 @@
   }
   
   body {
-    @apply bg-dark-900 text-white font-sans antialiased;
-    background-image: 
-      radial-gradient(circle at 20% 50%, rgba(0, 255, 136, 0.1) 0%, transparent 50%),
-      radial-gradient(circle at 80% 20%, rgba(255, 0, 128, 0.1) 0%, transparent 50%),
-      radial-gradient(circle at 40% 80%, rgba(0, 128, 255, 0.1) 0%, transparent 50%);
+    @apply bg-white text-gray-900 font-sans antialiased;
   }
   
   h1, h2, h3, h4, h5, h6 {
@@ -46,15 +42,15 @@
 }
 
 ::-webkit-scrollbar-track {
-  @apply bg-dark-800;
+  @apply bg-gray-100;
 }
 
 ::-webkit-scrollbar-thumb {
-  @apply bg-dark-600 rounded-full;
+  @apply bg-gray-300 rounded-full;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  @apply bg-neon-green;
+  @apply bg-primary-500;
 }
 
 /* Loading animations */
@@ -98,27 +94,27 @@
 
 /* Custom utilities */
 .text-gradient {
-  @apply bg-gradient-to-r from-neon-green to-neon-blue bg-clip-text text-transparent;
+  @apply bg-gradient-to-r from-primary-500 to-primary-600 bg-clip-text text-transparent;
 }
 
 .text-gradient-accent {
-  @apply bg-gradient-to-r from-neon-pink to-neon-purple bg-clip-text text-transparent;
+  @apply bg-gradient-to-r from-gray-600 to-gray-800 bg-clip-text text-transparent;
 }
 
 .glass-effect {
-  @apply bg-dark-800/20 backdrop-blur-md border border-dark-700/50;
+  @apply bg-white/80 backdrop-blur-md border border-gray-200;
 }
 
 .card-hover {
-  @apply transition-all duration-300 hover:shadow-2xl hover:-translate-y-2 hover:shadow-neon-green/20;
+  @apply transition-all duration-300 hover:shadow-lg hover:-translate-y-1 hover:shadow-gray-200;
 }
 
 .neon-glow {
-  @apply shadow-lg shadow-neon-green/25;
+  @apply shadow-lg shadow-primary-500/25;
 }
 
 .neon-border {
-  @apply border border-neon-green/50;
+  @apply border border-primary-500/50;
 }
 
 /* Product grid */
@@ -165,60 +161,75 @@
 
 /* Form styles */
 .form-input {
-  @apply w-full px-4 py-3 border border-dark-600 rounded-lg bg-dark-800 text-white placeholder:text-dark-400 focus:outline-none focus:ring-2 focus:ring-neon-green focus:border-neon-green transition-all duration-200;
+  @apply w-full px-4 py-3 border border-gray-300 rounded-md bg-white text-gray-900 placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all duration-200;
+}
+
+/* Input component styles - Force white background */
+.input-white {
+  background-color: white !important;
+}
+
+/* Force white background for all inputs in auth pages */
+.auth-page input {
+  background-color: white !important;
+  color: #1f2937 !important;
+}
+
+.auth-page input::placeholder {
+  color: #6b7280 !important;
 }
 
 .form-label {
-  @apply block text-sm font-medium text-white mb-2;
+  @apply block text-sm font-medium text-gray-900 mb-2;
 }
 
 .form-error {
-  @apply text-sm text-accent-500 mt-1;
+  @apply text-sm text-red-500 mt-1;
 }
 
 /* Button variants */
 .btn-primary {
-  @apply bg-gradient-to-r from-neon-green to-neon-blue text-dark-900 font-semibold px-6 py-3 rounded-lg hover:shadow-lg hover:shadow-neon-green/25 focus:ring-2 focus:ring-neon-green focus:ring-offset-2 focus:ring-offset-dark-900 transition-all duration-200;
+  @apply bg-primary-500 text-white font-semibold px-6 py-3 rounded-md hover:bg-primary-600 focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 transition-all duration-200;
 }
 
 .btn-secondary {
-  @apply bg-dark-700 text-white hover:bg-dark-600 focus:ring-2 focus:ring-dark-500 focus:ring-offset-2 focus:ring-offset-dark-900 transition-all duration-200;
+  @apply bg-gray-100 text-gray-900 hover:bg-gray-200 focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition-all duration-200;
 }
 
 .btn-destructive {
-  @apply bg-accent-600 text-white hover:bg-accent-700 focus:ring-2 focus:ring-accent-500 focus:ring-offset-2 focus:ring-offset-dark-900 transition-all duration-200;
+  @apply bg-red-500 text-white hover:bg-red-600 focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition-all duration-200;
 }
 
 .btn-outline {
-  @apply border border-neon-green bg-transparent text-neon-green hover:bg-neon-green hover:text-dark-900 focus:ring-2 focus:ring-neon-green focus:ring-offset-2 focus:ring-offset-dark-900 transition-all duration-200;
+  @apply border border-gray-300 bg-transparent text-gray-900 hover:bg-gray-50 focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition-all duration-200;
 }
 
 .btn-ghost {
-  @apply hover:bg-dark-800 hover:text-neon-green focus:ring-2 focus:ring-dark-500 focus:ring-offset-2 focus:ring-offset-dark-900 transition-all duration-200;
+  @apply hover:bg-gray-100 hover:text-gray-900 focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition-all duration-200;
 }
 
 /* Loading states */
 .skeleton {
-  @apply animate-pulse bg-dark-700 rounded;
+  @apply animate-pulse bg-gray-200 rounded;
 }
 
 .loading-spinner {
-  @apply animate-spin rounded-full border-2 border-dark-600 border-t-neon-green;
+  @apply animate-spin rounded-full border-2 border-gray-300 border-t-primary-500;
 }
 
 /* Toast notifications */
 .toast-success {
-  @apply bg-neon-green text-dark-900;
+  @apply bg-green-500 text-white;
 }
 
 .toast-error {
-  @apply bg-accent-600 text-white;
+  @apply bg-red-500 text-white;
 }
 
 .toast-warning {
-  @apply bg-yellow-500 text-dark-900;
+  @apply bg-yellow-500 text-white;
 }
 
 .toast-info {
-  @apply bg-neon-blue text-white;
+  @apply bg-primary-500 text-white;
 }

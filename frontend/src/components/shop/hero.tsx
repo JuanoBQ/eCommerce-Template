@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { ArrowRight, Play } from 'lucide-react'
+import { Button } from '@/components/ui/button'
 
 const Hero = () => {
   const [currentSlide, setCurrentSlide] = useState(0)
@@ -15,8 +16,8 @@ const Hero = () => {
       description: "Descubre la última tecnología en ropa deportiva diseñada para maximizar tu rendimiento",
       image: "/images/hero-1.jpg",
       cta: "Ver Colección",
-      link: "/shop/new",
-      gradient: "from-neon-green/20 to-neon-blue/20"
+      link: "/tienda",
+      gradient: "from-primary-500/10 to-primary-600/10"
     },
     {
       id: 2,
@@ -25,8 +26,8 @@ const Hero = () => {
       description: "Ropa que se adapta a tu movimiento, tecnología que potencia tu entrenamiento",
       image: "/images/hero-2.jpg",
       cta: "Comprar Ahora",
-      link: "/shop/men",
-      gradient: "from-neon-pink/20 to-neon-purple/20"
+      link: "/tienda?gender=men",
+      gradient: "from-gray-500/10 to-gray-600/10"
     },
     {
       id: 3,
@@ -35,8 +36,8 @@ const Hero = () => {
       description: "Diseñado para mujeres que no se conforman con menos que la excelencia",
       image: "/images/hero-3.jpg",
       cta: "Explorar",
-      link: "/shop/women",
-      gradient: "from-neon-blue/20 to-neon-green/20"
+      link: "/tienda?gender=women",
+      gradient: "from-primary-500/10 to-primary-600/10"
     }
   ]
 
@@ -48,7 +49,7 @@ const Hero = () => {
   }, [slides.length])
 
   return (
-    <section className="relative h-screen overflow-hidden">
+    <section className="relative h-screen overflow-hidden bg-white">
       {/* Background Slides */}
       {slides.map((slide, index) => (
         <div
@@ -62,7 +63,7 @@ const Hero = () => {
             className="absolute inset-0 bg-cover bg-center bg-no-repeat"
             style={{ backgroundImage: `url(${slide.image})` }}
           />
-          <div className="absolute inset-0 bg-dark-900/40" />
+          <div className="absolute inset-0 bg-black/30" />
         </div>
       ))}
 
@@ -73,7 +74,7 @@ const Hero = () => {
             <div className="animate-fade-in">
               <h1 className="text-6xl md:text-8xl font-display font-black mb-4">
                 <span className="block text-white">{slides[currentSlide].title}</span>
-                <span className="block text-gradient">{slides[currentSlide].subtitle}</span>
+                <span className="block text-primary-500">{slides[currentSlide].subtitle}</span>
               </h1>
               
               <p className="text-xl md:text-2xl text-white/90 mb-8 max-w-lg leading-relaxed">
@@ -81,18 +82,17 @@ const Hero = () => {
               </p>
 
               <div className="flex flex-col sm:flex-row gap-4">
-                <Link
-                  href={slides[currentSlide].link}
-                  className="btn-primary inline-flex items-center justify-center group"
-                >
-                  {slides[currentSlide].cta}
-                  <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform duration-200" />
+                <Link href={slides[currentSlide].link} className="inline-flex items-center justify-center group">
+                  <Button variant="primary" size="lg">
+                    {slides[currentSlide].cta}
+                    <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform duration-200" />
+                  </Button>
                 </Link>
                 
-                <button className="btn-outline inline-flex items-center justify-center group">
+                <Button variant="outline" size="lg" className="bg-white/10 border-white/20 text-white hover:bg-white/20">
                   <Play className="mr-2 w-5 h-5 group-hover:scale-110 transition-transform duration-200" />
                   Ver Video
-                </button>
+                </Button>
               </div>
             </div>
           </div>
@@ -106,9 +106,11 @@ const Hero = () => {
             <button
               key={index}
               onClick={() => setCurrentSlide(index)}
+              title={`Ir a la diapositiva ${index + 1}`}
+              aria-label={`Ir a la diapositiva ${index + 1}`}
               className={`w-3 h-3 rounded-full transition-all duration-300 ${
                 index === currentSlide
-                  ? 'bg-neon-green scale-125'
+                  ? 'bg-primary-500 scale-125'
                   : 'bg-white/50 hover:bg-white/75'
               }`}
             />
@@ -120,16 +122,16 @@ const Hero = () => {
       <div className="absolute bottom-8 right-8 z-20">
         <div className="flex flex-col items-center space-y-2 text-white/70">
           <span className="text-sm font-medium">Scroll</span>
-          <div className="w-px h-8 bg-gradient-to-b from-neon-green to-transparent" />
+          <div className="w-px h-8 bg-gradient-to-b from-primary-500 to-transparent" />
         </div>
       </div>
 
       {/* Floating Elements */}
       <div className="absolute top-1/4 right-8 z-10 animate-pulse-slow">
-        <div className="w-20 h-20 bg-neon-green/20 rounded-full blur-xl" />
+        <div className="w-20 h-20 bg-primary-500/20 rounded-full blur-xl" />
       </div>
       <div className="absolute bottom-1/4 left-8 z-10 animate-pulse-slow delay-1000">
-        <div className="w-32 h-32 bg-neon-blue/20 rounded-full blur-xl" />
+        <div className="w-32 h-32 bg-primary-500/20 rounded-full blur-xl" />
       </div>
     </section>
   )

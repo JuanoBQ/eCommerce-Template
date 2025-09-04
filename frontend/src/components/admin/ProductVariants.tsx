@@ -453,7 +453,7 @@ export default function ProductVariants({
                             <span className={`ml-1 ${
                               (variant.inventory_quantity || 0) === 0 
                                 ? 'text-red-600 font-medium' 
-                                : (variant.inventory_quantity || 0) <= (variant.low_stock_threshold || 5)
+                                : (variant.inventory_quantity || 0) <= 5
                                 ? 'text-yellow-600 font-medium'
                                 : 'text-green-600 font-medium'
                             }`}>
@@ -462,15 +462,13 @@ export default function ProductVariants({
                             {(variant.inventory_quantity || 0) === 0 && (
                               <span className="text-xs text-red-500 ml-1">(Sin stock)</span>
                             )}
-                            {(variant.inventory_quantity || 0) > 0 && (variant.inventory_quantity || 0) <= (variant.low_stock_threshold || 5) && (
+                            {(variant.inventory_quantity || 0) > 0 && (variant.inventory_quantity || 0) <= 5 && (
                               <span className="text-xs text-yellow-500 ml-1">(Bajo stock)</span>
                             )}
                           </div>
-                          {variant.sku && (
-                            <div>
-                              <span className="font-medium">SKU:</span> {variant.sku}
-                            </div>
-                          )}
+                          <div>
+                            <span className="font-medium">SKU:</span> {variant.id}
+                          </div>
                         </div>
                         {isMarkedForDeletion && (
                           <div className="text-red-600 font-medium text-xs mt-2">
@@ -588,7 +586,7 @@ function VariantEditForm({
             <option value="">Seleccionar talla</option>
             {getFilteredSizes().map((size) => (
               <option key={size.id} value={size.id}>
-                {size.name} ({size.type_display})
+                {size.name}
               </option>
             ))}
           </select>

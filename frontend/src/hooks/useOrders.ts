@@ -75,10 +75,14 @@ export interface OrderSummary {
 }
 
 export interface CreateOrderData {
+  first_name: string
+  last_name: string
+  document_id: string
   email: string
   phone: string
   shipping_address: string
   billing_address: string
+  shipping_cost: number
   notes?: string
   items: Array<{
     product_id: number
@@ -106,7 +110,7 @@ export const useOrders = () => {
       }
       
       // Manejar diferentes formatos de respuesta
-      const ordersData = response.results || response
+      const ordersData = (response as any).results || response
       if (Array.isArray(ordersData)) {
         setOrders(ordersData)
       } else {
@@ -128,7 +132,7 @@ export const useOrders = () => {
       setIsLoading(true)
       setError(null)
       const response = await apiClient.get(`/orders/${orderId}/`)
-      setCurrentOrder(response)
+      setCurrentOrder(response as Order)
       return response
     } catch (err: any) {
       const errorMessage = err.response?.data?.detail || 'Error al cargar los detalles de la orden'

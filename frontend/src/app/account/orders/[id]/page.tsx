@@ -104,7 +104,9 @@ export default function OrderDetailPage() {
 
   useEffect(() => {
     if (orderId) {
-      loadOrderDetails(orderId).then(setOrder)
+      loadOrderDetails(orderId).then((orderData) => {
+        setOrder(orderData as Order)
+      })
     }
   }, [orderId, loadOrderDetails])
 
@@ -122,7 +124,8 @@ export default function OrderDetailPage() {
     try {
       await createClaim({
         ...claimData,
-        order: orderId
+        order: orderId,
+        claim_type: claimData.claim_type as "product_issue" | "shipping_issue" | "payment_issue" | "service_issue"
       })
       
       toast.success('Reclamo enviado correctamente. Te contactaremos pronto.')

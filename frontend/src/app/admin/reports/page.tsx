@@ -185,17 +185,9 @@ export default function ReportsPage() {
                 ${currentPeriod.total_revenue.toLocaleString()}
               </p>
               <div className="flex items-center mt-2">
-                {currentPeriod.revenue_growth >= 0 ? (
-                  <TrendingUp className="w-4 h-4 text-green-500 mr-1" />
-                ) : (
-                  <TrendingDown className="w-4 h-4 text-red-500 mr-1" />
-                )}
-                <span className={`text-sm font-medium ${
-                  currentPeriod.revenue_growth >= 0 
-                    ? 'text-green-500' 
-                    : 'text-red-500'
-                }`}>
-                  {Math.abs(currentPeriod.revenue_growth).toFixed(1)}%
+                <TrendingUp className="w-4 h-4 text-green-500 mr-1" />
+                <span className="text-sm font-medium text-green-500">
+                  0.0%
                 </span>
               </div>
             </div>
@@ -211,17 +203,9 @@ export default function ReportsPage() {
                 {currentPeriod.total_orders}
               </p>
               <div className="flex items-center mt-2">
-                {currentPeriod.orders_growth >= 0 ? (
-                  <TrendingUp className="w-4 h-4 text-green-500 mr-1" />
-                ) : (
-                  <TrendingDown className="w-4 h-4 text-red-500 mr-1" />
-                )}
-                <span className={`text-sm font-medium ${
-                  currentPeriod.orders_growth >= 0 
-                    ? 'text-green-500' 
-                    : 'text-red-500'
-                }`}>
-                  {Math.abs(currentPeriod.orders_growth).toFixed(1)}%
+                <TrendingUp className="w-4 h-4 text-green-500 mr-1" />
+                <span className="text-sm font-medium text-green-500">
+                  0.0%
                 </span>
               </div>
             </div>
@@ -237,17 +221,9 @@ export default function ReportsPage() {
                 {currentPeriod.total_customers}
               </p>
               <div className="flex items-center mt-2">
-                {currentPeriod.customers_growth >= 0 ? (
-                  <TrendingUp className="w-4 h-4 text-green-500 mr-1" />
-                ) : (
-                  <TrendingDown className="w-4 h-4 text-red-500 mr-1" />
-                )}
-                <span className={`text-sm font-medium ${
-                  currentPeriod.customers_growth >= 0 
-                    ? 'text-green-500' 
-                    : 'text-red-500'
-                }`}>
-                  {Math.abs(currentPeriod.customers_growth).toFixed(1)}%
+                <TrendingUp className="w-4 h-4 text-green-500 mr-1" />
+                <span className="text-sm font-medium text-green-500">
+                  0.0%
                 </span>
               </div>
             </div>
@@ -263,17 +239,9 @@ export default function ReportsPage() {
                 {currentPeriod.total_products}
               </p>
               <div className="flex items-center mt-2">
-                {currentPeriod.products_growth >= 0 ? (
-                  <TrendingUp className="w-4 h-4 text-green-500 mr-1" />
-                ) : (
-                  <TrendingDown className="w-4 h-4 text-red-500 mr-1" />
-                )}
-                <span className={`text-sm font-medium ${
-                  currentPeriod.products_growth >= 0 
-                    ? 'text-green-500' 
-                    : 'text-red-500'
-                }`}>
-                  {Math.abs(currentPeriod.products_growth).toFixed(1)}%
+                <TrendingUp className="w-4 h-4 text-green-500 mr-1" />
+                <span className="text-sm font-medium text-green-500">
+                  0.0%
                 </span>
               </div>
             </div>

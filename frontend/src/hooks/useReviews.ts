@@ -35,7 +35,7 @@ export const useReviews = (productId?: number) => {
       setIsLoading(true)
       setError(null)
       const response = await apiClient.get(`/products/${targetProductId}/reviews/`)
-      setReviews(response.results || response || [])
+      setReviews((response as any).results || response || [])
     } catch (err: any) {
       console.error('Error loading reviews:', err)
       const errorMessage = err.response?.data?.detail || 'Error al cargar las reseñas'

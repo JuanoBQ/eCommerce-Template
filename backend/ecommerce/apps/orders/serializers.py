@@ -74,8 +74,9 @@ class OrderCreateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Order
         fields = [
-            'email', 'phone', 'shipping_address', 'billing_address', 
-            'notes', 'items'
+            'first_name', 'last_name', 'document_id',
+            'email', 'phone', 'shipping_address', 
+            'shipping_cost', 'notes', 'items'
         ]
     
 
@@ -91,15 +92,19 @@ class OrderCreateSerializer(serializers.ModelSerializer):
         
         # Crear la orden con campos requeridos
         order = Order.objects.create(
+            first_name=validated_data['first_name'],
+            last_name=validated_data['last_name'],
+            document_id=validated_data['document_id'],
             email=validated_data['email'],
             phone=validated_data['phone'],
             shipping_address=validated_data['shipping_address'],
-            billing_address=validated_data.get('billing_address', validated_data['shipping_address']),
+            billing_address=validated_data['shipping_address'],  # Usar la misma dirección de envío
             notes=validated_data.get('notes', ''),
             subtotal=total_amount,
-            total_amount=total_amount,
-            shipping_first_name='Usuario',  # Valor por defecto
-            shipping_last_name='Cliente',
+            shipping_amount=validated_data.get('shipping_cost', 0),
+            total_amount=total_amount + validated_data.get('shipping_cost', 0),
+            shipping_first_name=validated_data['first_name'],
+            shipping_last_name=validated_data['last_name'],
             shipping_city='Bogotá',
             shipping_state='Cundinamarca',
             shipping_country='Colombia',

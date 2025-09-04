@@ -1,41 +1,146 @@
 "use client"
 
 import { useState } from 'react'
-import { Users, Search, Filter, MoreVertical, Edit, Trash2, Eye } from 'lucide-react'
-
-// Mock data para usuarios
-const mockUsers = [
-  {
-    id: 1,
-    email: 'admin@tienda.com',
-    first_name: 'Admin',
-    last_name: 'Usuario',
-    is_admin: true,
-    is_active: true,
-    date_joined: '2024-01-01',
-    last_login: '2024-01-15'
-  },
-  {
-    id: 2,
-    email: 'cliente@email.com',
-    first_name: 'Juan',
-    last_name: 'Pérez',
-    is_admin: false,
-    is_active: true,
-    date_joined: '2024-01-10',
-    last_login: '2024-01-14'
-  }
-]
+import { Users, Search, Filter, MoreVertical, Trash2, Eye, Shield, UserCheck, UserX, X, Save, UserPlus } from 'lucide-react'
+import { useUsers, User, CreateUserData } from '@/hooks/useUsers'
+import toast from 'react-hot-toast'
 
 export default function UsersPage() {
-  const [users] = useState(mockUsers)
+  const { 
+    users, 
+    userStats, 
+    isLoading, 
+    error, 
+    deleteUser, 
+    toggleUserStatus, 
+    toggleUserRole,
+    createUser
+  } = useUsers()
   const [searchTerm, setSearchTerm] = useState('')
+  const [statusFilter, setStatusFilter] = useState('all')
+  const [roleFilter, setRoleFilter] = useState('all')
+  
+  // Estados para modales
+  const [viewModalOpen, setViewModalOpen] = useState(false)
+  const [createModalOpen, setCreateModalOpen] = useState(false)
+  const [selectedUser, setSelectedUser] = useState<User | null>(null)
+  
+  // Estados para formularios
+  const [createForm, setCreateForm] = useState<CreateUserData>({
+    email: '',
+    first_name: '',
+    last_name: '',
+    password: '',
+    is_staff: false,
+    is_active: true
+  })
 
-  const filteredUsers = users.filter(user =>
-    user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+  const filteredUsers = users?.filter(user => {
+    const matchesSearch = user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
     user.first_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     user.last_name.toLowerCase().includes(searchTerm.toLowerCase())
-  )
+    const matchesStatus = statusFilter === 'all' || 
+                         (statusFilter === 'active' && user.is_active) ||
+                         (statusFilter === 'inactive' && !user.is_active)
+    const matchesRole = roleFilter === 'all' || 
+                       (roleFilter === 'staff' && user.is_staff) ||
+                       (roleFilter === 'regular' && !user.is_staff)
+    
+    return matchesSearch && matchesStatus && matchesRole
+  }) || []
+
+  const handleDeleteUser = async (userId: number, userName: string) => {
+    if (confirm(`¿Estás seguro de que quieres eliminar al usuario ${userName}?`)) {
+      try {
+        await deleteUser(userId)
+      } catch (error) {
+        console.error('Error al eliminar usuario:', error)
+      }
+    }
+  }
+
+  const handleToggleStatus = async (userId: number, currentStatus: boolean, userName: string) => {
+    const action = currentStatus ? 'desactivar' : 'activar'
+    if (confirm(`¿Estás seguro de que quieres ${action} al usuario ${userName}?`)) {
+      try {
+        await toggleUserStatus(userId, !currentStatus)
+      } catch (error) {
+        console.error('Error al cambiar estado del usuario:', error)
+      }
+    }
+  }
+
+  const handleToggleRole = async (userId: number, currentRole: boolean, userName: string) => {
+    const action = currentRole ? 'quitar permisos de administrador' : 'dar permisos de administrador'
+    if (confirm(`¿Estás seguro de que quieres ${action} al usuario ${userName}?`)) {
+      try {
+        await toggleUserRole(userId, !currentRole)
+      } catch (error) {
+        console.error('Error al cambiar rol del usuario:', error)
+      }
+    }
+  }
+
+  // Funciones para manejar modales
+  const handleViewUser = (user: User) => {
+    setSelectedUser(user)
+    setViewModalOpen(true)
+  }
+
+  const handleCreateUser = () => {
+    setCreateForm({
+      email: '',
+      first_name: '',
+      last_name: '',
+      password: '',
+      is_staff: false,
+      is_active: true
+    })
+    setCreateModalOpen(true)
+  }
+
+
+
+  const handleSaveCreate = async () => {
+    try {
+      await createUser(createForm)
+      setCreateModalOpen(false)
+      setCreateForm({
+        email: '',
+        first_name: '',
+        last_name: '',
+        password: '',
+        is_staff: false,
+        is_active: true
+      })
+    } catch (error) {
+      console.error('Error al crear usuario:', error)
+    }
+  }
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-neon-green"></div>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-center">
+          <p className="text-red-400 mb-4">Error al cargar usuarios: {error}</p>
+          <button 
+            onClick={() => window.location.reload()}
+            className="px-4 py-2 bg-neon-green text-dark-900 rounded-lg hover:bg-neon-green/90 transition-colors"
+          >
+            Reintentar
+          </button>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="space-y-6">
@@ -45,28 +150,111 @@ export default function UsersPage() {
           <h1 className="text-3xl font-bold text-white">Usuarios</h1>
           <p className="text-dark-400 mt-2">Gestiona los usuarios del sistema</p>
         </div>
-        <button className="px-4 py-2 bg-neon-green text-dark-900 font-medium rounded-lg hover:bg-neon-green/90 transition-colors">
+        <button 
+          onClick={handleCreateUser}
+          className="px-4 py-2 bg-neon-green text-dark-900 font-medium rounded-lg hover:bg-neon-green/90 transition-colors flex items-center gap-2"
+        >
+          <UserPlus className="w-4 h-4" />
           Nuevo Usuario
         </button>
       </div>
 
+      {/* Stats */}
+      {userStats && (
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+          <div className="bg-dark-800 border border-dark-700 rounded-xl p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-dark-400 text-sm">Total Usuarios</p>
+                <p className="text-2xl font-bold text-white">{userStats.total_users}</p>
+              </div>
+              <Users className="w-8 h-8 text-neon-green" />
+            </div>
+          </div>
+          <div className="bg-dark-800 border border-dark-700 rounded-xl p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-dark-400 text-sm">Administradores</p>
+                <p className="text-2xl font-bold text-white">{userStats.staff_users}</p>
+              </div>
+              <Shield className="w-8 h-8 text-red-400" />
+            </div>
+          </div>
+          <div className="bg-dark-800 border border-dark-700 rounded-xl p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-dark-400 text-sm">Clientes</p>
+                <p className="text-2xl font-bold text-white">{userStats.regular_users}</p>
+              </div>
+              <Users className="w-8 h-8 text-blue-400" />
+            </div>
+          </div>
+          <div className="bg-dark-800 border border-dark-700 rounded-xl p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-dark-400 text-sm">Usuarios Activos</p>
+                <p className="text-2xl font-bold text-white">{userStats.active_users}</p>
+              </div>
+              <UserCheck className="w-8 h-8 text-green-400" />
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Filters */}
       <div className="bg-dark-800 border border-dark-700 rounded-xl p-6">
-        <div className="flex items-center space-x-4">
-          <div className="flex-1 relative">
+        <div className="space-y-4">
+          {/* Search Bar */}
+          <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-dark-400 w-4 h-4" />
             <input
               type="text"
-              placeholder="Buscar usuarios..."
+              placeholder="Buscar por nombre o email..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full pl-10 pr-4 py-2 bg-dark-700 border border-dark-600 rounded-lg text-white placeholder-dark-400 focus:outline-none focus:ring-2 focus:ring-neon-green focus:border-transparent"
             />
           </div>
-          <button className="px-4 py-2 bg-dark-700 border border-dark-600 rounded-lg text-white hover:bg-dark-600 transition-colors flex items-center space-x-2">
-            <Filter className="w-4 h-4" />
-            <span>Filtros</span>
+          
+          {/* Filter Row */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              className="px-4 py-2 bg-dark-700 border border-dark-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-neon-green focus:border-transparent"
+              aria-label="Filtrar por estado"
+            >
+              <option value="all">Todos los Estados</option>
+              <option value="active">Activos</option>
+              <option value="inactive">Inactivos</option>
+            </select>
+            
+            <select
+              value={roleFilter}
+              onChange={(e) => setRoleFilter(e.target.value)}
+              className="px-4 py-2 bg-dark-700 border border-dark-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-neon-green focus:border-transparent"
+              aria-label="Filtrar por rol"
+            >
+              <option value="all">Todos los Roles</option>
+              <option value="staff">Administradores</option>
+              <option value="regular">Clientes</option>
+            </select>
+          </div>
+          
+          {/* Clear Filters Button */}
+          {(statusFilter !== 'all' || roleFilter !== 'all') && (
+            <div className="flex justify-end">
+              <button
+                onClick={() => {
+                  setStatusFilter('all')
+                  setRoleFilter('all')
+                }}
+                className="px-4 py-2 text-sm text-dark-400 hover:text-white transition-colors"
+              >
+                Limpiar filtros
           </button>
+            </div>
+          )}
         </div>
       </div>
 
@@ -107,11 +295,11 @@ export default function UsersPage() {
                   <td className="px-6 py-4 text-white">{user.email}</td>
                   <td className="px-6 py-4">
                     <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                      user.is_admin 
+                      user.is_staff 
                         ? 'bg-red-500/20 text-red-400' 
                         : 'bg-blue-500/20 text-blue-400'
                     }`}>
-                      {user.is_admin ? 'Administrador' : 'Cliente'}
+                      {user.is_staff ? 'Administrador' : 'Cliente'}
                     </span>
                   </td>
                   <td className="px-6 py-4">
@@ -124,17 +312,40 @@ export default function UsersPage() {
                     </span>
                   </td>
                   <td className="px-6 py-4 text-dark-400">
-                    {new Date(user.last_login).toLocaleDateString()}
+                    {user.last_login ? new Date(user.last_login).toLocaleDateString() : 'Nunca'}
                   </td>
                   <td className="px-6 py-4">
                     <div className="flex items-center justify-end space-x-2">
-                      <button className="p-2 text-dark-400 hover:text-white transition-colors" title="Ver">
+                      <button 
+                        onClick={() => handleViewUser(user)}
+                        className="p-2 text-dark-400 hover:text-white transition-colors" 
+                        title="Ver"
+                      >
                         <Eye className="w-4 h-4" />
                       </button>
-                      <button className="p-2 text-dark-400 hover:text-white transition-colors" title="Editar">
-                        <Edit className="w-4 h-4" />
+                      <button 
+                        onClick={() => handleToggleStatus(user.id, user.is_active, `${user.first_name} ${user.last_name}`)}
+                        className={`p-2 transition-colors ${
+                          user.is_active 
+                            ? 'text-dark-400 hover:text-yellow-400' 
+                            : 'text-dark-400 hover:text-green-400'
+                        }`}
+                        title={user.is_active ? 'Desactivar' : 'Activar'}
+                      >
+                        {user.is_active ? <UserX className="w-4 h-4" /> : <UserCheck className="w-4 h-4" />}
                       </button>
-                      <button className="p-2 text-dark-400 hover:text-red-400 transition-colors" title="Eliminar">
+                      <button 
+                        onClick={() => handleToggleRole(user.id, user.is_staff, `${user.first_name} ${user.last_name}`)}
+                        className="p-2 text-dark-400 hover:text-purple-400 transition-colors"
+                        title={user.is_staff ? 'Quitar permisos de admin' : 'Dar permisos de admin'}
+                      >
+                        <Shield className="w-4 h-4" />
+                      </button>
+                      <button 
+                        onClick={() => handleDeleteUser(user.id, `${user.first_name} ${user.last_name}`)}
+                        className="p-2 text-dark-400 hover:text-red-400 transition-colors" 
+                        title="Eliminar"
+                      >
                         <Trash2 className="w-4 h-4" />
                       </button>
                     </div>
@@ -146,51 +357,192 @@ export default function UsersPage() {
         </div>
       </div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <div className="bg-dark-800 border border-dark-700 rounded-xl p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-dark-400 text-sm">Total Usuarios</p>
-              <p className="text-2xl font-bold text-white">{users.length}</p>
+
+
+      {/* Modal Ver Usuario */}
+      {viewModalOpen && selectedUser && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-dark-800 border border-dark-700 rounded-xl p-6 w-full max-w-md">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-xl font-bold text-white">Detalles del Usuario</h3>
+              <button 
+                onClick={() => setViewModalOpen(false)}
+                className="p-2 text-dark-400 hover:text-white transition-colors"
+                title="Cerrar modal"
+                aria-label="Cerrar modal"
+              >
+                <X className="w-5 h-5" />
+              </button>
             </div>
-            <Users className="w-8 h-8 text-neon-green" />
+            
+            <div className="space-y-4">
+              <div className="flex items-center space-x-3">
+                <div className="w-12 h-12 bg-neon-green rounded-full flex items-center justify-center">
+                  <span className="text-dark-900 font-semibold text-lg">
+                    {selectedUser.first_name[0]}{selectedUser.last_name[0]}
+                  </span>
+                </div>
+                <div>
+                  <h4 className="text-white font-medium text-lg">
+                    {selectedUser.first_name} {selectedUser.last_name}
+                  </h4>
+                  <p className="text-dark-400">ID: {selectedUser.id}</p>
+                </div>
+              </div>
+              
+              <div className="space-y-3">
+                <div>
+                  <label className="text-dark-400 text-sm">Email</label>
+                  <p className="text-white">{selectedUser.email}</p>
+                </div>
+                
+                <div>
+                  <label className="text-dark-400 text-sm">Rol</label>
+                  <span className={`inline-block px-2 py-1 rounded-full text-xs font-medium ${
+                    selectedUser.is_staff 
+                      ? 'bg-red-500/20 text-red-400' 
+                      : 'bg-blue-500/20 text-blue-400'
+                  }`}>
+                    {selectedUser.is_staff ? 'Administrador' : 'Cliente'}
+                  </span>
+                </div>
+                
+                <div>
+                  <label className="text-dark-400 text-sm">Estado</label>
+                  <span className={`inline-block px-2 py-1 rounded-full text-xs font-medium ${
+                    selectedUser.is_active 
+                      ? 'bg-green-500/20 text-green-400' 
+                      : 'bg-gray-500/20 text-gray-400'
+                  }`}>
+                    {selectedUser.is_active ? 'Activo' : 'Inactivo'}
+                  </span>
+                </div>
+                
+                <div>
+                  <label className="text-dark-400 text-sm">Fecha de Registro</label>
+                  <p className="text-white">{new Date(selectedUser.date_joined).toLocaleDateString()}</p>
+                </div>
+                
+                <div>
+                  <label className="text-dark-400 text-sm">Último Acceso</label>
+                  <p className="text-white">
+                    {selectedUser.last_login ? new Date(selectedUser.last_login).toLocaleDateString() : 'Nunca'}
+                  </p>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
-        <div className="bg-dark-800 border border-dark-700 rounded-xl p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-dark-400 text-sm">Administradores</p>
-              <p className="text-2xl font-bold text-white">
-                {users.filter(u => u.is_admin).length}
-              </p>
+      )}
+
+
+
+      {/* Modal Crear Usuario */}
+      {createModalOpen && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-dark-800 border border-dark-700 rounded-xl p-6 w-full max-w-md">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-xl font-bold text-white">Crear Nuevo Usuario</h3>
+              <button 
+                onClick={() => setCreateModalOpen(false)}
+                className="p-2 text-dark-400 hover:text-white transition-colors"
+                title="Cerrar modal"
+                aria-label="Cerrar modal"
+              >
+                <X className="w-5 h-5" />
+              </button>
             </div>
-            <Users className="w-8 h-8 text-red-400" />
-          </div>
-        </div>
-        <div className="bg-dark-800 border border-dark-700 rounded-xl p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-dark-400 text-sm">Clientes</p>
-              <p className="text-2xl font-bold text-white">
-                {users.filter(u => !u.is_admin).length}
-              </p>
-            </div>
-            <Users className="w-8 h-8 text-blue-400" />
-          </div>
-        </div>
-        <div className="bg-dark-800 border border-dark-700 rounded-xl p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-dark-400 text-sm">Usuarios Activos</p>
-              <p className="text-2xl font-bold text-white">
-                {users.filter(u => u.is_active).length}
-              </p>
-            </div>
-            <Users className="w-8 h-8 text-green-400" />
+            
+            <div className="space-y-4">
+              <div>
+                <label className="block text-dark-400 text-sm mb-2">Email *</label>
+                <input
+                  type="email"
+                  value={createForm.email}
+                  onChange={(e) => setCreateForm({...createForm, email: e.target.value})}
+                  className="w-full px-3 py-2 bg-dark-700 border border-dark-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-neon-green focus:border-transparent"
+                  aria-label="Email del nuevo usuario"
+                  required
+                />
+              </div>
+              
+              <div>
+                <label className="block text-dark-400 text-sm mb-2">Nombre *</label>
+                <input
+                  type="text"
+                  value={createForm.first_name}
+                  onChange={(e) => setCreateForm({...createForm, first_name: e.target.value})}
+                  className="w-full px-3 py-2 bg-dark-700 border border-dark-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-neon-green focus:border-transparent"
+                  aria-label="Nombre del nuevo usuario"
+                  required
+                />
+              </div>
+              
+              <div>
+                <label className="block text-dark-400 text-sm mb-2">Apellido *</label>
+                <input
+                  type="text"
+                  value={createForm.last_name}
+                  onChange={(e) => setCreateForm({...createForm, last_name: e.target.value})}
+                  className="w-full px-3 py-2 bg-dark-700 border border-dark-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-neon-green focus:border-transparent"
+                  aria-label="Apellido del nuevo usuario"
+                  required
+                />
+              </div>
+              
+              <div>
+                <label className="block text-dark-400 text-sm mb-2">Contraseña *</label>
+                <input
+                  type="password"
+                  value={createForm.password}
+                  onChange={(e) => setCreateForm({...createForm, password: e.target.value})}
+                  className="w-full px-3 py-2 bg-dark-700 border border-dark-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-neon-green focus:border-transparent"
+                  aria-label="Contraseña del nuevo usuario"
+                  required
+                />
+              </div>
+              
+              <div className="flex items-center space-x-4">
+                <label className="flex items-center space-x-2">
+                  <input
+                    type="checkbox"
+                    checked={createForm.is_staff}
+                    onChange={(e) => setCreateForm({...createForm, is_staff: e.target.checked})}
+                    className="w-4 h-4 text-neon-green bg-dark-700 border-dark-600 rounded focus:ring-neon-green focus:ring-2"
+                  />
+                  <span className="text-white text-sm">Administrador</span>
+                </label>
+                
+                <label className="flex items-center space-x-2">
+                  <input
+                    type="checkbox"
+                    checked={createForm.is_active}
+                    onChange={(e) => setCreateForm({...createForm, is_active: e.target.checked})}
+                    className="w-4 h-4 text-neon-green bg-dark-700 border-dark-600 rounded focus:ring-neon-green focus:ring-2"
+                  />
+                  <span className="text-white text-sm">Activo</span>
+                </label>
+              </div>
+              
+              <div className="flex space-x-3 pt-4">
+                <button
+                  onClick={handleSaveCreate}
+                  className="flex-1 px-4 py-2 bg-neon-green text-dark-900 font-medium rounded-lg hover:bg-neon-green/90 transition-colors flex items-center justify-center gap-2"
+                >
+                  <Save className="w-4 h-4" />
+                  Crear Usuario
+                </button>
+                <button
+                  onClick={() => setCreateModalOpen(false)}
+                  className="px-4 py-2 bg-dark-700 text-white font-medium rounded-lg hover:bg-dark-600 transition-colors"
+                >
+                  Cancelar
+                </button>
+              </div>
           </div>
         </div>
       </div>
+      )}
     </div>
   )
 }

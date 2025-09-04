@@ -1,12 +1,13 @@
 "use client"
 
 import Link from 'next/link'
-import Image from 'next/image'
 import ProtectedRoute from '@/components/auth/ProtectedRoute'
-import { Heart, Trash2, Eye } from 'lucide-react'
+import { Heart, ShoppingCart } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { formatPrice } from '@/utils/currency'
 import { useWishlist } from '@/hooks/useWishlist'
+import { Button } from '@/components/ui/button'
+import { ProductCard } from '@/components/ui/ProductCard'
 
 export default function WishlistPage() {
   const { items: wishlistItems, removeFromWishlist } = useWishlist()
@@ -24,219 +25,137 @@ export default function WishlistPage() {
 
   return (
     <ProtectedRoute>
-      <div className="min-h-screen bg-dark-900 py-20">
+      <div className="min-h-screen bg-white py-8">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          {/* Header */}
-          <div className="text-center mb-12">
-            <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-r from-neon-pink to-neon-purple rounded-2xl mb-6">
-              <Heart className="w-8 h-8 text-dark-900" />
+          {/* Header - Estilo Adidas */}
+          <div className="mb-8">
+            <div className="flex items-center gap-3 mb-4">
+              <Heart className="w-6 h-6 text-gray-900" />
+              <h1 className="text-2xl font-bold text-gray-900">
+                Lista de Deseos
+              </h1>
             </div>
-            <h1 className="text-4xl md:text-6xl font-display font-black mb-4">
-              <span className="text-white">LISTA DE</span>
-              <span className="block text-gradient">DESEOS</span>
-            </h1>
-            <p className="text-xl text-white/70 max-w-2xl mx-auto">
+            <p className="text-gray-600">
               Productos que has guardado para comprar después
             </p>
           </div>
 
           {wishlistItems.length === 0 ? (
-            /* Empty State */
-            <div className="bg-dark-800/50 backdrop-blur-md rounded-2xl p-12 border border-dark-700/50 text-center">
-              <Heart className="w-16 h-16 text-white/30 mx-auto mb-6" />
-              <h3 className="text-xl font-semibold text-white mb-4">
+            /* Empty State - Estilo Adidas */
+            <div className="text-center py-16">
+              <Heart className="w-16 h-16 text-gray-300 mx-auto mb-6" />
+              <h3 className="text-xl font-semibold text-gray-900 mb-4">
                 Tu lista de deseos está vacía
               </h3>
-              <p className="text-white/70 mb-8 max-w-md mx-auto">
+              <p className="text-gray-600 mb-8 max-w-md mx-auto">
                 Agrega productos que te gusten para tenerlos siempre a mano
               </p>
-              <Link
-                href="/tienda"
-                className="btn-primary inline-flex items-center"
-              >
-                Explorar Productos
+              <Link href="/tienda">
+                <Button variant="black">
+                  Explorar Productos
+                </Button>
               </Link>
             </div>
           ) : (
             <>
-              {/* Actions Bar */}
+              {/* Actions Bar - Estilo Adidas */}
               <div className="flex flex-col sm:flex-row items-center justify-between mb-8 gap-4">
-                <div className="text-white">
+                <div className="text-gray-900">
                   <span className="text-lg font-medium">
                     {wishlistItems.length} producto{wishlistItems.length !== 1 ? 's' : ''} en tu lista
                   </span>
                 </div>
-
+                <div className="flex items-center gap-3">
+                  <Button variant="outline" size="sm">
+                    <ShoppingCart className="w-4 h-4 mr-2" />
+                    Agregar todo al carrito
+                  </Button>
+                </div>
               </div>
 
-              {/* Wishlist Items Grid */}
+              {/* Wishlist Items Grid - Usando ProductCard */}
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                 {wishlistItems.map((item) => (
-                  <div
-                    key={item.id}
-                    className="bg-dark-800/50 backdrop-blur-md rounded-2xl overflow-hidden border border-dark-700/50 card-hover group"
-                  >
-                    {/* Product Image */}
-                    <div className="relative aspect-square overflow-hidden">
-                      {item.product.images && item.product.images.length > 0 ? (
-                        <Image
-                          src={item.product.images[0].image}
-                          alt={item.product.name}
-                          fill
-                          className="object-cover transition-transform duration-500 group-hover:scale-110"
-                        />
-                      ) : (
-                        <div className="w-full h-full bg-dark-700 flex items-center justify-center">
-                          <span className="text-dark-400 text-sm">Sin imagen</span>
-                        </div>
-                      )}
-
-                      {/* Overlay */}
-                      <div className="absolute inset-0 bg-gradient-to-t from-dark-900/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-
-                      {/* Quick Actions */}
-                      <div className="absolute top-4 right-4 flex flex-col space-y-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                        <button
-                          onClick={() => handleRemoveFromWishlist(item.product.id)}
-                          className="p-2 bg-red-600/80 backdrop-blur-sm rounded-full text-white hover:bg-red-600 transition-colors duration-200"
-                          title="Eliminar de la lista de deseos"
-                          aria-label="Eliminar de la lista de deseos"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                        <Link
-                          href={`/producto/${item.product.slug}`}
-                          className="p-2 bg-dark-800/80 backdrop-blur-sm rounded-full text-white hover:text-neon-green transition-colors duration-200"
-                          title="Ver detalles del producto"
-                        >
-                          <Eye className="w-4 h-4" />
-                        </Link>
-                      </div>
-
-                      {/* Sale Badge */}
-                      {item.product.compare_price && item.product.compare_price > item.product.price && (
-                        <div className="absolute top-4 left-4 bg-accent-600 text-white px-2 py-1 rounded-full text-xs font-bold">
-                          -{Math.round(((item.product.compare_price - item.product.price) / item.product.compare_price) * 100)}%
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Product Info */}
-                    <div className="p-6">
-                      <div className="mb-2">
-                        <span className="text-sm text-neon-green font-medium">
-                          {item.product.brand_details?.name || 'Sin marca'}
-                        </span>
-                      </div>
-
-                      <h3 className="text-lg font-semibold text-white mb-2 group-hover:text-neon-green transition-colors duration-200">
-                        <Link href={`/producto/${item.product.slug}`}>
-                          {item.product.name}
-                        </Link>
-                      </h3>
-
-                      <p className="text-sm text-white/70 mb-4">
-                        {item.product.category_details?.name || 'Sin categoría'}
+                  <div key={item.id} className="relative group">
+                    {/* ProductCard Component */}
+                    <ProductCard
+                      product={{
+                        id: item.product.id,
+                        name: item.product.name,
+                        slug: item.product.slug,
+                        price: item.product.price,
+                        compare_price: item.product.compare_price,
+                        images: item.product.images,
+                        brand_details: item.product.brand_details,
+                        is_featured: item.product.is_featured,
+                        inventory_quantity: item.product.inventory_quantity,
+                        low_stock_threshold: item.product.low_stock_threshold
+                      }}
+                      onToggleWishlist={handleRemoveFromWishlist}
+                      isInWishlist={true}
+                    />
+                    
+                    {/* Wishlist-specific overlay with date */}
+                    <div className="absolute bottom-0 left-0 right-0 bg-white border-t border-gray-100 p-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                      <p className="text-xs text-gray-400 text-center">
+                        Agregado el {new Date(item.added_at).toLocaleDateString('es-ES', {
+                          year: 'numeric',
+                          month: 'short',
+                          day: 'numeric'
+                        })}
                       </p>
-
-                      {/* Price */}
-                      <div className="flex items-center justify-between mb-4">
-                        <div className="flex items-center space-x-2">
-                          <span className="text-xl font-bold text-white">
-                            {formatPrice(item.product.price)}
-                          </span>
-                          {item.product.compare_price && item.product.compare_price > item.product.price && (
-                            <span className="text-sm text-white/50 line-through">
-                              {formatPrice(item.product.compare_price)}
-                            </span>
-                          )}
-                        </div>
-                      </div>
-
-                      {/* Stock Status */}
-                      <div className="mb-4">
-                        <div className="flex items-center">
-                          <div className={`w-2 h-2 rounded-full mr-2 ${
-                            item.product.inventory_quantity > 10
-                              ? 'bg-green-400'
-                              : item.product.inventory_quantity > 0
-                              ? 'bg-yellow-400'
-                              : 'bg-red-400'
-                          }`} />
-                          <span className="text-sm text-white/70">
-                            {item.product.inventory_quantity > 10
-                              ? 'En stock'
-                              : item.product.inventory_quantity > 0
-                              ? `Solo ${item.product.inventory_quantity} disponibles`
-                              : 'Agotado'
-                            }
-                          </span>
-                        </div>
-                      </div>
-
-                      {/* View Details Button */}
-                      <button
-                        onClick={() => handleViewDetails(item.product)}
-                        className="w-full btn-primary flex items-center justify-center group"
-                      >
-                        <Eye className="w-4 h-4 mr-2 group-hover:scale-110 transition-transform duration-200" />
-                        Ver detalles
-                      </button>
-
-                      {/* Date Added */}
-                      <div className="mt-4 pt-4 border-t border-dark-600">
-                        <p className="text-xs text-white/50">
-                          Agregado el {new Date(item.added_at).toLocaleDateString('es-ES', {
-                            year: 'numeric',
-                            month: 'short',
-                            day: 'numeric'
-                          })}
-                        </p>
-                      </div>
                     </div>
                   </div>
                 ))}
               </div>
 
-              {/* Summary */}
-              <div className="mt-12 bg-dark-800/50 backdrop-blur-md rounded-2xl p-6 border border-dark-700/50">
+              {/* Summary - Estilo Adidas */}
+              <div className="mt-12 bg-gray-50 border border-gray-200 rounded-md p-6">
                 <div className="flex flex-col sm:flex-row items-center justify-between">
                   <div className="mb-4 sm:mb-0">
-                    <h3 className="text-lg font-semibold text-white mb-2">
+                    <h3 className="text-lg font-semibold text-gray-900 mb-4">
                       Resumen de Lista de Deseos
                     </h3>
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-center">
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-6 text-center">
                       <div>
-                        <div className="text-2xl font-bold text-neon-green">
+                        <div className="text-2xl font-bold text-gray-900">
                           {wishlistItems.length}
                         </div>
-                        <div className="text-sm text-white/70">Productos</div>
+                        <div className="text-sm text-gray-600">Productos</div>
                       </div>
                       <div>
-                        <div className="text-2xl font-bold text-neon-blue">
+                        <div className="text-2xl font-bold text-primary-500">
                           {formatPrice(wishlistItems.reduce((total, item) => total + item.product.price, 0))}
                         </div>
-                        <div className="text-sm text-white/70">Valor Total</div>
+                        <div className="text-sm text-gray-600">Valor Total</div>
                       </div>
                       <div>
-                        <div className="text-2xl font-bold text-neon-purple">
+                        <div className="text-2xl font-bold text-green-600">
                           {formatPrice(wishlistItems
                             .filter(item => item.product.compare_price && item.product.compare_price > item.product.price)
                             .reduce((total, item) =>
-                              total + (item.product.compare_price - item.product.price), 0
+                              total + ((item.product.compare_price || 0) - item.product.price), 0
                             ))}
                         </div>
-                        <div className="text-sm text-white/70">Ahorro</div>
+                        <div className="text-sm text-gray-600">Ahorro</div>
                       </div>
                       <div>
-                        <div className="text-2xl font-bold text-accent-500">
+                        <div className="text-2xl font-bold text-red-500">
                           {wishlistItems.filter(item => item.product.inventory_quantity === 0).length}
                         </div>
-                        <div className="text-sm text-white/70">Agotados</div>
+                        <div className="text-sm text-gray-600">Agotados</div>
                       </div>
                     </div>
                   </div>
-
+                  <div className="flex flex-col gap-3">
+                    <Button variant="black" size="lg">
+                      <ShoppingCart className="w-5 h-5 mr-2" />
+                      Agregar todo al carrito
+                    </Button>
+                    <Button variant="outline" size="lg">
+                      Compartir lista
+                    </Button>
+                  </div>
                 </div>
               </div>
             </>
@@ -246,3 +165,4 @@ export default function WishlistPage() {
     </ProtectedRoute>
   )
 }
+

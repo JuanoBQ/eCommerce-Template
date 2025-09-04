@@ -62,6 +62,7 @@ MIDDLEWARE = [
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
+    'ecommerce.middleware.JWTAuthenticationMiddleware',  # Middleware JWT personalizado ANTES de AuthenticationMiddleware
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'allauth.account.middleware.AccountMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
@@ -131,11 +132,11 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 # Django REST Framework
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
-        'dj_rest_auth.jwt_auth.JWTCookieAuthentication',
         'rest_framework_simplejwt.authentication.JWTAuthentication',
+        'dj_rest_auth.jwt_auth.JWTCookieAuthentication',
     ],
     'DEFAULT_PERMISSION_CLASSES': [
-        'rest_framework.permissions.AllowAny',  # Cambiado para permitir registro
+        'rest_framework.permissions.AllowAny',  # Temporalmente AllowAny para debug
     ],
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
     'PAGE_SIZE': 20,

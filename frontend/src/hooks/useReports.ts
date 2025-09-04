@@ -50,7 +50,7 @@ export function useReports(dateRange: string = '30') {
       setLoading(true)
       setError(null)
       const response = await reportsApi.getDashboardData()
-      setReport(response.data)
+      setReport((response as any).data)
     } catch (err: any) {
       console.error('Error loading dashboard report:', err)
       setError(err.response?.data?.detail || 'Error al cargar el reporte')

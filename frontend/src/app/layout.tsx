@@ -9,20 +9,20 @@ import ConditionalLayout from '@/components/layout/conditional-layout'
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
-  title: 'FitStore - Ropa Deportiva Premium',
-  description: 'Descubre la mejor ropa deportiva diseñada para atletas que buscan superar sus límites. Calidad premium, tecnología avanzada y estilo único.',
-  keywords: 'ropa deportiva, fitness, gym, atletas, entrenamiento, moda deportiva, gymshark, nike, adidas',
+  title: 'FitStore - Ropa Deportiva Minimalista',
+  description: 'Descubre la mejor ropa deportiva con un diseño minimalista y elegante. Calidad premium, tecnología avanzada y estilo único.',
+  keywords: 'ropa deportiva, fitness, gym, atletas, entrenamiento, moda deportiva, minimalista, elegante',
   authors: [{ name: 'FitStore Team' }],
   openGraph: {
-    title: 'FitStore - Ropa Deportiva Premium',
-    description: 'Descubre la mejor ropa deportiva diseñada para atletas que buscan superar sus límites.',
+    title: 'FitStore - Ropa Deportiva Minimalista',
+    description: 'Descubre la mejor ropa deportiva con un diseño minimalista y elegante.',
     type: 'website',
     locale: 'es_ES',
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'FitStore - Ropa Deportiva Premium',
-    description: 'Descubre la mejor ropa deportiva diseñada para atletas que buscan superar sus límites.',
+    title: 'FitStore - Ropa Deportiva Minimalista',
+    description: 'Descubre la mejor ropa deportiva con un diseño minimalista y elegante.',
   },
 }
 

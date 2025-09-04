@@ -10,6 +10,8 @@ import { useWishlist } from '@/hooks/useWishlist'
 import { Product } from '@/types'
 import { formatPrice } from '@/utils/currency'
 import Dropdown from '@/components/ui/Dropdown'
+import { ProductCard } from '@/components/ui/ProductCard'
+import { Button } from '@/components/ui/button'
 import { Heart } from 'lucide-react'
 
 
@@ -260,7 +262,9 @@ function TiendaContent() {
       maxPrice: null,
       sortBy: 'name',
       sortOrder: 'asc',
-      viewMode: filters.viewMode
+      viewMode: filters.viewMode,
+      gender: null,
+      sale: false
     })
   }
 
@@ -301,15 +305,15 @@ function TiendaContent() {
 
 
   return (
-    <div className="min-h-screen bg-dark-900">
+    <div className="min-h-screen bg-white">
       {/* Header de la tienda */}
-      <div className="bg-dark-800 border-b border-dark-700">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="bg-gray-50 border-b border-gray-200">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
           <div className="text-center">
-            <h1 className="text-4xl font-bold text-white mb-4">
-              Tienda <span className="text-neon-green">FitStore</span>
+            <h1 className="text-4xl font-bold text-gray-900 mb-4">
+              Tienda <span className="text-primary-500">FitStore</span>
             </h1>
-            <p className="text-dark-300 text-lg">
+            <p className="text-gray-600 text-lg">
               Encuentra la mejor ropa deportiva y accesorios para tu entrenamiento
             </p>
           </div>
@@ -320,12 +324,12 @@ function TiendaContent() {
         <div className="flex flex-col gap-8">
           {/* Filtros horizontales - Solo mostrar si no viene de navegación */}
           {!isFromNavigation && (
-            <div className="bg-dark-800 border border-dark-700 rounded-xl p-6">
+            <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
             <div className="flex items-center justify-between mb-6">
-              <h3 className="text-lg font-semibold text-white">Filtros</h3>
+              <h3 className="text-lg font-semibold text-gray-900">Filtros</h3>
               <button
                 onClick={clearFilters}
-                className="text-dark-400 hover:text-white transition-colors text-sm"
+                className="text-gray-500 hover:text-gray-900 transition-colors text-sm"
               >
                 Limpiar filtros
               </button>
@@ -372,22 +376,23 @@ function TiendaContent() {
               />
               
               <div className="flex items-end">
-                <button
+                <Button
                   onClick={() => setShowFilters(!showFilters)}
-                  className="w-full px-4 py-3 bg-dark-700 border border-dark-600 rounded-lg text-white hover:bg-dark-600 transition-colors flex items-center justify-center gap-2"
+                  variant="outline"
+                  className="w-full"
                 >
-                  <SlidersHorizontal className="w-4 h-4" />
+                  <SlidersHorizontal className="w-4 h-4 mr-2" />
                   Más filtros
-                </button>
+                </Button>
               </div>
             </div>
 
             {/* Filtros adicionales (colapsables) */}
             {showFilters && (
-              <div className="mt-6 pt-6 border-t border-dark-700">
+              <div className="mt-6 pt-6 border-t border-gray-200">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-white mb-2">
+                    <label className="block text-sm font-medium text-gray-900 mb-2">
                       Precio mínimo
                     </label>
                     <input
@@ -398,11 +403,11 @@ function TiendaContent() {
                         ...filters, 
                         minPrice: e.target.value ? parseInt(e.target.value) : null 
                       })}
-                      className="w-full px-3 py-2 bg-dark-700 border border-dark-600 rounded-lg text-white placeholder-dark-400 focus:outline-none focus:ring-2 focus:ring-neon-green focus:border-transparent"
+                      className="w-full px-3 py-2 bg-white border border-gray-300 rounded-md text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-white mb-2">
+                    <label className="block text-sm font-medium text-gray-900 mb-2">
                       Precio máximo
                     </label>
                     <input
@@ -413,7 +418,7 @@ function TiendaContent() {
                         ...filters, 
                         maxPrice: e.target.value ? parseInt(e.target.value) : null 
                       })}
-                      className="w-full px-3 py-2 bg-dark-700 border border-dark-600 rounded-lg text-white placeholder-dark-400 focus:outline-none focus:ring-2 focus:ring-neon-green focus:border-transparent"
+                      className="w-full px-3 py-2 bg-white border border-gray-300 rounded-md text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                     />
                   </div>
                 </div>
@@ -426,11 +431,11 @@ function TiendaContent() {
           <div>
             {/* Mensaje informativo cuando se ocultan filtros */}
             {isFromNavigation && (
-              <div className="mb-6 p-4 bg-neon-green/10 border border-neon-green/30 rounded-lg">
+              <div className="mb-6 p-4 bg-primary-500/10 border border-primary-500/30 rounded-lg">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <div className="w-2 h-2 bg-neon-green rounded-full"></div>
-                    <p className="text-white font-medium">
+                    <div className="w-2 h-2 bg-primary-500 rounded-full"></div>
+                    <p className="text-gray-900 font-medium">
                       {filters.sale ? 'Ofertas' : 
                        filters.gender === 'men' ? 'Productos para Hombres' : 
                        filters.gender === 'women' ? 'Productos para Mujeres' : 'Productos Filtrados'}
@@ -440,7 +445,7 @@ function TiendaContent() {
                   </div>
                   <Link 
                     href="/tienda" 
-                    className="text-neon-green hover:text-white text-sm font-medium transition-colors"
+                    className="text-primary-500 hover:text-primary-600 text-sm font-medium transition-colors"
                   >
                     Ver todos los productos
                   </Link>
@@ -451,19 +456,19 @@ function TiendaContent() {
             {/* Barra de herramientas */}
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
               <div className="flex items-center gap-4">
-                <p className="text-dark-300">
+                <p className="text-gray-600">
                   Mostrando {filteredProducts.length} de {products.length} productos
                 </p>
               </div>
 
               <div className="flex items-center gap-4">
                 {/* Vista */}
-                <div className="flex items-center gap-1 bg-dark-800 border border-dark-700 rounded-lg p-1">
+                <div className="flex items-center gap-1 bg-gray-100 border border-gray-200 rounded-md p-1">
                   <button
                     onClick={() => setFilters({ ...filters, viewMode: 'grid' })}
                     title="Vista en cuadrícula"
                     aria-label="Vista en cuadrícula"
-                    className={`p-2 rounded ${filters.viewMode === 'grid' ? 'bg-neon-green text-dark-900' : 'text-dark-300 hover:text-white'}`}
+                    className={`p-2 rounded ${filters.viewMode === 'grid' ? 'bg-primary-500 text-white' : 'text-gray-600 hover:text-gray-900'}`}
                   >
                     <Grid className="w-4 h-4" />
                   </button>
@@ -471,7 +476,7 @@ function TiendaContent() {
                     onClick={() => setFilters({ ...filters, viewMode: 'list' })}
                     title="Vista en lista"
                     aria-label="Vista en lista"
-                    className={`p-2 rounded ${filters.viewMode === 'list' ? 'bg-neon-green text-dark-900' : 'text-dark-300 hover:text-white'}`}
+                    className={`p-2 rounded ${filters.viewMode === 'list' ? 'bg-primary-500 text-white' : 'text-gray-600 hover:text-gray-900'}`}
                   >
                     <List className="w-4 h-4" />
                   </button>
@@ -482,17 +487,18 @@ function TiendaContent() {
             {/* Grid de productos */}
             {productsLoading ? (
               <div className="flex justify-center items-center py-12">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-neon-green"></div>
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-500"></div>
               </div>
             ) : filteredProducts.length === 0 ? (
               <div className="text-center py-12">
-                <p className="text-dark-300 text-lg">No se encontraron productos</p>
-                <button
+                <p className="text-gray-600 text-lg">No se encontraron productos</p>
+                <Button
                   onClick={clearFilters}
-                  className="mt-4 px-6 py-2 bg-neon-green text-dark-900 rounded-lg hover:bg-neon-green/90 transition-colors"
+                  variant="primary"
+                  className="mt-4"
                 >
                   Limpiar filtros
-                </button>
+                </Button>
               </div>
             ) : (
               <div className={`grid gap-6 ${
@@ -501,87 +507,12 @@ function TiendaContent() {
                   : 'grid-cols-1'
               }`}>
                 {filteredProducts.map((product) => (
-                  <div
+                  <ProductCard
                     key={product.id}
-                    className={`bg-dark-800 border border-dark-700 rounded-xl overflow-hidden hover:border-neon-green/50 transition-all duration-300 ${
-                      filters.viewMode === 'list' ? 'flex' : ''
-                    }`}
-                  >
-                    {/* Imagen del producto */}
-                    <div className={`${filters.viewMode === 'list' ? 'w-48 h-48' : 'aspect-square'} relative overflow-hidden`}>
-                      <img
-                        src={product.images?.[0]?.image || '/images/placeholder-product.jpg'}
-                        alt={product.images?.[0]?.alt_text || product.name}
-                        className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
-                      />
-                      {product.is_featured && (
-                        <div className="absolute top-3 left-3 bg-neon-green text-dark-900 px-2 py-1 rounded-full text-xs font-semibold">
-                          Destacado
-                        </div>
-                      )}
-                      {product.compare_price && product.compare_price > product.price && (
-                        <div className="absolute top-3 right-3 bg-red-600 text-white px-2 py-1 rounded-full text-xs font-bold">
-                          -{Math.round(((product.compare_price - product.price) / product.compare_price) * 100)}%
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Información del producto */}
-                    <div className={`p-6 ${filters.viewMode === 'list' ? 'flex-1' : ''}`}>
-                      <div className="mb-2">
-                        <span className="text-neon-green text-sm font-medium">
-                          {product.brand_details?.name}
-                        </span>
-                      </div>
-                      
-                      <h3 className="text-lg font-semibold text-white mb-2 line-clamp-2">
-                        {product.name}
-                      </h3>
-                      
-                      <p className="text-dark-300 text-sm mb-4 line-clamp-2">
-                        {product.short_description}
-                      </p>
-
-                      <div className="flex items-center justify-between mb-4">
-                        <div className="flex items-center gap-2">
-                          <span className="text-xl font-bold text-white">
-                            {formatPrice(product.price)}
-                          </span>
-                          {product.compare_price && product.compare_price > product.price && (
-                            <span className="text-dark-400 line-through text-sm">
-                              {formatPrice(product.compare_price)}
-                            </span>
-                          )}
-                        </div>
-                        
-                        {product.inventory_quantity <= product.low_stock_threshold && (
-                          <span className="text-orange-400 text-xs">
-                            ¡Pocas unidades!
-                          </span>
-                        )}
-                      </div>
-
-                      <div className="flex gap-2">
-                        <button
-                          onClick={() => handleWishlistToggle(product)}
-                          className={`p-2 rounded-lg transition-colors ${
-                            isInWishlist(product.id)
-                              ? 'bg-red-600 text-white hover:bg-red-700'
-                              : 'bg-dark-700 text-white hover:bg-dark-600'
-                          }`}
-                          title={isInWishlist(product.id) ? 'Eliminar de lista de deseos' : 'Agregar a lista de deseos'}
-                        >
-                          <Heart className={`w-4 h-4 ${isInWishlist(product.id) ? 'fill-current' : ''}`} />
-                        </button>
-                        <button
-                          onClick={() => handleViewDetails(product)}
-                          className="flex-1 bg-neon-green text-dark-900 px-4 py-2 rounded-lg font-semibold hover:bg-neon-green/90 transition-colors"
-                        >
-                          Ver detalles
-                        </button>
-                      </div>
-                    </div>
-                  </div>
+                    product={product}
+                    onToggleWishlist={() => handleWishlistToggle(product)}
+                    isInWishlist={isInWishlist(product.id)}
+                  />
                 ))}
               </div>
             )}
@@ -595,10 +526,10 @@ function TiendaContent() {
 export default function TiendaPage() {
   return (
     <Suspense fallback={
-      <div className="min-h-screen bg-dark-900 pt-20 flex items-center justify-center">
+      <div className="min-h-screen bg-white pt-20 flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-neon-green mx-auto mb-4"></div>
-          <p className="text-white">Cargando tienda...</p>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-500 mx-auto mb-4"></div>
+          <p className="text-gray-600">Cargando tienda...</p>
         </div>
       </div>
     }>

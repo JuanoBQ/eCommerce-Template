@@ -22,6 +22,27 @@ export interface User {
   sms_notifications: boolean
   created_at: string
   updated_at: string
+  addresses?: UserAddress[]
+}
+
+// Address Types
+export interface UserAddress {
+  id: number
+  title: string
+  first_name: string
+  last_name: string
+  address_line_1: string
+  address_line_2?: string
+  city: string
+  state: string
+  postal_code: string
+  country: string
+  is_default: boolean
+  is_billing: boolean
+  is_shipping: boolean
+  full_address: string
+  created_at: string
+  updated_at: string
 }
 
 
@@ -110,7 +131,6 @@ export interface Product {
   images?: ProductImage[]
   variants?: ProductVariant[]
   reviews?: ProductReview[]
-  tags?: ProductTag[]
   category_details?: Category
   brand_details?: Brand
 }

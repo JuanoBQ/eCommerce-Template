@@ -12,7 +12,7 @@ interface Category {
   id: number
   name: string
   slug: string
-  description: string
+  description?: string
   is_active: boolean
   sort_order: number
   created_at: string
@@ -82,7 +82,7 @@ export default function CategoriesPage() {
 
   const filteredCategories = categories.filter(category =>
     category.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    category.description.toLowerCase().includes(searchTerm.toLowerCase())
+    (category.description && category.description.toLowerCase().includes(searchTerm.toLowerCase()))
   )
 
   const handleCreateCategory = async (e: React.FormEvent) => {
@@ -133,7 +133,7 @@ export default function CategoriesPage() {
     setEditingCategory(category)
     setCategoryFormData({
       name: category.name,
-      description: category.description,
+      description: category.description || '',
       is_active: category.is_active,
       sort_order: category.sort_order
     })

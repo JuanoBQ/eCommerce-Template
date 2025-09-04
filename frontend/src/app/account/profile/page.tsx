@@ -2,24 +2,32 @@
 
 import { useState } from 'react'
 import { useAuth } from '@/hooks/useAuth'
+import { useOrders } from '@/hooks/useOrders'
+import { useWishlist } from '@/hooks/useWishlist'
+import { useAddresses } from '@/hooks/useAddresses'
 import ProtectedRoute from '@/components/auth/ProtectedRoute'
-import { User, Mail, Phone, MapPin, Calendar, Save, Camera, Bell, BellOff } from 'lucide-react'
+import AddressModal from '@/components/address/AddressModal'
+import { User, Mail, Phone, MapPin, Calendar, Save, Camera, Bell, BellOff, Plus, Edit, Trash2, Star } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 import { toast } from 'react-hot-toast'
+import { UserAddress } from '@/types'
+import { CreateAddressData } from '@/hooks/useAddresses'
 
 export default function ProfilePage() {
   const { user, updateProfile, isLoading } = useAuth()
+  const { orders } = useOrders()
+  const { count: wishlistCount } = useWishlist()
+  const { addresses, createAddress, updateAddress, deleteAddress, setDefaultAddress, isLoading: addressesLoading } = useAddresses()
   const [isEditing, setIsEditing] = useState(false)
+  const [addressModalOpen, setAddressModalOpen] = useState(false)
+  const [editingAddress, setEditingAddress] = useState<UserAddress | null>(null)
   const [formData, setFormData] = useState({
     first_name: user?.first_name || '',
     last_name: user?.last_name || '',
     phone: user?.phone || '',
     birth_date: user?.birth_date || '',
     avatar: user?.avatar || '',
-    default_address: user?.default_address || '',
-    default_city: user?.default_city || '',
-    default_state: user?.default_state || '',
-    default_country: user?.default_country || '',
-    default_postal_code: user?.default_postal_code || '',
     email_notifications: user?.email_notifications ?? true,
     sms_notifications: user?.sms_notifications ?? false,
   })
@@ -42,8 +50,7 @@ export default function ProfilePage() {
       // Filtrar strings vacías y convertirlas a null para campos opcionales
       if (value === '' || value === undefined) {
         // Para campos opcionales, enviar null
-        if (['phone', 'birth_date', 'avatar', 'default_address', 'default_city',
-             'default_state', 'default_country', 'default_postal_code'].includes(key)) {
+        if (['phone', 'birth_date', 'avatar'].includes(key)) {
           cleaned[key] = null
         }
         // Para campos booleanos, mantener el valor por defecto
@@ -92,8 +99,7 @@ export default function ProfilePage() {
 
         // Buscar el primer error de campo
         const fieldErrors = [
-          'first_name', 'last_name', 'phone', 'birth_date', 'avatar',
-          'default_address', 'default_city', 'default_state', 'default_country', 'default_postal_code'
+          'first_name', 'last_name', 'phone', 'birth_date', 'avatar'
         ]
 
         for (const field of fieldErrors) {
@@ -103,12 +109,7 @@ export default function ProfilePage() {
               last_name: 'Apellidos',
               phone: 'Teléfono',
               birth_date: 'Fecha de nacimiento',
-              avatar: 'Avatar',
-              default_address: 'Dirección',
-              default_city: 'Ciudad',
-              default_state: 'Estado/Provincia',
-              default_country: 'País',
-              default_postal_code: 'Código Postal'
+              avatar: 'Avatar'
             }
             return `${fieldNames[field]}: ${errorData[field][0]}`
           }
@@ -129,28 +130,55 @@ export default function ProfilePage() {
       phone: user?.phone || '',
       birth_date: user?.birth_date || '',
       avatar: user?.avatar || '',
-      default_address: user?.default_address || '',
-      default_city: user?.default_city || '',
-      default_state: user?.default_state || '',
-      default_country: user?.default_country || '',
-      default_postal_code: user?.default_postal_code || '',
+
       email_notifications: user?.email_notifications ?? true,
       sms_notifications: user?.sms_notifications ?? false,
     })
     setIsEditing(false)
   }
 
+  // Address management functions
+  const handleCreateAddress = async (data: CreateAddressData) => {
+    await createAddress(data)
+  }
+
+  const handleUpdateAddress = async (data: CreateAddressData) => {
+    if (editingAddress) {
+      await updateAddress({ id: editingAddress.id, ...data })
+    }
+  }
+
+  const handleEditAddress = (address: UserAddress) => {
+    setEditingAddress(address)
+    setAddressModalOpen(true)
+  }
+
+  const handleDeleteAddress = async (id: number) => {
+    if (confirm('¿Estás seguro de que quieres eliminar esta dirección?')) {
+      await deleteAddress(id)
+    }
+  }
+
+  const handleSetDefaultAddress = async (id: number) => {
+    await setDefaultAddress(id)
+  }
+
+  const handleCloseAddressModal = () => {
+    setAddressModalOpen(false)
+    setEditingAddress(null)
+  }
+
   return (
     <ProtectedRoute>
-      <div className="min-h-screen bg-dark-900 py-20">
+      <div className="min-h-screen bg-white py-20">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           {/* Header */}
           <div className="text-center mb-12">
             <h1 className="text-4xl md:text-6xl font-display font-black mb-4">
-              <span className="text-white">MI</span>
-              <span className="block text-gradient">PERFIL</span>
+              <span className="text-gray-900">MI</span>
+              <span className="block text-gray-900">PERFIL</span>
             </h1>
-            <p className="text-xl text-white/70">
+            <p className="text-xl text-gray-600">
               Gestiona tu información personal y preferencias
             </p>
           </div>
@@ -158,35 +186,38 @@ export default function ProfilePage() {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             {/* Profile Card */}
             <div className="lg:col-span-1">
-              <div className="bg-dark-800/50 backdrop-blur-md rounded-2xl p-8 border border-dark-700/50 text-center">
+              <div className="bg-white border border-gray-200 rounded-md p-8 shadow-sm text-center">
                 {/* Avatar */}
-                <div className="w-24 h-24 bg-gradient-to-r from-neon-green to-neon-blue rounded-full mx-auto mb-6 flex items-center justify-center">
-                  <User className="w-12 h-12 text-dark-900" />
+                <div className="w-24 h-24 bg-gray-900 rounded-full mx-auto mb-6 flex items-center justify-center">
+                  <User className="w-12 h-12 text-white" />
                 </div>
 
                 {/* User Info */}
-                <h3 className="text-xl font-semibold text-white mb-2">
+                <h3 className="text-xl font-semibold text-gray-900 mb-2">
                   {user?.first_name} {user?.last_name}
                 </h3>
-                <p className="text-white/70 mb-4">{user?.email}</p>
+                <p className="text-gray-600 mb-4">{user?.email}</p>
 
                 {/* User Stats */}
-                <div className="grid grid-cols-2 gap-4 pt-4 border-t border-dark-600">
+                <div className="grid grid-cols-2 gap-4 pt-4 border-t border-gray-200">
                   <div>
-                    <div className="text-2xl font-bold text-neon-green">0</div>
-                    <div className="text-sm text-white/70">Pedidos</div>
+                    <div className="text-2xl font-bold text-gray-900">{orders?.length || 0}</div>
+                    <div className="text-sm text-gray-600">Pedidos</div>
                   </div>
                   <div>
-                    <div className="text-2xl font-bold text-neon-blue">0</div>
-                    <div className="text-sm text-white/70">Favoritos</div>
+                    <div className="text-2xl font-bold text-gray-900">{wishlistCount || 0}</div>
+                    <div className="text-sm text-gray-600">Favoritos</div>
                   </div>
                 </div>
 
                 {/* Member Since */}
-                <div className="mt-6 pt-4 border-t border-dark-600">
-                  <div className="flex items-center justify-center text-white/70 text-sm">
+                <div className="mt-6 pt-4 border-t border-gray-200">
+                  <div className="flex items-center justify-center text-gray-600 text-sm">
                     <Calendar className="w-4 h-4 mr-2" />
-                    Miembro desde enero 2024
+                    Miembro desde {user?.created_at ? new Date(user.created_at).toLocaleDateString('es-ES', { 
+                      month: 'long', 
+                      year: 'numeric' 
+                    }) : 'Fecha no disponible'}
                   </div>
                 </div>
               </div>
@@ -194,30 +225,31 @@ export default function ProfilePage() {
 
             {/* Profile Form */}
             <div className="lg:col-span-2">
-              <div className="bg-dark-800/50 backdrop-blur-md rounded-2xl p-8 border border-dark-700/50">
+              <div className="bg-white border border-gray-200 rounded-md p-8 shadow-sm">
                 <div className="flex items-center justify-between mb-8">
-                  <h2 className="text-2xl font-display font-bold text-white">
-                    Información Personal
+                  <h2 className="text-2xl font-display font-bold text-gray-900">
+                    INFORMACIÓN PERSONAL
                   </h2>
                   {!isEditing ? (
-                    <button
+                    <Button
                       onClick={() => setIsEditing(true)}
-                      className="btn-secondary"
+                      variant="outline"
                     >
                       Editar Perfil
-                    </button>
+                    </Button>
                   ) : (
                     <div className="flex space-x-3">
-                      <button
+                      <Button
                         onClick={handleCancel}
-                        className="btn-secondary"
+                        variant="outline"
                       >
                         Cancelar
-                      </button>
-                      <button
+                      </Button>
+                      <Button
                         onClick={handleSubmit}
                         disabled={isLoading}
-                        className="btn-primary flex items-center"
+                        variant="black"
+                        className="flex items-center"
                       >
                         {isLoading ? (
                           <div className="loading-spinner w-4 h-4 mr-2" />
@@ -225,7 +257,7 @@ export default function ProfilePage() {
                           <Save className="w-4 h-4 mr-2" />
                         )}
                         Guardar
-                      </button>
+                      </Button>
                     </div>
                   )}
                 </div>
@@ -234,163 +266,88 @@ export default function ProfilePage() {
                   {/* Name Fields */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
-                      <label className="form-label">Nombre</label>
+                      <label className="block text-sm font-medium text-gray-900 mb-2">Nombre</label>
                       <div className="relative">
-                        <input
+                        <Input
                           type="text"
                           name="first_name"
                           value={formData.first_name}
                           onChange={handleChange}
                           disabled={!isEditing}
-                          className={`form-input pl-12 ${!isEditing ? 'bg-dark-700/50 cursor-not-allowed' : ''}`}
+                          className={`pl-12 ${!isEditing ? 'bg-gray-100 cursor-not-allowed' : ''}`}
                         />
-                        <User className="absolute left-4 top-1/2 transform -translate-y-1/2 w-4 h-4 text-dark-400" />
+                        <User className="absolute left-4 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
                       </div>
                     </div>
 
                     <div>
-                      <label className="form-label">Apellidos</label>
-                      <input
+                      <label className="block text-sm font-medium text-gray-900 mb-2">Apellidos</label>
+                      <Input
                         type="text"
                         name="last_name"
                         value={formData.last_name}
                         onChange={handleChange}
                         disabled={!isEditing}
-                        className={`form-input ${!isEditing ? 'bg-dark-700/50 cursor-not-allowed' : ''}`}
+                        className={!isEditing ? 'bg-gray-100 cursor-not-allowed' : ''}
                       />
                     </div>
                   </div>
 
                   {/* Email (Read-only) */}
                   <div>
-                    <label className="form-label">Correo electrónico</label>
+                    <label className="block text-sm font-medium text-gray-900 mb-2">Correo electrónico</label>
                     <div className="relative">
-                      <input
+                      <Input
                         type="email"
                         value={user?.email}
                         disabled
-                        className="form-input pl-12 bg-dark-700/50 cursor-not-allowed"
+                        className="pl-12 bg-gray-100 cursor-not-allowed"
                       />
-                      <Mail className="absolute left-4 top-1/2 transform -translate-y-1/2 w-4 h-4 text-dark-400" />
+                      <Mail className="absolute left-4 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
                     </div>
-                    <p className="text-sm text-white/50 mt-1">
+                    <p className="text-sm text-gray-500 mt-1">
                       El email no se puede cambiar desde aquí
                     </p>
                   </div>
 
                   {/* Phone */}
                   <div>
-                    <label className="form-label">Teléfono</label>
+                    <label className="block text-sm font-medium text-gray-900 mb-2">Teléfono</label>
                     <div className="relative">
-                      <input
+                      <Input
                         type="tel"
                         name="phone"
                         value={formData.phone}
                         onChange={handleChange}
                         disabled={!isEditing}
-                        className={`form-input pl-12 ${!isEditing ? 'bg-dark-700/50 cursor-not-allowed' : ''}`}
+                        className={`pl-12 ${!isEditing ? 'bg-gray-100 cursor-not-allowed' : ''}`}
                         placeholder="+34 600 000 000"
                       />
-                      <Phone className="absolute left-4 top-1/2 transform -translate-y-1/2 w-4 h-4 text-dark-400" />
+                      <Phone className="absolute left-4 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
                     </div>
                   </div>
 
                   {/* Birth Date */}
                   <div>
-                    <label className="form-label">Fecha de nacimiento</label>
+                    <label className="block text-sm font-medium text-gray-900 mb-2">Fecha de nacimiento</label>
                     <div className="relative">
-                      <input
+                      <Input
                         type="date"
                         name="birth_date"
                         value={formData.birth_date}
                         onChange={handleChange}
                         disabled={!isEditing}
-                        className={`form-input pl-12 ${!isEditing ? 'bg-dark-700/50 cursor-not-allowed' : ''}`}
+                        className={`pl-12 ${!isEditing ? 'bg-gray-100 cursor-not-allowed' : ''}`}
                       />
-                      <Calendar className="absolute left-4 top-1/2 transform -translate-y-1/2 w-4 h-4 text-dark-400" />
+                      <Calendar className="absolute left-4 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
                     </div>
                   </div>
 
-                  {/* Address Fields */}
-                  <div className="space-y-6 pt-6 border-t border-dark-600">
-                    <h3 className="text-lg font-semibold text-white">Dirección Predeterminada</h3>
 
-                    <div>
-                      <label className="form-label">Dirección</label>
-                      <div className="relative">
-                        <input
-                          type="text"
-                          name="default_address"
-                          value={formData.default_address}
-                          onChange={handleChange}
-                          disabled={!isEditing}
-                          className={`form-input pl-12 ${!isEditing ? 'bg-dark-700/50 cursor-not-allowed' : ''}`}
-                          placeholder="Calle Principal 123"
-                        />
-                        <MapPin className="absolute left-4 top-1/2 transform -translate-y-1/2 w-4 h-4 text-dark-400" />
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <div>
-                        <label className="form-label">Ciudad</label>
-                        <input
-                          type="text"
-                          name="default_city"
-                          value={formData.default_city}
-                          onChange={handleChange}
-                          disabled={!isEditing}
-                          className={`form-input ${!isEditing ? 'bg-dark-700/50 cursor-not-allowed' : ''}`}
-                          placeholder="Madrid"
-                        />
-                      </div>
-
-                      <div>
-                        <label className="form-label">Estado/Provincia</label>
-                        <input
-                          type="text"
-                          name="default_state"
-                          value={formData.default_state}
-                          onChange={handleChange}
-                          disabled={!isEditing}
-                          className={`form-input ${!isEditing ? 'bg-dark-700/50 cursor-not-allowed' : ''}`}
-                          placeholder="Madrid"
-                        />
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <div>
-                        <label className="form-label">Código Postal</label>
-                        <input
-                          type="text"
-                          name="default_postal_code"
-                          value={formData.default_postal_code}
-                          onChange={handleChange}
-                          disabled={!isEditing}
-                          className={`form-input ${!isEditing ? 'bg-dark-700/50 cursor-not-allowed' : ''}`}
-                          placeholder="28001"
-                        />
-                      </div>
-
-                      <div>
-                        <label className="form-label">País</label>
-                        <input
-                          type="text"
-                          name="default_country"
-                          value={formData.default_country}
-                          onChange={handleChange}
-                          disabled={!isEditing}
-                          className={`form-input ${!isEditing ? 'bg-dark-700/50 cursor-not-allowed' : ''}`}
-                          placeholder="España"
-                        />
-                      </div>
-                    </div>
-                  </div>
 
                   {/* Notification Preferences */}
-                  <div className="space-y-6 pt-6 border-t border-dark-600">
-                    <h3 className="text-lg font-semibold text-white">Preferencias de Notificaciones</h3>
+                  <div className="space-y-6 pt-6 border-t border-gray-200">
+                    <h3 className="text-lg font-semibold text-gray-900">Preferencias de Notificaciones</h3>
 
                     <div className="space-y-4">
                       <div className="flex items-center">
@@ -401,11 +358,11 @@ export default function ProfilePage() {
                           checked={formData.email_notifications}
                           onChange={handleChange}
                           disabled={!isEditing}
-                          className="w-4 h-4 text-neon-green bg-dark-700 border-dark-600 rounded focus:ring-neon-green focus:ring-2"
+                          className="w-4 h-4 text-primary-500 bg-white border-gray-300 rounded focus:ring-primary-500 focus:ring-2"
                         />
-                        <label htmlFor="email_notifications" className="ml-3 text-sm font-medium text-white">
+                        <label htmlFor="email_notifications" className="ml-3 text-sm font-medium text-gray-900">
                           <div className="flex items-center">
-                            <Bell className="w-4 h-4 mr-2 text-neon-green" />
+                            <Bell className="w-4 h-4 mr-2 text-primary-500" />
                             Recibir notificaciones por email
                           </div>
                         </label>
@@ -419,11 +376,11 @@ export default function ProfilePage() {
                           checked={formData.sms_notifications}
                           onChange={handleChange}
                           disabled={!isEditing}
-                          className="w-4 h-4 text-neon-blue bg-dark-700 border-dark-600 rounded focus:ring-neon-blue focus:ring-2"
+                          className="w-4 h-4 text-primary-500 bg-white border-gray-300 rounded focus:ring-primary-500 focus:ring-2"
                         />
-                        <label htmlFor="sms_notifications" className="ml-3 text-sm font-medium text-white">
+                        <label htmlFor="sms_notifications" className="ml-3 text-sm font-medium text-gray-900">
                           <div className="flex items-center">
-                            <BellOff className="w-4 h-4 mr-2 text-neon-blue" />
+                            <BellOff className="w-4 h-4 mr-2 text-primary-500" />
                             Recibir notificaciones por SMS
                           </div>
                         </label>
@@ -434,8 +391,135 @@ export default function ProfilePage() {
               </div>
             </div>
           </div>
+
+          {/* Addresses Section */}
+          <div className="mt-12">
+            <div className="bg-white border border-gray-200 rounded-md p-8 shadow-sm">
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-2xl font-bold text-gray-900 uppercase tracking-wide">
+                  Mis Direcciones
+                </h2>
+                {addresses.length < 2 && (
+                  <Button
+                    onClick={() => setAddressModalOpen(true)}
+                    variant="black"
+                    className="flex items-center"
+                  >
+                    <Plus className="w-4 h-4 mr-2" />
+                    Agregar Dirección
+                  </Button>
+                )}
+              </div>
+
+              {addressesLoading ? (
+                <div className="text-center py-8">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-500 mx-auto"></div>
+                  <p className="text-gray-600 mt-2">Cargando direcciones...</p>
+                </div>
+              ) : addresses.length === 0 ? (
+                <div className="text-center py-12">
+                  <MapPin className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2">No tienes direcciones guardadas</h3>
+                  <p className="text-gray-600 mb-6">Agrega una dirección para facilitar tus compras</p>
+                  <Button
+                    onClick={() => setAddressModalOpen(true)}
+                    variant="black"
+                    className="flex items-center mx-auto"
+                  >
+                    <Plus className="w-4 h-4 mr-2" />
+                    Agregar Primera Dirección
+                  </Button>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {addresses.map((address) => (
+                    <div
+                      key={address.id}
+                      className={`border rounded-md p-6 ${
+                        address.is_default 
+                          ? 'border-primary-500 bg-primary-50' 
+                          : 'border-gray-200 bg-white'
+                      }`}
+                    >
+                      <div className="flex items-start justify-between mb-4">
+                        <div className="flex items-center">
+                          <h3 className="text-lg font-semibold text-gray-900">
+                            {address.title}
+                          </h3>
+                          {address.is_default && (
+                            <div className="ml-2 flex items-center text-primary-600">
+                              <Star className="w-4 h-4 fill-current" />
+                              <span className="text-xs font-medium ml-1">Predeterminada</span>
+                            </div>
+                          )}
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          {!address.is_default && (
+                            <button
+                              onClick={() => handleSetDefaultAddress(address.id)}
+                              className="p-1 text-gray-400 hover:text-primary-500 transition-colors"
+                              title="Marcar como predeterminada"
+                            >
+                              <Star className="w-4 h-4" />
+                            </button>
+                          )}
+                          <button
+                            onClick={() => handleEditAddress(address)}
+                            className="p-1 text-gray-400 hover:text-primary-500 transition-colors"
+                            title="Editar dirección"
+                          >
+                            <Edit className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => handleDeleteAddress(address.id)}
+                            className="p-1 text-gray-400 hover:text-red-500 transition-colors"
+                            title="Eliminar dirección"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </div>
+
+                      <div className="space-y-2 text-sm text-gray-600">
+                        <p>{address.address_line_1}</p>
+                        {address.address_line_2 && (
+                          <p>{address.address_line_2}</p>
+                        )}
+                        <p>
+                          {address.city}, {address.state} {address.postal_code}
+                        </p>
+                        <p>{address.country}</p>
+                      </div>
+
+                      <div className="mt-4 flex flex-wrap gap-2">
+                        {address.is_shipping && (
+                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                            Envío
+                          </span>
+                        )}
+                        {address.is_billing && (
+                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                            Facturación
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
         </div>
       </div>
+
+      {/* Address Modal */}
+      <AddressModal
+        isOpen={addressModalOpen}
+        onClose={handleCloseAddressModal}
+        onSave={editingAddress ? handleUpdateAddress : handleCreateAddress}
+        address={editingAddress}
+        isLoading={addressesLoading}
+      />
     </ProtectedRoute>
   )
 }

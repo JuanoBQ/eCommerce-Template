@@ -25,22 +25,22 @@ export const useSizesAndColors = () => {
 
   // Datos mock para desarrollo
   const mockSizes: Size[] = [
-    { id: 1, name: 'XS', type: 'letter', sort_order: 1, is_active: true },
-    { id: 2, name: 'S', type: 'letter', sort_order: 2, is_active: true },
-    { id: 3, name: 'M', type: 'letter', sort_order: 3, is_active: true },
-    { id: 4, name: 'L', type: 'letter', sort_order: 4, is_active: true },
-    { id: 5, name: 'XL', type: 'letter', sort_order: 5, is_active: true },
-    { id: 6, name: '35', type: 'number', sort_order: 1, is_active: true },
-    { id: 7, name: '36', type: 'number', sort_order: 2, is_active: true },
-    { id: 8, name: '37', type: 'number', sort_order: 3, is_active: true },
-    { id: 9, name: '38', type: 'number', sort_order: 4, is_active: true },
-    { id: 10, name: '39', type: 'number', sort_order: 5, is_active: true },
-    { id: 11, name: '40', type: 'number', sort_order: 6, is_active: true },
-    { id: 12, name: '41', type: 'number', sort_order: 7, is_active: true },
-    { id: 13, name: '42', type: 'number', sort_order: 8, is_active: true },
-    { id: 14, name: '43', type: 'number', sort_order: 9, is_active: true },
-    { id: 15, name: '44', type: 'number', sort_order: 10, is_active: true },
-    { id: 16, name: '45', type: 'number', sort_order: 11, is_active: true },
+    { id: 1, name: 'XS', type: 'clothing', sort_order: 1, is_active: true },
+    { id: 2, name: 'S', type: 'clothing', sort_order: 2, is_active: true },
+    { id: 3, name: 'M', type: 'clothing', sort_order: 3, is_active: true },
+    { id: 4, name: 'L', type: 'clothing', sort_order: 4, is_active: true },
+    { id: 5, name: 'XL', type: 'clothing', sort_order: 5, is_active: true },
+    { id: 6, name: '35', type: 'shoes', sort_order: 1, is_active: true },
+    { id: 7, name: '36', type: 'shoes', sort_order: 2, is_active: true },
+    { id: 8, name: '37', type: 'shoes', sort_order: 3, is_active: true },
+    { id: 9, name: '38', type: 'shoes', sort_order: 4, is_active: true },
+    { id: 10, name: '39', type: 'shoes', sort_order: 5, is_active: true },
+    { id: 11, name: '40', type: 'shoes', sort_order: 6, is_active: true },
+    { id: 12, name: '41', type: 'shoes', sort_order: 7, is_active: true },
+    { id: 13, name: '42', type: 'shoes', sort_order: 8, is_active: true },
+    { id: 14, name: '43', type: 'shoes', sort_order: 9, is_active: true },
+    { id: 15, name: '44', type: 'shoes', sort_order: 10, is_active: true },
+    { id: 16, name: '45', type: 'shoes', sort_order: 11, is_active: true },
   ]
 
   const mockColors: Color[] = [

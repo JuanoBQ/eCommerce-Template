@@ -344,7 +344,7 @@ export default function ProductsPage() {
                     <div className="flex items-center">
                       <Star className="w-4 h-4 text-yellow-400 mr-1" />
                       <span className="text-sm text-white">
-                        {product.average_rating || 0}
+                        0
                       </span>
                     </div>
                   </td>

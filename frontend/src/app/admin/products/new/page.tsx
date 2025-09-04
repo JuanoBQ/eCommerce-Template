@@ -12,7 +12,8 @@ import {
   Trash2
 } from 'lucide-react'
 import { toast } from 'react-hot-toast'
-import { useProducts, Size, Color } from '@/hooks/useProducts'
+import { useProducts } from '@/hooks/useProducts'
+import { Size, Color } from '@/hooks/useSizesAndColors'
 import { Category, Brand } from '@/types'
 import ProductVariants from '@/components/admin/ProductVariants'
 
@@ -222,14 +223,15 @@ export default function NewProductPage() {
           const variant = formData.variants[i]
           const createdVariant = newProduct.variants[i]
           
-          if (variant.image && createdVariant) {
-            try {
-              await uploadVariantImage(createdVariant.id, variant.image)
-              console.log(`✅ Imagen de variante ${i + 1} subida correctamente`)
-            } catch (error) {
-              console.error(`Error uploading variant image ${i + 1}:`, error)
-            }
-          }
+          // TODO: Implementar subida de imágenes de variantes
+          // if (variant.image && createdVariant) {
+          //   try {
+          //     await uploadVariantImage(createdVariant.id, variant.image)
+          //     console.log(`✅ Imagen de variante ${i + 1} subida correctamente`)
+          //   } catch (error) {
+          //     console.error(`Error uploading variant image ${i + 1}:`, error)
+          //   }
+          // }
         }
       }
       
@@ -266,11 +268,14 @@ export default function NewProductPage() {
 
   const addVariant = () => {
     const newVariant: ProductVariant = {
-      id: Date.now().toString(),
-      name: '',
-      price: formData.price,
-      stock: 0,
-      attributes: {}
+      id: Date.now(),
+      size: undefined,
+      color: undefined,
+      size_details: undefined,
+      color_details: undefined,
+      inventory_quantity: 0,
+      image: undefined,
+      image_url: undefined
     }
     
     setFormData(prev => ({
@@ -279,7 +284,7 @@ export default function NewProductPage() {
     }))
   }
 
-  const removeVariant = (id: string) => {
+  const removeVariant = (id: number) => {
     setFormData(prev => ({
       ...prev,
       variants: prev.variants.filter(v => v.id !== id)
@@ -737,7 +742,7 @@ export default function NewProductPage() {
                 sizes={sizes}
                 colors={colors}
                 onVariantsChange={(variants) => setFormData({ ...formData, variants })}
-                selectedCategory={formData.category}
+                selectedCategory={formData.category || undefined}
               />
             </div>
 

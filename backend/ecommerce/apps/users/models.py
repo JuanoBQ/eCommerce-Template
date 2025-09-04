@@ -56,4 +56,55 @@ class User(AbstractUser):
         return self.is_staff or self.is_superuser
 
 
+class UserAddress(models.Model):
+    """
+    Modelo para direcciones de usuario.
+    """
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='addresses')
+    title = models.CharField(_('address title'), max_length=100, help_text=_('e.g., Home, Work'))
+    first_name = models.CharField(_('first name'), max_length=150)
+    last_name = models.CharField(_('last name'), max_length=150)
+    company = models.CharField(_('company'), max_length=100, blank=True)
+    address_line_1 = models.CharField(_('address line 1'), max_length=255)
+    address_line_2 = models.CharField(_('address line 2'), max_length=255, blank=True)
+    city = models.CharField(_('city'), max_length=100)
+    state = models.CharField(_('state/province'), max_length=100)
+    postal_code = models.CharField(_('postal code'), max_length=20)
+    country = models.CharField(_('country'), max_length=100, default='España')
+    phone = models.CharField(_('phone number'), max_length=20, blank=True)
+    is_default = models.BooleanField(_('is default address'), default=False)
+    is_billing = models.BooleanField(_('is billing address'), default=False)
+    is_shipping = models.BooleanField(_('is shipping address'), default=True)
+    
+    # Timestamps
+    created_at = models.DateTimeField(_('created at'), auto_now_add=True)
+    updated_at = models.DateTimeField(_('updated at'), auto_now=True)
+    
+    class Meta:
+        verbose_name = _('User Address')
+        verbose_name_plural = _('User Addresses')
+        db_table = 'user_addresses'
+        ordering = ['-is_default', '-created_at']
+    
+    def __str__(self):
+        return f"{self.title} - {self.user.full_name}"
+    
+    def save(self, *args, **kwargs):
+        # Si se marca como default, desmarcar otros
+        if self.is_default:
+            UserAddress.objects.filter(user=self.user, is_default=True).update(is_default=False)
+        super().save(*args, **kwargs)
+    
+    @property
+    def full_address(self):
+        """Retorna la dirección completa formateada."""
+        address_parts = [
+            self.address_line_1,
+            self.address_line_2 if self.address_line_2 else None,
+            f"{self.city}, {self.state} {self.postal_code}",
+            self.country
+        ]
+        return ', '.join(filter(None, address_parts))
+
+
 

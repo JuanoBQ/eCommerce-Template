@@ -64,7 +64,13 @@ class ProductReviewSerializer(serializers.ModelSerializer):
     """
     Serializer para reseñas de productos.
     """
-    user_details = serializers.StringRelatedField(source='user', read_only=True)
+    user_details = serializers.SerializerMethodField()
+    
+    def get_user_details(self, obj):
+        """Retorna solo el nombre completo del usuario, sin email."""
+        if obj.user:
+            return f"{obj.user.first_name} {obj.user.last_name}".strip()
+        return "Usuario anónimo"
     
     class Meta:
         model = ProductReview

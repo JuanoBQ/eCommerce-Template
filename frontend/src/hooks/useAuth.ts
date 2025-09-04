@@ -55,10 +55,10 @@ export const useAuth = () => {
   }, [])
 
   // Debug: Log auth state changes (usando useRef para evitar bucles)
-  const prevAuthState = useRef({ user: null, isLoading: true })
+  const prevAuthState = useRef<{ user: string | null; isLoading: boolean }>({ user: null, isLoading: true })
   
   useEffect(() => {
-    const currentState = { user: authState.user?.first_name, isLoading: authState.isLoading }
+    const currentState = { user: authState.user?.first_name || null, isLoading: authState.isLoading }
     const prevState = prevAuthState.current
     
     // Solo loggear si realmente cambió algo

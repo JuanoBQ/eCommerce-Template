@@ -1,12 +1,24 @@
 from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import csrf_exempt
 from dj_rest_auth.registration.views import RegisterView
-from rest_framework import generics, permissions, status
+from rest_framework import generics, permissions, status, viewsets
 from rest_framework.response import Response
-from rest_framework.decorators import api_view, permission_classes
+from rest_framework.decorators import api_view, permission_classes, action
 from rest_framework.views import APIView
-from .serializers import CustomRegisterSerializer, UserSerializer, UserProfileUpdateSerializer
-from .models import User
+from rest_framework.permissions import AllowAny
+from django.contrib.auth import get_user_model
+from django.db import models
+from .serializers import (
+    CustomRegisterSerializer, 
+    UserSerializer, 
+    UserProfileUpdateSerializer,
+    UserListSerializer,
+    UserCreateSerializer,
+    UserUpdateSerializer,
+    UserAddressSerializer,
+    UserAddressCreateSerializer
+)
+from .models import User, UserAddress
 
 
 @method_decorator(csrf_exempt, name='dispatch')
@@ -69,3 +81,227 @@ class UserProfileView(APIView):
                 {'detail': f'Error interno del servidor: {str(e)}'}, 
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
+
+
+class UserViewSet(viewsets.ModelViewSet):
+    """
+    ViewSet para la gestión de usuarios (solo para administradores).
+    """
+    queryset = User.objects.all()
+    permission_classes = [permissions.IsAdminUser]
+    
+    def get_serializer_class(self):
+        if self.action == 'create':
+            return UserCreateSerializer
+        elif self.action in ['update', 'partial_update']:
+            return UserUpdateSerializer
+        elif self.action == 'list':
+            return UserListSerializer
+        return UserSerializer
+    
+    def get_queryset(self):
+        """
+        Filtrar usuarios según parámetros de búsqueda.
+        """
+        queryset = User.objects.all()
+        
+        # Filtrar por estado activo
+        is_active = self.request.query_params.get('is_active', None)
+        if is_active is not None:
+            queryset = queryset.filter(is_active=is_active.lower() == 'true')
+        
+        # Filtrar por rol de staff
+        is_staff = self.request.query_params.get('is_staff', None)
+        if is_staff is not None:
+            queryset = queryset.filter(is_staff=is_staff.lower() == 'true')
+        
+        # Búsqueda por nombre o email
+        search = self.request.query_params.get('search', None)
+        if search:
+            queryset = queryset.filter(
+                models.Q(first_name__icontains=search) |
+                models.Q(last_name__icontains=search) |
+                models.Q(email__icontains=search)
+            )
+        
+        return queryset.order_by('-date_joined')
+    
+    @action(detail=True, methods=['post'])
+    def toggle_status(self, request, pk=None):
+        """
+        Activar/desactivar usuario.
+        """
+        user = self.get_object()
+        user.is_active = not user.is_active
+        user.save()
+        
+        serializer = self.get_serializer(user)
+        return Response(serializer.data)
+    
+    @action(detail=True, methods=['post'])
+    def toggle_role(self, request, pk=None):
+        """
+        Cambiar rol de usuario (staff/regular).
+        """
+        user = self.get_object()
+        user.is_staff = not user.is_staff
+        user.save()
+        
+        serializer = self.get_serializer(user)
+        return Response(serializer.data)
+    
+    def destroy(self, request, *args, **kwargs):
+        """
+        Eliminar usuario (eliminación real).
+        """
+        user = self.get_object()
+        
+        # No permitir eliminar el usuario actual
+        if user == request.user:
+            return Response(
+                {'detail': 'No puedes eliminar tu propia cuenta.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Eliminación real del usuario
+        user.delete()
+        
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class UserAddressViewSet(viewsets.ModelViewSet):
+    """
+    ViewSet para gestionar direcciones de usuario.
+    """
+    permission_classes = [permissions.AllowAny]  # Temporalmente AllowAny para debug
+    
+    def get_permissions(self):
+        """
+        Instantiates and returns the list of permissions that this view requires.
+        """
+        print(f"🔍 UserAddressViewSet.get_permissions - Action: {self.action}")
+        print(f"🔍 UserAddressViewSet.get_permissions - Usuario: {self.request.user}")
+        return [permissions.AllowAny()]  # Temporalmente AllowAny para debug
+    
+    def get_queryset(self):
+        """Retorna solo las direcciones del usuario autenticado."""
+        print(f"🔍 UserAddressViewSet - Usuario autenticado: {self.request.user}")
+        print(f"🔍 UserAddressViewSet - Es anónimo: {self.request.user.is_anonymous}")
+        print(f"🔍 UserAddressViewSet - Headers: {dict(self.request.headers)}")
+        
+        # Temporalmente retornar todas las direcciones para debug
+        if self.request.user.is_anonymous:
+            print("⚠️ Usuario anónimo, retornando lista vacía")
+            return UserAddress.objects.none()
+        
+        return UserAddress.objects.filter(user=self.request.user)
+    
+    def get_serializer_class(self):
+        """Retorna el serializer apropiado según la acción."""
+        if self.action == 'create':
+            return UserAddressCreateSerializer
+        return UserAddressSerializer
+    
+    def list(self, request, *args, **kwargs):
+        """Lista las direcciones del usuario autenticado."""
+        print(f"🔍 UserAddressViewSet.list - Usuario: {request.user}")
+        print(f"🔍 UserAddressViewSet.list - Es anónimo: {request.user.is_anonymous}")
+        return super().list(request, *args, **kwargs)
+    
+    def perform_create(self, serializer):
+        """Asigna el usuario actual a la dirección y completa los datos del perfil."""
+        # Si no se proporcionan nombres, usar los del perfil del usuario
+        if not serializer.validated_data.get('first_name'):
+            serializer.validated_data['first_name'] = self.request.user.first_name
+        if not serializer.validated_data.get('last_name'):
+            serializer.validated_data['last_name'] = self.request.user.last_name
+        
+        serializer.save(user=self.request.user)
+    
+    @action(detail=True, methods=['post'])
+    def set_default(self, request, pk=None):
+        """
+        Marcar una dirección como predeterminada.
+        """
+        address = self.get_object()
+        
+        # Desmarcar otras direcciones como default
+        UserAddress.objects.filter(user=request.user, is_default=True).update(is_default=False)
+        
+        # Marcar esta dirección como default
+        address.is_default = True
+        address.save()
+        
+        serializer = self.get_serializer(address)
+        return Response(serializer.data)
+    
+    @action(detail=False, methods=['get'])
+    def default(self, request):
+        """
+        Obtener la dirección predeterminada del usuario.
+        """
+        try:
+            default_address = UserAddress.objects.get(user=request.user, is_default=True)
+            serializer = self.get_serializer(default_address)
+            return Response(serializer.data)
+        except UserAddress.DoesNotExist:
+            return Response(
+                {'detail': 'No hay dirección predeterminada.'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+
+@api_view(['GET', 'POST'])
+@permission_classes([AllowAny])
+def simple_addresses_endpoint(request):
+    """
+    Endpoint para direcciones que funciona con autenticación JWT.
+    """
+    if request.method == 'GET':
+        # Si el usuario está autenticado, filtrar por usuario
+        if not request.user.is_anonymous:
+            addresses = UserAddress.objects.filter(user=request.user)
+        else:
+            addresses = UserAddress.objects.none()
+        
+        serializer = UserAddressSerializer(addresses, many=True)
+        return Response({
+            'message': 'Direcciones obtenidas correctamente',
+            'user': str(request.user),
+            'is_anonymous': request.user.is_anonymous,
+            'addresses': serializer.data
+        })
+    elif request.method == 'POST':
+        # Verificar que el usuario esté autenticado
+        if request.user.is_anonymous:
+            return Response({
+                'error': 'Usuario no autenticado'
+            }, status=status.HTTP_401_UNAUTHORIZED)
+        
+        # Filtrar solo los campos necesarios
+        filtered_data = {
+            'title': request.data.get('title'),
+            'address_line_1': request.data.get('address_line_1'),
+            'address_line_2': request.data.get('address_line_2', ''),
+            'city': request.data.get('city'),
+            'state': request.data.get('state'),
+            'postal_code': request.data.get('postal_code'),
+            'country': request.data.get('country'),
+            'is_default': request.data.get('is_default', False),
+            'is_billing': request.data.get('is_billing', False),
+            'is_shipping': request.data.get('is_shipping', True),
+        }
+        
+        # Crear dirección con el usuario autenticado
+        serializer = UserAddressCreateSerializer(data=filtered_data, context={'request': request})
+        if serializer.is_valid():
+            # Asignar el usuario autenticado
+            address = serializer.save()
+            return Response({
+                'message': 'Dirección creada correctamente',
+                'user': str(request.user),
+                'is_anonymous': request.user.is_anonymous,
+                'address': serializer.data
+            }, status=status.HTTP_201_CREATED)
+        else:
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

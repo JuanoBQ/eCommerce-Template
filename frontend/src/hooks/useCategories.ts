@@ -28,7 +28,7 @@ export const useCategories = () => {
     setError(null)
     try {
       const newCategory = await categoriesApi.createCategory(categoryData)
-      setCategories(prev => [...prev, newCategory])
+      setCategories(prev => [...prev, newCategory as Category])
       return newCategory
     } catch (err: any) {
       console.error('Error creating category:', err)
@@ -46,7 +46,7 @@ export const useCategories = () => {
     setError(null)
     try {
       const updatedCategory = await categoriesApi.updateCategory(id, categoryData)
-      setCategories(prev => prev.map(cat => cat.id === id ? updatedCategory : cat))
+      setCategories(prev => prev.map(cat => cat.id === id ? (updatedCategory as Category) : cat))
       return updatedCategory
     } catch (err: any) {
       console.error('Error updating category:', err)

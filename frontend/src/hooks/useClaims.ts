@@ -140,8 +140,8 @@ export function useClaims() {
         } else if (response.results && Array.isArray(response.results)) {
           claimsData = response.results
           console.log('✅ Datos en results:', claimsData.length, 'reclamos')
-        } else if (response.data && Array.isArray(response.data)) {
-          claimsData = response.data
+        } else if ((response as any).data && Array.isArray((response as any).data)) {
+          claimsData = (response as any).data
           console.log('✅ Datos en data:', claimsData.length, 'reclamos')
         } else {
           console.log('❌ Estructura de datos no reconocida:', Object.keys(response))
@@ -167,7 +167,7 @@ export function useClaims() {
       setError(null)
       const response = await reportsApi.createClaim(claimData)
       await loadClaims() // Recargar la lista
-      return response.data
+      return (response as any).data
     } catch (err: any) {
       console.error('Error creating claim:', err)
       const errorMessage = err.response?.data?.detail || 'Error al crear el reclamo'
@@ -182,7 +182,7 @@ export function useClaims() {
       setError(null)
       const response = await reportsApi.updateClaim(claimId, updateData)
       await loadClaims() // Recargar la lista
-      return response.data
+      return (response as any).data
     } catch (err: any) {
       console.error('Error updating claim:', err)
       const errorMessage = err.response?.data?.detail || 'Error al actualizar el reclamo'
@@ -210,7 +210,7 @@ export function useClaims() {
     try {
       setError(null)
       const response = await reportsApi.getClaim(claimId)
-      return response.data
+      return (response as any).data
     } catch (err: any) {
       console.error('Error getting claim:', err)
       const errorMessage = err.response?.data?.detail || 'Error al obtener el reclamo'
@@ -250,7 +250,7 @@ export function useClaimsReport() {
       console.log('🔍 Loading claims report...')
       const data = await reportsApi.getClaimsReport()
       console.log('🔍 Claims report data:', data)
-      setReport(data)
+      setReport(data as ClaimsReport)
     } catch (err: any) {
       console.error('Error loading claims report:', err)
       console.error('Error details:', err.response)
@@ -284,7 +284,7 @@ export function useReviewsReport() {
       console.log('🔍 Loading reviews report...')
       const data = await reportsApi.getReviewsReport()
       console.log('🔍 Reviews report data:', data)
-      setReport(data)
+      setReport(data as ReviewsReport)
     } catch (err: any) {
       console.error('Error loading reviews report:', err)
       console.error('Error details:', err.response)

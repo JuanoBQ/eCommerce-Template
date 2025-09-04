@@ -12,7 +12,8 @@ import {
   Trash2
 } from 'lucide-react'
 import { toast } from 'react-hot-toast'
-import { useProducts, Size, Color } from '@/hooks/useProducts'
+import { useProducts } from '@/hooks/useProducts'
+import { Size, Color } from '@/hooks/useSizesAndColors'
 import { Product, Category, Brand } from '@/types'
 import ProductVariants from '@/components/admin/ProductVariants'
 
@@ -132,7 +133,7 @@ export default function EditProductPage() {
   const loadProduct = async () => {
     try {
       setIsLoading(true)
-      const productData = await getProduct(parseInt(productId))
+      const productData = await getProduct(parseInt(productId)) as Product
       setProduct(productData)
       
       // Populate form with existing data
@@ -146,7 +147,7 @@ export default function EditProductPage() {
         cost_price: productData.cost_price || 0,
         category: productData.category,
         brand: productData.brand || null,
-        gender: productData.gender || '',
+        gender: (productData.gender as "masculino" | "femenino" | "unisex") || 'unisex',
         track_inventory: productData.track_inventory,
         inventory_quantity: productData.inventory_quantity,
         low_stock_threshold: productData.low_stock_threshold,
@@ -159,15 +160,7 @@ export default function EditProductPage() {
         meta_title: productData.meta_title || '',
         meta_description: productData.meta_description || '',
         images: [],
-        variants: productData.variants?.map(variant => ({
-          id: variant.id,
-          size: variant.size?.id,
-          color: variant.color?.id,
-          size_details: variant.size,
-          color_details: variant.color,
-          inventory_quantity: variant.inventory_quantity,
-          image_url: variant.image
-        })) || []
+        variants: []
       })
     } catch (error) {
       console.error('Error loading product:', error)
@@ -530,7 +523,7 @@ export default function EditProductPage() {
                   </label>
                   <select
                     name="category"
-                    value={formData.category}
+                    value={formData.category || ''}
                     onChange={handleInputChange}
                     className={`w-full px-4 py-3 bg-dark-700 border rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-neon-green focus:border-transparent ${
                       errors.category ? 'border-red-500' : 'border-dark-600'
@@ -554,7 +547,7 @@ export default function EditProductPage() {
                   </label>
                   <select
                     name="brand"
-                    value={formData.brand}
+                    value={formData.brand || ''}
                     onChange={handleInputChange}
                     className="w-full px-4 py-3 bg-dark-700 border border-dark-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-neon-green focus:border-transparent"
                     title="Seleccionar marca"
@@ -794,7 +787,7 @@ export default function EditProductPage() {
                 onRegisterFunctions={registerVariantsFunctions}
                 sizes={sizes}
                 colors={colors}
-                selectedCategory={formData.category}
+                selectedCategory={formData.category || undefined}
               />
             </div>
 

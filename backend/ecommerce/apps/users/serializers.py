@@ -1,7 +1,7 @@
 from rest_framework import serializers
 from django.contrib.auth import get_user_model
 from django.contrib.auth.password_validation import validate_password
-from .models import User
+from .models import User, UserAddress
 
 User = get_user_model()
 
@@ -179,21 +179,130 @@ class UserListSerializer(serializers.ModelSerializer):
     Serializer simplificado para listado de usuarios (admin).
     """
     full_name = serializers.ReadOnlyField()
-    total_orders = serializers.SerializerMethodField()
-    total_spent = serializers.SerializerMethodField()
 
     class Meta:
         model = User
         fields = [
-            'id', 'email', 'full_name', 'is_vendor', 'is_customer',
-            'is_active', 'total_orders', 'total_spent', 'created_at'
+            'id', 'email', 'first_name', 'last_name', 'full_name', 
+            'is_staff', 'is_active', 'date_joined', 'last_login'
         ]
 
-    def get_total_orders(self, obj):
-        return obj.orders.count()
 
-    def get_total_spent(self, obj):
-        from django.db.models import Sum
-        return obj.orders.filter(payment_status='paid').aggregate(
-            total=Sum('total_amount')
-        )['total'] or 0
+class UserCreateSerializer(serializers.ModelSerializer):
+    """
+    Serializer para crear usuarios (admin).
+    """
+    password = serializers.CharField(write_only=True, validators=[validate_password])
+    
+    class Meta:
+        model = User
+        fields = [
+            'email', 'first_name', 'last_name', 'password',
+            'is_staff', 'is_active', 'phone'
+        ]
+        extra_kwargs = {
+            'email': {'required': True},
+            'first_name': {'required': True},
+            'last_name': {'required': True},
+            'password': {'required': True},
+        }
+    
+    def create(self, validated_data):
+        password = validated_data.pop('password')
+        user = User.objects.create_user(
+            password=password,
+            **validated_data
+        )
+        return user
+
+
+class UserUpdateSerializer(serializers.ModelSerializer):
+    """
+    Serializer para actualizar usuarios (admin).
+    """
+    class Meta:
+        model = User
+        fields = [
+            'email', 'first_name', 'last_name', 'is_staff', 
+            'is_active', 'phone'
+        ]
+        extra_kwargs = {
+            'email': {'required': False},
+            'first_name': {'required': False},
+            'last_name': {'required': False},
+        }
+
+
+class UserAddressSerializer(serializers.ModelSerializer):
+    """
+    Serializer para direcciones de usuario.
+    """
+    full_address = serializers.ReadOnlyField()
+    
+    class Meta:
+        model = UserAddress
+        fields = [
+            'id', 'title', 'first_name', 'last_name',
+            'address_line_1', 'address_line_2', 'city', 'state',
+            'postal_code', 'country', 'is_default',
+            'is_billing', 'is_shipping', 'full_address',
+            'created_at', 'updated_at'
+        ]
+        read_only_fields = ['id', 'created_at', 'updated_at', 'full_address']
+        extra_kwargs = {
+            'title': {'required': True},
+            'first_name': {'required': False},  # No requerido, se toma del perfil
+            'last_name': {'required': False},   # No requerido, se toma del perfil
+            'address_line_1': {'required': True},
+            'city': {'required': True},
+            'state': {'required': True},
+            'postal_code': {'required': True},
+            'country': {'required': True},
+        }
+    
+    def validate(self, attrs):
+        # Validar que no se excedan las 2 direcciones por usuario
+        user = self.context['request'].user
+        if not self.instance:  # Solo para creación, no para actualización
+            existing_addresses = UserAddress.objects.filter(user=user).count()
+            if existing_addresses >= 2:
+                raise serializers.ValidationError("No puedes tener más de 2 direcciones.")
+        
+        return attrs
+
+
+class UserAddressCreateSerializer(serializers.ModelSerializer):
+    """
+    Serializer para crear direcciones de usuario.
+    """
+    class Meta:
+        model = UserAddress
+        fields = [
+            'title', 'address_line_1', 'address_line_2', 'city', 'state',
+            'postal_code', 'country', 'is_default',
+            'is_billing', 'is_shipping'
+        ]
+        extra_kwargs = {
+            'title': {'required': True},
+            'address_line_1': {'required': True},
+            'city': {'required': True},
+            'state': {'required': True},
+            'postal_code': {'required': True},
+            'country': {'required': True},
+        }
+    
+    def validate(self, attrs):
+        # Validar que no se excedan las 2 direcciones por usuario
+        user = self.context['request'].user
+        existing_addresses = UserAddress.objects.filter(user=user).count()
+        if existing_addresses >= 2:
+            raise serializers.ValidationError("No puedes tener más de 2 direcciones.")
+        
+        return attrs
+    
+    def create(self, validated_data):
+        validated_data['user'] = self.context['request'].user
+        # Asignar nombres del perfil del usuario
+        validated_data['first_name'] = self.context['request'].user.first_name
+        validated_data['last_name'] = self.context['request'].user.last_name
+        return super().create(validated_data)

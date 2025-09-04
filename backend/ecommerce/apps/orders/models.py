@@ -44,6 +44,9 @@ class Order(models.Model):
     payment_status = models.CharField(_('payment status'), max_length=20, choices=PAYMENT_STATUS, default='pending')
     
     # Información de contacto
+    first_name = models.CharField(_('first name'), max_length=150, default='')
+    last_name = models.CharField(_('last name'), max_length=150, default='')
+    document_id = models.CharField(_('document ID'), max_length=20, default='')
     email = models.EmailField(_('email'))
     phone = models.CharField(_('phone'), max_length=20)
     

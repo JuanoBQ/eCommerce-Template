@@ -101,7 +101,9 @@ export default function AdminOrderDetailPage() {
 
   useEffect(() => {
     if (orderId) {
-      loadOrderDetails(orderId).then(setOrder)
+      loadOrderDetails(orderId).then((orderData) => {
+        setOrder(orderData as Order)
+      })
     }
   }, [orderId, loadOrderDetails])
 
@@ -129,7 +131,7 @@ export default function AdminOrderDetailPage() {
       }
       // Recargar los detalles de la orden
       const updatedOrder = await loadOrderDetails(order.id)
-      setOrder(updatedOrder)
+      setOrder(updatedOrder as Order)
     } catch (error) {
       console.error('Error updating order status:', error)
     } finally {

@@ -1,8 +1,9 @@
 "use client"
 
-import { Dumbbell, Shirt, Heart, Zap, Target, Trophy } from 'lucide-react'
+import { Dumbbell, Shirt, Heart, Zap, Target, Trophy, ArrowRight } from 'lucide-react'
 import Link from 'next/link'
 import Image from 'next/image'
+import { Button } from '@/components/ui/button'
 
 // Mock data - En producción esto vendría de la API
 const categories = [
@@ -14,8 +15,8 @@ const categories = [
     icon: Dumbbell,
     image: '/images/categories/men.jpg',
     product_count: 156,
-    gradient: 'from-neon-green/20 to-neon-blue/20',
-    textColor: 'text-neon-green'
+    gradient: 'from-primary-500/10 to-primary-600/10',
+    textColor: 'text-primary-500'
   },
   {
     id: 2,
@@ -25,8 +26,8 @@ const categories = [
     icon: Heart,
     image: '/images/categories/women.jpg',
     product_count: 203,
-    gradient: 'from-neon-pink/20 to-neon-purple/20',
-    textColor: 'text-neon-pink'
+    gradient: 'from-gray-500/10 to-gray-600/10',
+    textColor: 'text-gray-600'
   },
   {
     id: 3,
@@ -36,8 +37,8 @@ const categories = [
     icon: Zap,
     image: '/images/categories/accessories.jpg',
     product_count: 89,
-    gradient: 'from-neon-blue/20 to-neon-green/20',
-    textColor: 'text-neon-blue'
+    gradient: 'from-primary-500/10 to-gray-500/10',
+    textColor: 'text-primary-500'
   },
   {
     id: 4,
@@ -47,8 +48,8 @@ const categories = [
     icon: Target,
     image: '/images/categories/new.jpg',
     product_count: 67,
-    gradient: 'from-neon-purple/20 to-neon-pink/20',
-    textColor: 'text-neon-purple'
+    gradient: 'from-gray-600/10 to-primary-500/10',
+    textColor: 'text-gray-600'
   },
   {
     id: 5,
@@ -58,8 +59,8 @@ const categories = [
     icon: Trophy,
     image: '/images/categories/sale.jpg',
     product_count: 45,
-    gradient: 'from-accent-500/20 to-neon-green/20',
-    textColor: 'text-accent-500'
+    gradient: 'from-red-500/10 to-primary-500/10',
+    textColor: 'text-red-500'
   },
   {
     id: 6,
@@ -69,22 +70,22 @@ const categories = [
     icon: Shirt,
     image: '/images/categories/collections.jpg',
     product_count: 34,
-    gradient: 'from-neon-green/20 to-neon-purple/20',
-    textColor: 'text-neon-green'
+    gradient: 'from-primary-500/10 to-gray-600/10',
+    textColor: 'text-primary-500'
   },
 ]
 
 export default function Categories() {
   return (
-    <section className="py-20 bg-dark-900">
+    <section className="py-20 bg-gray-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
         <div className="text-center mb-16">
           <h2 className="text-4xl md:text-6xl font-display font-black mb-4">
-            <span className="text-white">EXPLORA</span>
-            <span className="block text-gradient">CATEGORÍAS</span>
+            <span className="text-gray-900">EXPLORA</span>
+            <span className="block text-primary-500">CATEGORÍAS</span>
           </h2>
-          <p className="text-xl text-white/70 max-w-2xl mx-auto">
+          <p className="text-xl text-gray-600 max-w-2xl mx-auto">
             Encuentra exactamente lo que necesitas para tu entrenamiento
           </p>
         </div>
@@ -96,10 +97,10 @@ export default function Categories() {
             return (
               <Link
                 key={category.id}
-                href={`/shop/${category.slug}`}
+                href={`/tienda?category=${category.slug}`}
                 className="group relative block"
               >
-                <div className="relative h-80 rounded-2xl overflow-hidden card-hover">
+                <div className="relative h-80 rounded-2xl overflow-hidden bg-white shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
                   {/* Background Image */}
                   <div className="absolute inset-0">
                     <div className={`absolute inset-0 bg-gradient-to-br ${category.gradient}`} />
@@ -107,21 +108,21 @@ export default function Categories() {
                       className="absolute inset-0 bg-cover bg-center bg-no-repeat"
                       style={{ backgroundImage: `url(${category.image})` }}
                     />
-                    <div className="absolute inset-0 bg-dark-900/60" />
+                    <div className="absolute inset-0 bg-black/40" />
                   </div>
 
                   {/* Content */}
                   <div className="relative z-10 h-full flex flex-col justify-between p-8">
                     {/* Icon */}
                     <div className="flex justify-end">
-                      <div className={`p-4 rounded-full bg-dark-800/50 backdrop-blur-sm ${category.textColor}`}>
+                      <div className={`p-4 rounded-full bg-white/90 backdrop-blur-sm ${category.textColor}`}>
                         <IconComponent className="w-8 h-8" />
                       </div>
                     </div>
 
                     {/* Text Content */}
                     <div className="space-y-4">
-                      <h3 className={`text-3xl font-display font-black ${category.textColor} group-hover:scale-105 transition-transform duration-300`}>
+                      <h3 className={`text-3xl font-display font-black text-white group-hover:scale-105 transition-transform duration-300`}>
                         {category.name}
                       </h3>
                       <p className="text-white/90 text-lg leading-relaxed">
@@ -132,16 +133,14 @@ export default function Categories() {
                           {category.product_count} productos
                         </span>
                         <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center">
-                          <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
-                          </svg>
+                          <ArrowRight className="w-4 h-4 text-white" />
                         </div>
                       </div>
                     </div>
                   </div>
 
                   {/* Hover Overlay */}
-                  <div className="absolute inset-0 bg-neon-green/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                  <div className="absolute inset-0 bg-primary-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                 </div>
               </Link>
             )
@@ -150,14 +149,11 @@ export default function Categories() {
 
         {/* Bottom CTA */}
         <div className="text-center mt-16">
-          <Link
-            href="/shop"
-            className="btn-outline inline-flex items-center group"
-          >
-            Ver Todas las Categorías
-            <svg className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
-            </svg>
+          <Link href="/tienda" className="inline-flex items-center gap-2">
+            <Button variant="outline" size="lg">
+              Ver Todas las Categorías
+              <ArrowRight className="w-5 h-5" />
+            </Button>
           </Link>
         </div>
       </div>

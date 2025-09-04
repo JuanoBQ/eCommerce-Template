@@ -43,7 +43,7 @@ export default function ProductDetailPage() {
     try {
       setIsLoading(true)
       const productData = await getProduct(parseInt(productId))
-      setProduct(productData)
+      setProduct(productData as Product)
     } catch (error) {
       console.error('Error loading product:', error)
       toast.error('Error al cargar el producto')
