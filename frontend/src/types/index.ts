@@ -157,6 +157,7 @@ export interface ProductVariant {
   low_stock_threshold: number
   is_active: boolean
   weight?: number
+  image?: string
   created_at: string
   updated_at: string
   size_details?: Size

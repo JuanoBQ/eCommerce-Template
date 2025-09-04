@@ -362,72 +362,281 @@ export default function UsersPage() {
       {/* Modal Ver Usuario */}
       {viewModalOpen && selectedUser && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-dark-800 border border-dark-700 rounded-xl p-6 w-full max-w-md">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-xl font-bold text-white">Detalles del Usuario</h3>
+          <div className="bg-dark-800 border border-dark-700 rounded-xl p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-2xl font-bold text-white">Detalles del Usuario</h3>
               <button 
                 onClick={() => setViewModalOpen(false)}
                 className="p-2 text-dark-400 hover:text-white transition-colors"
                 title="Cerrar modal"
                 aria-label="Cerrar modal"
               >
-                <X className="w-5 h-5" />
+                <X className="w-6 h-6" />
               </button>
             </div>
             
-            <div className="space-y-4">
-              <div className="flex items-center space-x-3">
-                <div className="w-12 h-12 bg-neon-green rounded-full flex items-center justify-center">
-                  <span className="text-dark-900 font-semibold text-lg">
+            <div className="space-y-6">
+              {/* Información Básica */}
+              <div className="flex items-center space-x-4">
+                <div className="w-16 h-16 bg-neon-green rounded-full flex items-center justify-center">
+                  <span className="text-dark-900 font-semibold text-xl">
                     {selectedUser.first_name[0]}{selectedUser.last_name[0]}
                   </span>
                 </div>
                 <div>
-                  <h4 className="text-white font-medium text-lg">
+                  <h4 className="text-white font-medium text-xl">
                     {selectedUser.first_name} {selectedUser.last_name}
                   </h4>
                   <p className="text-dark-400">ID: {selectedUser.id}</p>
+                  <p className="text-dark-400">Email: {selectedUser.email}</p>
                 </div>
               </div>
               
-              <div className="space-y-3">
-                <div>
-                  <label className="text-dark-400 text-sm">Email</label>
-                  <p className="text-white">{selectedUser.email}</p>
+              {/* Información Personal */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-4">
+                  <h5 className="text-lg font-semibold text-white border-b border-dark-600 pb-2">Información Personal</h5>
+                  
+                  <div>
+                    <label className="text-dark-400 text-sm">Username</label>
+                    <p className="text-white">{selectedUser.username || 'No especificado'}</p>
+                  </div>
+                  
+                  <div>
+                    <label className="text-dark-400 text-sm">Teléfono</label>
+                    <p className="text-white">{selectedUser.phone || 'No especificado'}</p>
+                  </div>
+                  
+                  <div>
+                    <label className="text-dark-400 text-sm">Fecha de Nacimiento</label>
+                    <p className="text-white">
+                      {selectedUser.birth_date ? new Date(selectedUser.birth_date).toLocaleDateString() : 'No especificada'}
+                    </p>
+                  </div>
+                  
+                  <div>
+                    <label className="text-dark-400 text-sm">Avatar</label>
+                    <p className="text-white">{selectedUser.avatar ? 'Tiene avatar' : 'Sin avatar'}</p>
+                  </div>
                 </div>
                 
-                <div>
-                  <label className="text-dark-400 text-sm">Rol</label>
-                  <span className={`inline-block px-2 py-1 rounded-full text-xs font-medium ${
-                    selectedUser.is_staff 
-                      ? 'bg-red-500/20 text-red-400' 
-                      : 'bg-blue-500/20 text-blue-400'
-                  }`}>
-                    {selectedUser.is_staff ? 'Administrador' : 'Cliente'}
-                  </span>
+                <div className="space-y-4">
+                  <h5 className="text-lg font-semibold text-white border-b border-dark-600 pb-2">Estado y Permisos</h5>
+                  
+                  <div>
+                    <label className="text-dark-400 text-sm">Rol</label>
+                    <span className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${
+                      selectedUser.is_staff 
+                        ? 'bg-red-500/20 text-red-400' 
+                        : 'bg-blue-500/20 text-blue-400'
+                    }`}>
+                      {selectedUser.is_staff ? 'Administrador' : 'Cliente'}
+                    </span>
+                  </div>
+                  
+                  <div>
+                    <label className="text-dark-400 text-sm">Superusuario</label>
+                    <span className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${
+                      selectedUser.is_superuser 
+                        ? 'bg-yellow-500/20 text-yellow-400' 
+                        : 'bg-gray-500/20 text-gray-400'
+                    }`}>
+                      {selectedUser.is_superuser ? 'Sí' : 'No'}
+                    </span>
+                  </div>
+                  
+                  <div>
+                    <label className="text-dark-400 text-sm">Estado</label>
+                    <span className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${
+                      selectedUser.is_active 
+                        ? 'bg-green-500/20 text-green-400' 
+                        : 'bg-gray-500/20 text-gray-400'
+                    }`}>
+                      {selectedUser.is_active ? 'Activo' : 'Inactivo'}
+                    </span>
+                  </div>
+                  
+                  <div>
+                    <label className="text-dark-400 text-sm">Es Vendedor</label>
+                    <span className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${
+                      selectedUser.is_vendor 
+                        ? 'bg-purple-500/20 text-purple-400' 
+                        : 'bg-gray-500/20 text-gray-400'
+                    }`}>
+                      {selectedUser.is_vendor ? 'Sí' : 'No'}
+                    </span>
+                  </div>
+                  
+                  <div>
+                    <label className="text-dark-400 text-sm">Es Cliente</label>
+                    <span className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${
+                      selectedUser.is_customer 
+                        ? 'bg-blue-500/20 text-blue-400' 
+                        : 'bg-gray-500/20 text-gray-400'
+                    }`}>
+                      {selectedUser.is_customer ? 'Sí' : 'No'}
+                    </span>
+                  </div>
                 </div>
+              </div>
+              
+              {/* Direcciones del Usuario */}
+              <div className="space-y-4">
+                <h5 className="text-lg font-semibold text-white border-b border-dark-600 pb-2">
+                  Direcciones ({selectedUser.addresses?.length || 0})
+                </h5>
                 
-                <div>
-                  <label className="text-dark-400 text-sm">Estado</label>
-                  <span className={`inline-block px-2 py-1 rounded-full text-xs font-medium ${
-                    selectedUser.is_active 
-                      ? 'bg-green-500/20 text-green-400' 
-                      : 'bg-gray-500/20 text-gray-400'
-                  }`}>
-                    {selectedUser.is_active ? 'Activo' : 'Inactivo'}
-                  </span>
+                {selectedUser.addresses && selectedUser.addresses.length > 0 ? (
+                  <div className="space-y-4">
+                    {selectedUser.addresses.map((address) => (
+                      <div
+                        key={address.id}
+                        className={`border rounded-lg p-4 ${
+                          address.is_default 
+                            ? 'border-neon-green bg-neon-green/5' 
+                            : 'border-dark-600 bg-dark-700/30'
+                        }`}
+                      >
+                        <div className="flex items-start justify-between mb-3">
+                          <div className="flex items-center gap-2">
+                            <h6 className="text-white font-medium">{address.title}</h6>
+                            {address.is_default && (
+                              <span className="px-2 py-1 bg-neon-green text-dark-900 text-xs font-medium rounded-full">
+                                Predeterminada
+                              </span>
+                            )}
+                          </div>
+                          <div className="flex gap-2">
+                            {address.is_shipping && (
+                              <span className="px-2 py-1 bg-blue-500/20 text-blue-400 text-xs rounded-full">
+                                Envío
+                              </span>
+                            )}
+                            {address.is_billing && (
+                              <span className="px-2 py-1 bg-green-500/20 text-green-400 text-xs rounded-full">
+                                Facturación
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                        
+                        <div className="text-sm text-gray-300 space-y-1">
+                          <p className="font-medium">{address.first_name} {address.last_name}</p>
+                          <p>{address.address_line_1}</p>
+                          {address.address_line_2 && <p>{address.address_line_2}</p>}
+                          <p>{address.city}, {address.state} {address.postal_code}</p>
+                          <p>{address.country}</p>
+                        </div>
+                        
+                        <div className="mt-3 text-xs text-gray-400">
+                          <p>Dirección completa: {address.full_address}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-8">
+                    <p className="text-gray-400">No hay direcciones registradas</p>
+                  </div>
+                )}
+              </div>
+              
+              {/* Configuración de Notificaciones */}
+              <div className="space-y-4">
+                <h5 className="text-lg font-semibold text-white border-b border-dark-600 pb-2">Configuración de Notificaciones</h5>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-dark-400 text-sm">Notificaciones por Email</label>
+                    <span className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${
+                      selectedUser.email_notifications 
+                        ? 'bg-green-500/20 text-green-400' 
+                        : 'bg-gray-500/20 text-gray-400'
+                    }`}>
+                      {selectedUser.email_notifications ? 'Activadas' : 'Desactivadas'}
+                    </span>
+                  </div>
+                  
+                  <div>
+                    <label className="text-dark-400 text-sm">Notificaciones por SMS</label>
+                    <span className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${
+                      selectedUser.sms_notifications 
+                        ? 'bg-green-500/20 text-green-400' 
+                        : 'bg-gray-500/20 text-gray-400'
+                    }`}>
+                      {selectedUser.sms_notifications ? 'Activadas' : 'Desactivadas'}
+                    </span>
+                  </div>
                 </div>
+              </div>
+              
+              {/* Información de Cuenta */}
+              <div className="space-y-4">
+                <h5 className="text-lg font-semibold text-white border-b border-dark-600 pb-2">Información de Cuenta</h5>
                 
-                <div>
-                  <label className="text-dark-400 text-sm">Fecha de Registro</label>
-                  <p className="text-white">{new Date(selectedUser.date_joined).toLocaleDateString()}</p>
-                </div>
-                
-                <div>
-                  <label className="text-dark-400 text-sm">Último Acceso</label>
-                  <p className="text-white">
-                    {selectedUser.last_login ? new Date(selectedUser.last_login).toLocaleDateString() : 'Nunca'}
-                  </p>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-dark-400 text-sm">Fecha de Registro</label>
+                    <p className="text-white">
+                      {new Date(selectedUser.date_joined).toLocaleDateString('es-ES', {
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                      })}
+                    </p>
+                  </div>
+                  
+                  <div>
+                    <label className="text-dark-400 text-sm">Último Acceso</label>
+                    <p className="text-white">
+                      {selectedUser.last_login ? new Date(selectedUser.last_login).toLocaleDateString('es-ES', {
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                      }) : 'Nunca'}
+                    </p>
+                  </div>
+                  
+                  <div>
+                    <label className="text-dark-400 text-sm">Fecha de Creación</label>
+                    <p className="text-white">
+                      {selectedUser.created_at ? new Date(selectedUser.created_at).toLocaleDateString('es-ES', {
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                      }) : 'No disponible'}
+                    </p>
+                  </div>
+                  
+                  <div>
+                    <label className="text-dark-400 text-sm">Última Actualización</label>
+                    <p className="text-white">
+                      {selectedUser.updated_at ? new Date(selectedUser.updated_at).toLocaleDateString('es-ES', {
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                      }) : 'No disponible'}
+                    </p>
+                  </div>
+                  
+                  <div>
+                    <label className="text-dark-400 text-sm">Términos Aceptados</label>
+                    <span className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${
+                      selectedUser.terms_accepted 
+                        ? 'bg-green-500/20 text-green-400' 
+                        : 'bg-red-500/20 text-red-400'
+                    }`}>
+                      {selectedUser.terms_accepted ? 'Sí' : 'No'}
+                    </span>
+                  </div>
                 </div>
               </div>
             </div>

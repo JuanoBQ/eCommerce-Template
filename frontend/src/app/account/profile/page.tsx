@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useAuth } from '@/hooks/useAuth'
 import { useOrders } from '@/hooks/useOrders'
 import { useWishlist } from '@/hooks/useWishlist'
@@ -15,22 +15,44 @@ import { UserAddress } from '@/types'
 import { CreateAddressData } from '@/hooks/useAddresses'
 
 export default function ProfilePage() {
-  const { user, updateProfile, isLoading } = useAuth()
+  const { user, updateProfile, changePassword, isLoading } = useAuth()
   const { orders } = useOrders()
   const { count: wishlistCount } = useWishlist()
   const { addresses, createAddress, updateAddress, deleteAddress, setDefaultAddress, isLoading: addressesLoading } = useAddresses()
   const [isEditing, setIsEditing] = useState(false)
   const [addressModalOpen, setAddressModalOpen] = useState(false)
   const [editingAddress, setEditingAddress] = useState<UserAddress | null>(null)
+  const [showPasswordChange, setShowPasswordChange] = useState(false)
   const [formData, setFormData] = useState({
-    first_name: user?.first_name || '',
-    last_name: user?.last_name || '',
-    phone: user?.phone || '',
-    birth_date: user?.birth_date || '',
-    avatar: user?.avatar || '',
-    email_notifications: user?.email_notifications ?? true,
-    sms_notifications: user?.sms_notifications ?? false,
+    first_name: '',
+    last_name: '',
+    phone: '',
+    birth_date: '',
+    avatar: '',
+    email_notifications: true,
+    sms_notifications: false,
   })
+  const [passwordData, setPasswordData] = useState({
+    current_password: '',
+    new_password: '',
+    confirm_password: '',
+  })
+  const [passwordErrors, setPasswordErrors] = useState<{[key: string]: string}>({})
+
+  // Actualizar formData cuando user cambie
+  useEffect(() => {
+    if (user) {
+      setFormData({
+        first_name: user.first_name || '',
+        last_name: user.last_name || '',
+        phone: user.phone || '',
+        birth_date: user.birth_date || '',
+        avatar: user.avatar || '',
+        email_notifications: user.email_notifications ?? true,
+        sms_notifications: user.sms_notifications ?? false,
+      })
+    }
+  }, [user])
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value, type, checked } = e.target
@@ -38,6 +60,22 @@ export default function ProfilePage() {
       ...prev,
       [name]: type === 'checkbox' ? checked : value
     }))
+  }
+
+  const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target
+    setPasswordData(prev => ({
+      ...prev,
+      [name]: value
+    }))
+    
+    // Limpiar errores cuando el usuario empiece a escribir
+    if (passwordErrors[name]) {
+      setPasswordErrors(prev => ({
+        ...prev,
+        [name]: ''
+      }))
+    }
   }
 
   // Función para filtrar datos vacíos
@@ -130,7 +168,6 @@ export default function ProfilePage() {
       phone: user?.phone || '',
       birth_date: user?.birth_date || '',
       avatar: user?.avatar || '',
-
       email_notifications: user?.email_notifications ?? true,
       sms_notifications: user?.sms_notifications ?? false,
     })
@@ -168,346 +205,548 @@ export default function ProfilePage() {
     setEditingAddress(null)
   }
 
+  // Función para validar contraseña
+  const validatePassword = () => {
+    const errors: {[key: string]: string} = {}
+
+    if (!passwordData.current_password) {
+      errors.current_password = 'La contraseña actual es requerida'
+    }
+
+    if (!passwordData.new_password) {
+      errors.new_password = 'La nueva contraseña es requerida'
+    } else if (passwordData.new_password.length < 8) {
+      errors.new_password = 'La contraseña debe tener al menos 8 caracteres'
+    }
+
+    if (!passwordData.confirm_password) {
+      errors.confirm_password = 'Confirma tu nueva contraseña'
+    } else if (passwordData.new_password !== passwordData.confirm_password) {
+      errors.confirm_password = 'Las contraseñas no coinciden'
+    }
+
+    if (passwordData.current_password === passwordData.new_password) {
+      errors.new_password = 'La nueva contraseña debe ser diferente a la actual'
+    }
+
+    setPasswordErrors(errors)
+    return Object.keys(errors).length === 0
+  }
+
+  // Función para cambiar contraseña
+  const handlePasswordSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    
+    if (!validatePassword()) {
+      return
+    }
+
+    try {
+      console.log('Cambiando contraseña...', {
+        old_password: passwordData.current_password,
+        new_password: passwordData.new_password,
+        new_password_confirm: passwordData.confirm_password
+      })
+      
+      // Llamar a la API real para cambiar la contraseña
+      await changePassword({
+        old_password: passwordData.current_password,
+        new_password: passwordData.new_password,
+        new_password_confirm: passwordData.confirm_password
+      })
+      
+      toast.success('Contraseña cambiada exitosamente')
+      setPasswordData({
+        current_password: '',
+        new_password: '',
+        confirm_password: '',
+      })
+      setShowPasswordChange(false)
+    } catch (error: any) {
+      console.error('Error al cambiar contraseña:', error)
+      const errorMessage = error.response?.data?.detail || 
+                          error.response?.data?.old_password?.[0] ||
+                          error.response?.data?.new_password?.[0] ||
+                          error.response?.data?.new_password_confirm?.[0] ||
+                          'Error al cambiar la contraseña'
+      toast.error(errorMessage)
+    }
+  }
+
+  const handlePasswordCancel = () => {
+    setPasswordData({
+      current_password: '',
+      new_password: '',
+      confirm_password: '',
+    })
+    setPasswordErrors({})
+    setShowPasswordChange(false)
+  }
+
   return (
     <ProtectedRoute>
       <div className="min-h-screen bg-white py-20">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           {/* Header */}
-          <div className="text-center mb-12">
-            <h1 className="text-4xl md:text-6xl font-display font-black mb-4">
-              <span className="text-gray-900">MI</span>
-              <span className="block text-gray-900">PERFIL</span>
-            </h1>
-            <p className="text-xl text-gray-600">
-              Gestiona tu información personal y preferencias
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            {/* Profile Card */}
-            <div className="lg:col-span-1">
-              <div className="bg-white border border-gray-200 rounded-md p-8 shadow-sm text-center">
-                {/* Avatar */}
-                <div className="w-24 h-24 bg-gray-900 rounded-full mx-auto mb-6 flex items-center justify-center">
-                  <User className="w-12 h-12 text-white" />
-                </div>
-
-                {/* User Info */}
-                <h3 className="text-xl font-semibold text-gray-900 mb-2">
-                  {user?.first_name} {user?.last_name}
-                </h3>
-                <p className="text-gray-600 mb-4">{user?.email}</p>
-
-                {/* User Stats */}
-                <div className="grid grid-cols-2 gap-4 pt-4 border-t border-gray-200">
-                  <div>
-                    <div className="text-2xl font-bold text-gray-900">{orders?.length || 0}</div>
-                    <div className="text-sm text-gray-600">Pedidos</div>
-                  </div>
-                  <div>
-                    <div className="text-2xl font-bold text-gray-900">{wishlistCount || 0}</div>
-                    <div className="text-sm text-gray-600">Favoritos</div>
-                  </div>
-                </div>
-
-                {/* Member Since */}
-                <div className="mt-6 pt-4 border-t border-gray-200">
-                  <div className="flex items-center justify-center text-gray-600 text-sm">
-                    <Calendar className="w-4 h-4 mr-2" />
-                    Miembro desde {user?.created_at ? new Date(user.created_at).toLocaleDateString('es-ES', { 
-                      month: 'long', 
-                      year: 'numeric' 
-                    }) : 'Fecha no disponible'}
-                  </div>
-                </div>
+          <div className="mb-8">
+            <div className="flex items-center justify-between">
+              <div>
+                <h1 className="text-3xl font-bold text-gray-900 mb-2">CONFIGURACIÓN</h1>
+                <p className="text-gray-600">
+                  Gestiona tu información personal y preferencias
+                </p>
               </div>
             </div>
+          </div>
 
-            {/* Profile Form */}
-            <div className="lg:col-span-2">
-              <div className="bg-white border border-gray-200 rounded-md p-8 shadow-sm">
-                <div className="flex items-center justify-between mb-8">
-                  <h2 className="text-2xl font-display font-bold text-gray-900">
-                    INFORMACIÓN PERSONAL
-                  </h2>
-                  {!isEditing ? (
-                    <Button
-                      onClick={() => setIsEditing(true)}
-                      variant="outline"
-                    >
-                      Editar Perfil
-                    </Button>
+          {/* Profile Overview */}
+          <div className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm mb-8">
+            <div className="flex flex-col md:flex-row items-center md:items-start gap-6">
+              {/* Avatar */}
+              <div className="relative">
+                <div className="w-20 h-20 bg-gray-200 rounded-full flex items-center justify-center">
+                  {user?.avatar ? (
+                    <img
+                      src={user.avatar}
+                      alt="Avatar"
+                      className="w-20 h-20 rounded-full object-cover"
+                    />
                   ) : (
-                    <div className="flex space-x-3">
-                      <Button
-                        onClick={handleCancel}
-                        variant="outline"
-                      >
-                        Cancelar
-                      </Button>
-                      <Button
-                        onClick={handleSubmit}
-                        disabled={isLoading}
-                        variant="black"
-                        className="flex items-center"
-                      >
-                        {isLoading ? (
-                          <div className="loading-spinner w-4 h-4 mr-2" />
-                        ) : (
-                          <Save className="w-4 h-4 mr-2" />
-                        )}
-                        Guardar
-                      </Button>
-                    </div>
+                    <User className="w-10 h-10 text-gray-400" />
                   )}
                 </div>
-
-                <form onSubmit={handleSubmit} className="space-y-6">
-                  {/* Name Fields */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-900 mb-2">Nombre</label>
-                      <div className="relative">
-                        <Input
-                          type="text"
-                          name="first_name"
-                          value={formData.first_name}
-                          onChange={handleChange}
-                          disabled={!isEditing}
-                          className={`pl-12 ${!isEditing ? 'bg-gray-100 cursor-not-allowed' : ''}`}
-                        />
-                        <User className="absolute left-4 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
-                      </div>
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-900 mb-2">Apellidos</label>
-                      <Input
-                        type="text"
-                        name="last_name"
-                        value={formData.last_name}
-                        onChange={handleChange}
-                        disabled={!isEditing}
-                        className={!isEditing ? 'bg-gray-100 cursor-not-allowed' : ''}
-                      />
-                    </div>
-                  </div>
-
-                  {/* Email (Read-only) */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-900 mb-2">Correo electrónico</label>
-                    <div className="relative">
-                      <Input
-                        type="email"
-                        value={user?.email}
-                        disabled
-                        className="pl-12 bg-gray-100 cursor-not-allowed"
-                      />
-                      <Mail className="absolute left-4 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
-                    </div>
-                    <p className="text-sm text-gray-500 mt-1">
-                      El email no se puede cambiar desde aquí
-                    </p>
-                  </div>
-
-                  {/* Phone */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-900 mb-2">Teléfono</label>
-                    <div className="relative">
-                      <Input
-                        type="tel"
-                        name="phone"
-                        value={formData.phone}
-                        onChange={handleChange}
-                        disabled={!isEditing}
-                        className={`pl-12 ${!isEditing ? 'bg-gray-100 cursor-not-allowed' : ''}`}
-                        placeholder="+34 600 000 000"
-                      />
-                      <Phone className="absolute left-4 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
-                    </div>
-                  </div>
-
-                  {/* Birth Date */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-900 mb-2">Fecha de nacimiento</label>
-                    <div className="relative">
-                      <Input
-                        type="date"
-                        name="birth_date"
-                        value={formData.birth_date}
-                        onChange={handleChange}
-                        disabled={!isEditing}
-                        className={`pl-12 ${!isEditing ? 'bg-gray-100 cursor-not-allowed' : ''}`}
-                      />
-                      <Calendar className="absolute left-4 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
-                    </div>
-                  </div>
-
-
-
-                  {/* Notification Preferences */}
-                  <div className="space-y-6 pt-6 border-t border-gray-200">
-                    <h3 className="text-lg font-semibold text-gray-900">Preferencias de Notificaciones</h3>
-
-                    <div className="space-y-4">
-                      <div className="flex items-center">
-                        <input
-                          type="checkbox"
-                          id="email_notifications"
-                          name="email_notifications"
-                          checked={formData.email_notifications}
-                          onChange={handleChange}
-                          disabled={!isEditing}
-                          className="w-4 h-4 text-primary-500 bg-white border-gray-300 rounded focus:ring-primary-500 focus:ring-2"
-                        />
-                        <label htmlFor="email_notifications" className="ml-3 text-sm font-medium text-gray-900">
-                          <div className="flex items-center">
-                            <Bell className="w-4 h-4 mr-2 text-primary-500" />
-                            Recibir notificaciones por email
-                          </div>
-                        </label>
-                      </div>
-
-                      <div className="flex items-center">
-                        <input
-                          type="checkbox"
-                          id="sms_notifications"
-                          name="sms_notifications"
-                          checked={formData.sms_notifications}
-                          onChange={handleChange}
-                          disabled={!isEditing}
-                          className="w-4 h-4 text-primary-500 bg-white border-gray-300 rounded focus:ring-primary-500 focus:ring-2"
-                        />
-                        <label htmlFor="sms_notifications" className="ml-3 text-sm font-medium text-gray-900">
-                          <div className="flex items-center">
-                            <BellOff className="w-4 h-4 mr-2 text-primary-500" />
-                            Recibir notificaciones por SMS
-                          </div>
-                        </label>
-                      </div>
-                    </div>
-                  </div>
-                </form>
-              </div>
-            </div>
-          </div>
-
-          {/* Addresses Section */}
-          <div className="mt-12">
-            <div className="bg-white border border-gray-200 rounded-md p-8 shadow-sm">
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-2xl font-bold text-gray-900 uppercase tracking-wide">
-                  Mis Direcciones
-                </h2>
-                {addresses.length < 2 && (
-                  <Button
-                    onClick={() => setAddressModalOpen(true)}
-                    variant="black"
-                    className="flex items-center"
+                {isEditing && (
+                  <button
+                    type="button"
+                    className="absolute -bottom-2 -right-2 bg-gray-900 text-white rounded-full p-2 hover:bg-gray-800 transition-colors"
+                    title="Cambiar foto de perfil"
                   >
-                    <Plus className="w-4 h-4 mr-2" />
-                    Agregar Dirección
-                  </Button>
+                    <Camera className="w-4 h-4" />
+                  </button>
                 )}
               </div>
 
-              {addressesLoading ? (
-                <div className="text-center py-8">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-500 mx-auto"></div>
-                  <p className="text-gray-600 mt-2">Cargando direcciones...</p>
+              {/* User Info */}
+              <div className="flex-1 text-center md:text-left">
+                <h2 className="text-2xl font-bold text-gray-900 mb-1">
+                  {user?.first_name} {user?.last_name}
+                </h2>
+                <p className="text-gray-600 mb-4">{user?.email}</p>
+                
+                {/* Stats */}
+                <div className="flex justify-center md:justify-start gap-6">
+                  <div className="text-center">
+                    <div className="text-xl font-bold text-gray-900">{orders?.length || 0}</div>
+                    <div className="text-sm text-gray-600">Pedidos</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-xl font-bold text-gray-900">{wishlistCount || 0}</div>
+                    <div className="text-sm text-gray-600">Favoritos</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-xl font-bold text-gray-900">{addresses?.length || 0}</div>
+                    <div className="text-sm text-gray-600">Direcciones</div>
+                  </div>
                 </div>
-              ) : addresses.length === 0 ? (
-                <div className="text-center py-12">
-                  <MapPin className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-                  <h3 className="text-lg font-semibold text-gray-900 mb-2">No tienes direcciones guardadas</h3>
-                  <p className="text-gray-600 mb-6">Agrega una dirección para facilitar tus compras</p>
-                  <Button
-                    onClick={() => setAddressModalOpen(true)}
-                    variant="black"
-                    className="flex items-center mx-auto"
-                  >
-                    <Plus className="w-4 h-4 mr-2" />
-                    Agregar Primera Dirección
-                  </Button>
+              </div>
+
+              {/* Member Since */}
+              <div className="text-center md:text-right">
+                <div className="flex items-center justify-center md:justify-end text-gray-600 text-sm">
+                  <Calendar className="w-4 h-4 mr-2" />
+                  <span>Miembro desde {user?.created_at ? new Date(user.created_at).toLocaleDateString('es-ES', { 
+                    month: 'long', 
+                    year: 'numeric' 
+                  }) : 'Fecha no disponible'}</span>
                 </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Personal Information Form */}
+          <div className="bg-white border border-gray-200 rounded-md p-8 shadow-sm mb-8">
+            <div className="flex items-center justify-between mb-8">
+              <h2 className="text-2xl font-display font-bold text-gray-900">
+                INFORMACIÓN PERSONAL
+              </h2>
+              {!isEditing ? (
+                <Button
+                  onClick={() => setIsEditing(true)}
+                  variant="outline"
+                  className="flex items-center gap-2"
+                >
+                  <Edit className="w-4 h-4" />
+                  Editar
+                </Button>
               ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {addresses.map((address) => (
-                    <div
-                      key={address.id}
-                      className={`border rounded-md p-6 ${
-                        address.is_default 
-                          ? 'border-primary-500 bg-primary-50' 
-                          : 'border-gray-200 bg-white'
-                      }`}
-                    >
-                      <div className="flex items-start justify-between mb-4">
-                        <div className="flex items-center">
-                          <h3 className="text-lg font-semibold text-gray-900">
-                            {address.title}
-                          </h3>
-                          {address.is_default && (
-                            <div className="ml-2 flex items-center text-primary-600">
-                              <Star className="w-4 h-4 fill-current" />
-                              <span className="text-xs font-medium ml-1">Predeterminada</span>
-                            </div>
-                          )}
-                        </div>
-                        <div className="flex items-center space-x-2">
-                          {!address.is_default && (
-                            <button
-                              onClick={() => handleSetDefaultAddress(address.id)}
-                              className="p-1 text-gray-400 hover:text-primary-500 transition-colors"
-                              title="Marcar como predeterminada"
-                            >
-                              <Star className="w-4 h-4" />
-                            </button>
-                          )}
-                          <button
-                            onClick={() => handleEditAddress(address)}
-                            className="p-1 text-gray-400 hover:text-primary-500 transition-colors"
-                            title="Editar dirección"
-                          >
-                            <Edit className="w-4 h-4" />
-                          </button>
-                          <button
-                            onClick={() => handleDeleteAddress(address.id)}
-                            className="p-1 text-gray-400 hover:text-red-500 transition-colors"
-                            title="Eliminar dirección"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        </div>
-                      </div>
-
-                      <div className="space-y-2 text-sm text-gray-600">
-                        <p>{address.address_line_1}</p>
-                        {address.address_line_2 && (
-                          <p>{address.address_line_2}</p>
-                        )}
-                        <p>
-                          {address.city}, {address.state} {address.postal_code}
-                        </p>
-                        <p>{address.country}</p>
-                      </div>
-
-                      <div className="mt-4 flex flex-wrap gap-2">
-                        {address.is_shipping && (
-                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                            Envío
-                          </span>
-                        )}
-                        {address.is_billing && (
-                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                            Facturación
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  ))}
+                <div className="flex space-x-3">
+                  <Button
+                    onClick={handleCancel}
+                    variant="outline"
+                  >
+                    Cancelar
+                  </Button>
+                  <Button
+                    onClick={handleSubmit}
+                    disabled={isLoading}
+                    variant="black"
+                    className="flex items-center gap-2"
+                  >
+                    {isLoading ? (
+                      <div className="loading-spinner w-4 h-4" />
+                    ) : (
+                      <Save className="w-4 h-4" />
+                    )}
+                    Guardar
+                  </Button>
                 </div>
               )}
             </div>
+
+            <form onSubmit={handleSubmit} className="space-y-6">
+              {/* Name Fields */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-sm font-medium text-gray-900 mb-2">Nombre</label>
+                  <div className="relative">
+                    <Input
+                      type="text"
+                      name="first_name"
+                      value={formData.first_name}
+                      onChange={handleChange}
+                      disabled={!isEditing}
+                      className={`pl-12 ${!isEditing ? 'bg-gray-100 cursor-not-allowed' : ''}`}
+                      placeholder="Tu nombre"
+                    />
+                    <User className="absolute left-4 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-900 mb-2">Apellidos</label>
+                  <Input
+                    type="text"
+                    name="last_name"
+                    value={formData.last_name}
+                    onChange={handleChange}
+                    disabled={!isEditing}
+                    className={!isEditing ? 'bg-gray-100 cursor-not-allowed' : ''}
+                    placeholder="Tus apellidos"
+                  />
+                </div>
+              </div>
+
+              {/* Email (Read-only) */}
+              <div>
+                <label className="block text-sm font-medium text-gray-900 mb-2">Correo electrónico</label>
+                <div className="relative">
+                  <Input
+                    type="email"
+                    value={user?.email || ''}
+                    disabled
+                    className="pl-12 bg-gray-100 cursor-not-allowed"
+                  />
+                  <Mail className="absolute left-4 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                </div>
+                <p className="text-sm text-gray-500 mt-1">
+                  El email no se puede cambiar desde aquí
+                </p>
+              </div>
+
+              {/* Phone */}
+              <div>
+                <label className="block text-sm font-medium text-gray-900 mb-2">Teléfono</label>
+                <div className="relative">
+                  <Input
+                    type="tel"
+                    name="phone"
+                    value={formData.phone}
+                    onChange={handleChange}
+                    disabled={!isEditing}
+                    className={`pl-12 ${!isEditing ? 'bg-gray-100 cursor-not-allowed' : ''}`}
+                    placeholder="+57 300 000 0000"
+                  />
+                  <Phone className="absolute left-4 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                </div>
+              </div>
+
+              {/* Birth Date */}
+              <div>
+                <label className="block text-sm font-medium text-gray-900 mb-2">Fecha de nacimiento</label>
+                <div className="relative">
+                  <Input
+                    type="date"
+                    name="birth_date"
+                    value={formData.birth_date}
+                    onChange={handleChange}
+                    disabled={!isEditing}
+                    className={`pl-12 ${!isEditing ? 'bg-gray-100 cursor-not-allowed' : ''}`}
+                  />
+                  <Calendar className="absolute left-4 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                </div>
+              </div>
+
+              {/* Notification Preferences */}
+              <div className="space-y-6 pt-6 border-t border-gray-200">
+                <h3 className="text-lg font-semibold text-gray-900">Preferencias de Notificaciones</h3>
+
+                <div className="space-y-4">
+                  <div className="flex items-center">
+                    <input
+                      type="checkbox"
+                      id="email_notifications"
+                      name="email_notifications"
+                      checked={formData.email_notifications}
+                      onChange={handleChange}
+                      disabled={!isEditing}
+                      className="w-4 h-4 text-gray-900 bg-white border-gray-300 rounded focus:ring-gray-900 focus:ring-2"
+                    />
+                    <label htmlFor="email_notifications" className="ml-3 text-sm font-medium text-gray-900">
+                      <div className="flex items-center">
+                        <Bell className="w-4 h-4 mr-2 text-gray-600" />
+                        Recibir notificaciones por email
+                      </div>
+                    </label>
+                  </div>
+
+                  <div className="flex items-center">
+                    <input
+                      type="checkbox"
+                      id="sms_notifications"
+                      name="sms_notifications"
+                      checked={formData.sms_notifications}
+                      onChange={handleChange}
+                      disabled={!isEditing}
+                      className="w-4 h-4 text-gray-900 bg-white border-gray-300 rounded focus:ring-gray-900 focus:ring-2"
+                    />
+                    <label htmlFor="sms_notifications" className="ml-3 text-sm font-medium text-gray-900">
+                      <div className="flex items-center">
+                        <BellOff className="w-4 h-4 mr-2 text-gray-600" />
+                        Recibir notificaciones por SMS
+                      </div>
+                    </label>
+                  </div>
+                </div>
+              </div>
+            </form>
+          </div>
+
+          {/* Addresses Section */}
+          <div className="bg-white border border-gray-200 rounded-md p-8 shadow-sm mb-8">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-2xl font-bold text-gray-900 uppercase tracking-wide">
+                MIS DIRECCIONES
+              </h2>
+              {addresses.length < 2 && (
+                <Button
+                  onClick={() => setAddressModalOpen(true)}
+                  variant="black"
+                  className="flex items-center"
+                >
+                  <Plus className="w-4 h-4 mr-2" />
+                  Agregar Dirección
+                </Button>
+              )}
+            </div>
+
+            {addressesLoading ? (
+              <div className="text-center py-8">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto"></div>
+                <p className="text-gray-600 mt-2">Cargando direcciones...</p>
+              </div>
+            ) : addresses.length === 0 ? (
+              <div className="text-center py-12">
+                <MapPin className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+                <h3 className="text-xl font-semibold text-gray-900 mb-2">No tienes direcciones guardadas</h3>
+                <p className="text-gray-600 mb-6">Agrega una dirección para facilitar tus compras</p>
+                <Button
+                  onClick={() => setAddressModalOpen(true)}
+                  variant="black"
+                  className="flex items-center mx-auto"
+                >
+                  <Plus className="w-4 h-4 mr-2" />
+                  Agregar Primera Dirección
+                </Button>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {addresses.map((address) => (
+                  <div
+                    key={address.id}
+                    className={`border rounded-md p-6 ${
+                      address.is_default 
+                        ? 'border-gray-900 bg-gray-50' 
+                        : 'border-gray-200 bg-white'
+                    }`}
+                  >
+                    <div className="flex items-start justify-between mb-4">
+                      <div className="flex items-center">
+                        <h3 className="text-lg font-semibold text-gray-900">
+                          {address.title}
+                        </h3>
+                        {address.is_default && (
+                          <div className="ml-2 flex items-center text-gray-900">
+                            <Star className="w-4 h-4 fill-current" />
+                            <span className="text-xs font-medium ml-1">Predeterminada</span>
+                          </div>
+                        )}
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        {!address.is_default && (
+                          <button
+                            onClick={() => handleSetDefaultAddress(address.id)}
+                            className="p-1 text-gray-400 hover:text-gray-900 transition-colors"
+                            title="Marcar como predeterminada"
+                          >
+                            <Star className="w-4 h-4" />
+                          </button>
+                        )}
+                        <button
+                          onClick={() => handleEditAddress(address)}
+                          className="p-1 text-gray-400 hover:text-gray-900 transition-colors"
+                          title="Editar dirección"
+                        >
+                          <Edit className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => handleDeleteAddress(address.id)}
+                          className="p-1 text-gray-400 hover:text-red-500 transition-colors"
+                          title="Eliminar dirección"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="space-y-2 text-sm text-gray-600">
+                      <p>{address.address_line_1}</p>
+                      {address.address_line_2 && (
+                        <p>{address.address_line_2}</p>
+                      )}
+                      <p>
+                        {address.city}, {address.state} {address.postal_code}
+                      </p>
+                      <p>{address.country}</p>
+                    </div>
+
+                    <div className="mt-4 flex flex-wrap gap-2">
+                      {address.is_shipping && (
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                          Envío
+                        </span>
+                      )}
+                      {address.is_billing && (
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                          Facturación
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Password Change Section */}
+          <div className="bg-white border border-gray-200 rounded-md p-8 shadow-sm">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-2xl font-bold text-gray-900 uppercase tracking-wide">
+                CAMBIAR CONTRASEÑA
+              </h2>
+              {!showPasswordChange ? (
+                <Button
+                  onClick={() => setShowPasswordChange(true)}
+                  variant="outline"
+                  className="flex items-center gap-2"
+                >
+                  <Edit className="w-4 h-4" />
+                  Cambiar
+                </Button>
+              ) : (
+                <Button
+                  onClick={handlePasswordCancel}
+                  variant="outline"
+                >
+                  Cancelar
+                </Button>
+              )}
+            </div>
+
+            {!showPasswordChange ? (
+              <div className="text-center py-8">
+                <p className="text-gray-600">
+                  Cambia tu contraseña para mantener tu cuenta segura
+                </p>
+              </div>
+            ) : (
+              <form onSubmit={handlePasswordSubmit} className="space-y-6">
+                {/* Current Password */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-900 mb-2">
+                    Contraseña Actual
+                  </label>
+                  <Input
+                    type="password"
+                    name="current_password"
+                    value={passwordData.current_password}
+                    onChange={handlePasswordChange}
+                    className={`pl-12 ${passwordErrors.current_password ? 'border-red-500' : ''}`}
+                    placeholder="Ingresa tu contraseña actual"
+                  />
+                  {passwordErrors.current_password && (
+                    <p className="text-red-500 text-sm mt-1">{passwordErrors.current_password}</p>
+                  )}
+                </div>
+
+                {/* New Password */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-900 mb-2">
+                    Nueva Contraseña
+                  </label>
+                  <Input
+                    type="password"
+                    name="new_password"
+                    value={passwordData.new_password}
+                    onChange={handlePasswordChange}
+                    className={`pl-12 ${passwordErrors.new_password ? 'border-red-500' : ''}`}
+                    placeholder="Mínimo 8 caracteres"
+                  />
+                  {passwordErrors.new_password && (
+                    <p className="text-red-500 text-sm mt-1">{passwordErrors.new_password}</p>
+                  )}
+                </div>
+
+                {/* Confirm Password */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-900 mb-2">
+                    Confirmar Nueva Contraseña
+                  </label>
+                  <Input
+                    type="password"
+                    name="confirm_password"
+                    value={passwordData.confirm_password}
+                    onChange={handlePasswordChange}
+                    className={`pl-12 ${passwordErrors.confirm_password ? 'border-red-500' : ''}`}
+                    placeholder="Confirma tu nueva contraseña"
+                  />
+                  {passwordErrors.confirm_password && (
+                    <p className="text-red-500 text-sm mt-1">{passwordErrors.confirm_password}</p>
+                  )}
+                </div>
+
+                {/* Submit Button */}
+                <div className="pt-4">
+                  <Button
+                    type="submit"
+                    variant="black"
+                    className="flex items-center gap-2"
+                  >
+                    <Save className="w-4 h-4" />
+                    Cambiar Contraseña
+                  </Button>
+                </div>
+              </form>
+            )}
           </div>
         </div>
       </div>

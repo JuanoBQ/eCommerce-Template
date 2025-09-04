@@ -46,14 +46,34 @@ export interface Order {
   status_display: string
   payment_status: 'pending' | 'paid' | 'failed' | 'refunded' | 'partially_refunded'
   payment_status_display: string
+  first_name: string
+  last_name: string
+  document_id: string
   email: string
   phone: string
   shipping_address: string
+  shipping_first_name: string
+  shipping_last_name: string
+  shipping_city: string
+  shipping_state: string
+  shipping_country: string
+  shipping_postal_code: string
   billing_address: string
-  payment_method: string
-  transaction_id?: string
-  notes?: string
+  billing_first_name: string
+  billing_last_name: string
+  billing_city: string
+  billing_state: string
+  billing_country: string
+  billing_postal_code: string
+  subtotal: number
+  tax_amount: number
+  shipping_amount: number
+  discount_amount: number
   total_amount: number
+  notes?: string
+  tracking_number?: string
+  shipped_at?: string
+  delivered_at?: string
   items: OrderItem[]
   created_at: string
   updated_at: string
@@ -82,7 +102,7 @@ export interface CreateOrderData {
   phone: string
   shipping_address: string
   billing_address: string
-  shipping_cost: number
+  shipping_amount: number
   notes?: string
   items: Array<{
     product_id: number

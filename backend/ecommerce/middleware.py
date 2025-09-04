@@ -32,10 +32,14 @@ class JWTAuthenticationMiddleware:
                         print(f"✅ JWT Auth - Usuario autenticado: {user} (ID: {user.id})")
                     else:
                         print("⚠️ JWT Auth - Usuario no válido")
+                        request.user = AnonymousUser()
                         
                 except (InvalidToken, TokenError) as e:
                     print(f"❌ JWT Auth - Error: {e}")
                     request.user = AnonymousUser()
+            else:
+                # No hay token, mantener usuario anónimo
+                request.user = AnonymousUser()
 
         response = self.get_response(request)
         return response

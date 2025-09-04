@@ -59,8 +59,14 @@ class OrderDetailSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'order_number', 'uuid', 'user', 'user_email', 'user_name', 
             'status', 'status_display', 'payment_status', 'payment_status_display',
-            'email', 'phone', 'shipping_address', 'billing_address', 
-            'notes', 'total_amount', 'items', 'created_at', 'updated_at'
+            'first_name', 'last_name', 'document_id', 'email', 'phone', 
+            'shipping_address', 'shipping_first_name', 'shipping_last_name',
+            'shipping_city', 'shipping_state', 'shipping_country', 'shipping_postal_code',
+            'billing_address', 'billing_first_name', 'billing_last_name',
+            'billing_city', 'billing_state', 'billing_country', 'billing_postal_code',
+            'subtotal', 'tax_amount', 'shipping_amount', 'discount_amount', 'total_amount',
+            'notes', 'tracking_number', 'shipped_at', 'delivered_at',
+            'items', 'created_at', 'updated_at'
         ]
         read_only_fields = ['id', 'order_number', 'uuid', 'user', 'created_at', 'updated_at']
 
@@ -75,9 +81,15 @@ class OrderCreateSerializer(serializers.ModelSerializer):
         model = Order
         fields = [
             'first_name', 'last_name', 'document_id',
-            'email', 'phone', 'shipping_address', 
-            'shipping_cost', 'notes', 'items'
+            'email', 'phone', 'shipping_address', 'billing_address',
+            'shipping_amount', 'notes', 'items'
         ]
+        extra_kwargs = {
+            'shipping_address': {'required': True},
+            'billing_address': {'required': False},
+            'shipping_amount': {'required': False},
+            'notes': {'required': False},
+        }
     
 
     
@@ -98,11 +110,11 @@ class OrderCreateSerializer(serializers.ModelSerializer):
             email=validated_data['email'],
             phone=validated_data['phone'],
             shipping_address=validated_data['shipping_address'],
-            billing_address=validated_data['shipping_address'],  # Usar la misma dirección de envío
+            billing_address=validated_data.get('billing_address', validated_data['shipping_address']),  # Usar billing_address si existe, sino shipping_address
             notes=validated_data.get('notes', ''),
             subtotal=total_amount,
-            shipping_amount=validated_data.get('shipping_cost', 0),
-            total_amount=total_amount + validated_data.get('shipping_cost', 0),
+            shipping_amount=validated_data.get('shipping_amount', 0),
+            total_amount=total_amount + validated_data.get('shipping_amount', 0),
             shipping_first_name=validated_data['first_name'],
             shipping_last_name=validated_data['last_name'],
             shipping_city='Bogotá',

@@ -151,35 +151,15 @@ export default function UserTicketsPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           {/* Header */}
           <div className="mb-8">
-            <div className="flex items-center gap-4 mb-6">
-              <Link href="/account">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="p-2"
-                >
-                  <ArrowLeft className="w-6 h-6" />
-                </Button>
-              </Link>
+            <div className="flex items-center justify-between">
               <div>
-                <h1 className="text-3xl font-bold text-gray-900">MIS TICKETS</h1>
+                <h1 className="text-3xl font-bold text-gray-900 mb-2">MIS TICKETS</h1>
                 <p className="text-gray-600">
                   Gestiona y da seguimiento a tus tickets de soporte
                 </p>
               </div>
-            </div>
-
-            <div className="flex items-center justify-between">
-              <div className="text-right">
-                <div className="text-2xl font-bold text-gray-900">{userTickets.length}</div>
-                <div className="text-gray-600 text-sm">Total Tickets</div>
-              </div>
               <Link href="/account/orders">
-                <Button
-                  variant="black"
-                  className="flex items-center gap-2"
-                >
-                  <Plus className="w-4 h-4" />
+                <Button variant="black">
                   Ver Mis Pedidos
                 </Button>
               </Link>

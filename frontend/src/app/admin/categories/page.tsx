@@ -1,10 +1,11 @@
 "use client"
 
 import { useState, useEffect } from 'react'
-import { Plus, Edit, Trash2, Eye, Search, Filter, Ruler, Palette, Package } from 'lucide-react'
+import { Plus, Edit, Trash2, Eye, Search, Filter, Ruler, Palette, Package, Tag } from 'lucide-react'
 import { useProducts } from '@/hooks/useProducts'
 import { useCategories } from '@/hooks/useCategories'
 import { useSizesAndColors, Size, Color } from '@/hooks/useSizesAndColors'
+import { useBrands, Brand } from '@/hooks/useBrands'
 import toast from 'react-hot-toast'
 import Link from 'next/link'
 
@@ -21,6 +22,7 @@ interface Category {
 
 export default function CategoriesPage() {
   const { categories, loadCategories, createCategory, updateCategory, deleteCategory } = useCategories()
+  const { brands, loadBrands, createBrand, updateBrand, deleteBrand } = useBrands()
   const { products } = useProducts()
   const { 
     sizes, 
@@ -35,7 +37,7 @@ export default function CategoriesPage() {
   
   const [isLoading, setIsLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
-  const [activeTab, setActiveTab] = useState<'categories' | 'sizes' | 'colors'>('categories')
+  const [activeTab, setActiveTab] = useState<'categories' | 'brands' | 'sizes' | 'colors'>('categories')
   
   // Estados para categorías
   const [showCreateForm, setShowCreateForm] = useState(false)
@@ -43,6 +45,17 @@ export default function CategoriesPage() {
   const [categoryFormData, setCategoryFormData] = useState({
     name: '',
     description: '',
+    is_active: true,
+    sort_order: 0
+  })
+
+  // Estados para marcas
+  const [showBrandForm, setShowBrandForm] = useState(false)
+  const [editingBrand, setEditingBrand] = useState<Brand | null>(null)
+  const [brandFormData, setBrandFormData] = useState({
+    name: '',
+    description: '',
+    website: '',
     is_active: true,
     sort_order: 0
   })
@@ -69,7 +82,10 @@ export default function CategoriesPage() {
   useEffect(() => {
     const loadData = async () => {
       try {
-        await loadCategories()
+        await Promise.all([
+          loadCategories(),
+          loadBrands()
+        ])
       } catch (error) {
         console.error('Error loading data:', error)
         toast.error('Error al cargar datos')
@@ -78,11 +94,16 @@ export default function CategoriesPage() {
       }
     }
     loadData()
-  }, [loadCategories])
+  }, [loadCategories, loadBrands])
 
   const filteredCategories = categories.filter(category =>
     category.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     (category.description && category.description.toLowerCase().includes(searchTerm.toLowerCase()))
+  )
+
+  const filteredBrands = brands.filter(brand =>
+    brand.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (brand.description && brand.description.toLowerCase().includes(searchTerm.toLowerCase()))
   )
 
   const handleCreateCategory = async (e: React.FormEvent) => {
@@ -136,6 +157,58 @@ export default function CategoriesPage() {
       description: category.description || '',
       is_active: category.is_active,
       sort_order: category.sort_order
+    })
+  }
+
+  // Funciones para marcas
+  const handleCreateBrand = async (e: React.FormEvent) => {
+    e.preventDefault()
+    try {
+      await createBrand(brandFormData)
+      setBrandFormData({ name: '', description: '', website: '', is_active: true, sort_order: 0 })
+      setShowBrandForm(false)
+      toast.success('Marca creada exitosamente')
+    } catch (error) {
+      console.error('Error creating brand:', error)
+      toast.error('Error al crear marca')
+    }
+  }
+
+  const handleUpdateBrand = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!editingBrand) return
+
+    try {
+      await updateBrand(editingBrand.id, brandFormData)
+      setEditingBrand(null)
+      setBrandFormData({ name: '', description: '', website: '', is_active: true, sort_order: 0 })
+      toast.success('Marca actualizada exitosamente')
+    } catch (error) {
+      console.error('Error updating brand:', error)
+      toast.error('Error al actualizar marca')
+    }
+  }
+
+  const handleDeleteBrand = async (id: number) => {
+    if (!confirm('¿Estás seguro de que quieres eliminar esta marca?')) return
+
+    try {
+      await deleteBrand(id)
+      toast.success('Marca eliminada exitosamente')
+    } catch (error) {
+      console.error('Error deleting brand:', error)
+      toast.error('Error al eliminar marca')
+    }
+  }
+
+  const startEditBrand = (brand: Brand) => {
+    setEditingBrand(brand)
+    setBrandFormData({
+      name: brand.name,
+      description: brand.description || '',
+      website: brand.website || '',
+      is_active: brand.is_active,
+      sort_order: brand.sort_order
     })
   }
 
@@ -254,7 +327,7 @@ export default function CategoriesPage() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold text-white">Categorías y Variantes</h1>
-          <p className="text-dark-400 mt-2">Gestiona categorías, tallas y colores de productos</p>
+          <p className="text-dark-400 mt-2">Gestiona categorías, marcas, tallas y colores de productos</p>
         </div>
         <div className="flex gap-2">
           {activeTab === 'categories' && (
@@ -264,6 +337,15 @@ export default function CategoriesPage() {
             >
               <Plus className="w-4 h-4" />
               Nueva Categoría
+            </button>
+          )}
+          {activeTab === 'brands' && (
+            <button
+              onClick={() => setShowBrandForm(true)}
+              className="flex items-center gap-2 px-4 py-2 bg-neon-green text-dark-900 rounded-lg hover:bg-neon-green/90 transition-colors"
+            >
+              <Plus className="w-4 h-4" />
+              Nueva Marca
             </button>
           )}
           {activeTab === 'sizes' && (
@@ -301,6 +383,17 @@ export default function CategoriesPage() {
           Categorías
         </button>
         <button
+          onClick={() => setActiveTab('brands')}
+          className={`flex items-center gap-2 px-4 py-2 rounded-md transition-colors ${
+            activeTab === 'brands'
+              ? 'bg-neon-green text-dark-900'
+              : 'text-dark-400 hover:text-white hover:bg-dark-700'
+          }`}
+        >
+          <Tag className="w-4 h-4" />
+          Marcas
+        </button>
+        <button
           onClick={() => setActiveTab('sizes')}
           className={`flex items-center gap-2 px-4 py-2 rounded-md transition-colors ${
             activeTab === 'sizes'
@@ -332,6 +425,7 @@ export default function CategoriesPage() {
             type="text"
             placeholder={
               activeTab === 'categories' ? 'Buscar categorías...' :
+              activeTab === 'brands' ? 'Buscar marcas...' :
               activeTab === 'sizes' ? 'Buscar tallas...' :
               'Buscar colores...'
             }
@@ -393,6 +487,69 @@ export default function CategoriesPage() {
               <p className="text-dark-400 text-lg">No se encontraron categorías</p>
               <p className="text-dark-500 text-sm mt-2">
                 {searchTerm ? 'Intenta con otros términos de búsqueda' : 'Crea tu primera categoría'}
+              </p>
+            </div>
+          )}
+        </>
+      )}
+
+      {activeTab === 'brands' && (
+        <>
+          {/* Brands Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filteredBrands.map((brand) => (
+              <div key={brand.id} className="bg-dark-800 border border-dark-700 rounded-xl p-6 hover:border-neon-green/30 transition-colors">
+                <div className="flex items-start justify-between mb-4">
+                  <div className="flex-1">
+                    <h3 className="text-lg font-semibold text-white mb-2">{brand.name}</h3>
+                    <p className="text-dark-400 text-sm mb-3 line-clamp-2">{brand.description}</p>
+                    {brand.website && (
+                      <a 
+                        href={brand.website} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="text-neon-green text-sm hover:underline"
+                      >
+                        {brand.website}
+                      </a>
+                    )}
+                    <div className="flex items-center gap-4 text-sm mt-3">
+                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                        brand.is_active 
+                          ? 'bg-green-500/20 text-green-400' 
+                          : 'bg-red-500/20 text-red-400'
+                      }`}>
+                        {brand.is_active ? 'Activa' : 'Inactiva'}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => startEditBrand(brand)}
+                    className="flex items-center gap-1 px-3 py-1.5 text-sm bg-dark-700 hover:bg-dark-600 text-white rounded-lg transition-colors"
+                  >
+                    <Edit className="w-3 h-3" />
+                    Editar
+                  </button>
+                  <button
+                    onClick={() => handleDeleteBrand(brand.id)}
+                    className="flex items-center gap-1 px-3 py-1.5 text-sm bg-red-600/20 hover:bg-red-600/30 text-red-400 rounded-lg transition-colors"
+                  >
+                    <Trash2 className="w-3 h-3" />
+                    Eliminar
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {filteredBrands.length === 0 && (
+            <div className="text-center py-12">
+              <p className="text-dark-400 text-lg">No se encontraron marcas</p>
+              <p className="text-dark-500 text-sm mt-2">
+                {searchTerm ? 'Intenta con otros términos de búsqueda' : 'Crea tu primera marca'}
               </p>
             </div>
           )}
@@ -771,6 +928,109 @@ export default function CategoriesPage() {
                     setShowColorForm(false)
                     setEditingColor(null)
                     setColorFormData({ name: '', hex_code: '#000000', is_active: true })
+                  }}
+                  className="flex-1 px-4 py-2 bg-dark-700 text-white rounded-lg hover:bg-dark-600 transition-colors"
+                >
+                  Cancelar
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Brand Modal */}
+      {(showBrandForm || editingBrand) && (
+        <div className="fixed inset-0 bg-dark-900/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-dark-800 border border-dark-700 rounded-xl p-6 w-full max-w-md">
+            <h2 className="text-xl font-bold text-white mb-6">
+              {editingBrand ? 'Editar Marca' : 'Nueva Marca'}
+            </h2>
+            
+            <form onSubmit={editingBrand ? handleUpdateBrand : handleCreateBrand} className="space-y-4">
+              <div>
+                <label htmlFor="brand-name" className="block text-sm font-medium text-white mb-2">
+                  Nombre
+                </label>
+                <input
+                  id="brand-name"
+                  type="text"
+                  value={brandFormData.name}
+                  onChange={(e) => setBrandFormData({ ...brandFormData, name: e.target.value })}
+                  className="w-full px-3 py-2 bg-dark-700 border border-dark-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-neon-green focus:border-transparent"
+                  placeholder="Nombre de la marca"
+                  required
+                />
+              </div>
+
+              <div>
+                <label htmlFor="brand-description" className="block text-sm font-medium text-white mb-2">
+                  Descripción
+                </label>
+                <textarea
+                  id="brand-description"
+                  value={brandFormData.description}
+                  onChange={(e) => setBrandFormData({ ...brandFormData, description: e.target.value })}
+                  rows={3}
+                  className="w-full px-3 py-2 bg-dark-700 border border-dark-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-neon-green focus:border-transparent"
+                  placeholder="Descripción de la marca"
+                />
+              </div>
+
+              <div>
+                <label htmlFor="brand-website" className="block text-sm font-medium text-white mb-2">
+                  Sitio Web
+                </label>
+                <input
+                  id="brand-website"
+                  type="url"
+                  value={brandFormData.website}
+                  onChange={(e) => setBrandFormData({ ...brandFormData, website: e.target.value })}
+                  className="w-full px-3 py-2 bg-dark-700 border border-dark-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-neon-green focus:border-transparent"
+                  placeholder="https://ejemplo.com"
+                />
+              </div>
+
+              <div>
+                <label htmlFor="brand-order" className="block text-sm font-medium text-white mb-2">
+                  Orden
+                </label>
+                <input
+                  id="brand-order"
+                  type="number"
+                  value={brandFormData.sort_order}
+                  onChange={(e) => setBrandFormData({ ...brandFormData, sort_order: parseInt(e.target.value) || 0 })}
+                  className="w-full px-3 py-2 bg-dark-700 border border-dark-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-neon-green focus:border-transparent"
+                  placeholder="0"
+                />
+              </div>
+
+              <div className="flex items-center">
+                <input
+                  type="checkbox"
+                  id="brand-active"
+                  checked={brandFormData.is_active}
+                  onChange={(e) => setBrandFormData({ ...brandFormData, is_active: e.target.checked })}
+                  className="w-4 h-4 text-neon-green bg-dark-700 border-dark-600 rounded focus:ring-neon-green focus:ring-2"
+                />
+                <label htmlFor="brand-active" className="ml-2 text-sm text-white">
+                  Marca activa
+                </label>
+              </div>
+
+              <div className="flex gap-3 pt-4">
+                <button
+                  type="submit"
+                  className="flex-1 px-4 py-2 bg-neon-green text-dark-900 rounded-lg hover:bg-neon-green/90 transition-colors"
+                >
+                  {editingBrand ? 'Actualizar' : 'Crear'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowBrandForm(false)
+                    setEditingBrand(null)
+                    setBrandFormData({ name: '', description: '', website: '', is_active: true, sort_order: 0 })
                   }}
                   className="flex-1 px-4 py-2 bg-dark-700 text-white rounded-lg hover:bg-dark-600 transition-colors"
                 >

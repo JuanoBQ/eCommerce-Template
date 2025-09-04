@@ -256,7 +256,7 @@ export default function CheckoutPage() {
         billing_address: formData.billing_address_option === 'same' 
           ? formData.shipping_address 
           : formData.billing_address,
-        shipping_cost: shippingCost,
+        shipping_amount: shippingCost,
         notes: formData.notes || undefined,
         items: items.map(item => ({
           product_id: item.product_details?.id || 0,
@@ -595,55 +595,33 @@ export default function CheckoutPage() {
                             Dirección *
                           </label>
                           
-                          {addresses.length > 0 ? (
-                            <div className="space-y-3">
-                              <Select
-                                options={addresses.filter(addr => addr.is_billing).map((address) => ({
-                                  value: address.id,
-                                  label: `${address.title} - ${address.full_address}`
-                                }))}
-                                value={formData.selected_billing_address || ''}
-                                onChange={(value) => handleAddressSelection('billing', value ? Number(value) : undefined)}
-                                placeholder="Seleccionar dirección guardada"
-                                error={!!errors.billing_address}
-                              />
-                              
-                              <div className="text-sm text-gray-600">
-                                <Link href="/account/profile" className="text-primary-500 hover:text-primary-600">
-                                  Gestionar direcciones
-                                </Link>
-                              </div>
-                            </div>
-                          ) : (
-                            <div className="space-y-3">
-                              <textarea
-                                id="billing_address"
-                                name="billing_address"
-                                value={formData.billing_address}
-                                onChange={handleInputChange}
-                                rows={3}
-                                className={`w-full px-4 py-3 bg-white border rounded-md text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent ${
-                                  errors.billing_address ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : 'border-gray-300'
-                                }`}
-                                placeholder="Dirección"
-                              />
-                              <div className="text-sm text-gray-600">
-                                <Link href="/account/profile" className="text-primary-500 hover:text-primary-600">
-                                  Guardar direcciones para futuras compras
-                                </Link>
-                              </div>
-                            </div>
-                          )}
+                                                <div className="space-y-3">
+                        <Input
+                          id="billing_address"
+                          name="billing_address"
+                          value={formData.billing_address}
+                          onChange={handleInputChange}
+                          className={`w-full px-4 py-3 bg-white border rounded-md text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent ${
+                            errors.billing_address ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : 'border-gray-300'
+                          }`}
+                          placeholder="Dirección"
+                        />
+                        <div className="text-sm text-gray-600">
+                          <Link href="/account/profile" className="text-primary-500 hover:text-primary-600">
+                            Guardar direcciones para futuras compras
+                          </Link>
+                        </div>
+                      </div>
                           
                           {errors.billing_address && (
                             <p className="text-red-500 text-sm mt-1">{errors.billing_address}</p>
                           )}
                         </div>
 
-                        {/* Casa, apartamento, etc. (opcional) */}
+                        {/* Información adicional */}
                         <div>
                           <label htmlFor="billing_address_line_2" className="block text-sm font-medium text-gray-900 mb-2">
-                            Casa, apartamento, etc. (opcional)
+                            Información adicional
                           </label>
                           <Input
                             type="text"

@@ -25,27 +25,31 @@ export default function WishlistPage() {
 
   return (
     <ProtectedRoute>
-      <div className="min-h-screen bg-white py-8">
+      <div className="min-h-screen bg-white py-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          {/* Header - Estilo Adidas */}
+          {/* Header */}
           <div className="mb-8">
-            <div className="flex items-center gap-3 mb-4">
-              <Heart className="w-6 h-6 text-gray-900" />
-              <h1 className="text-2xl font-bold text-gray-900">
-                Lista de Deseos
-              </h1>
+            <div className="flex items-center justify-between">
+              <div>
+                <h1 className="text-3xl font-bold text-gray-900 mb-2">LISTA DE DESEOS</h1>
+                <p className="text-gray-600">
+                  Productos que has guardado para comprar después
+                </p>
+              </div>
+              <Link href="/tienda">
+                <Button variant="black">
+                  Seguir Comprando
+                </Button>
+              </Link>
             </div>
-            <p className="text-gray-600">
-              Productos que has guardado para comprar después
-            </p>
           </div>
 
           {wishlistItems.length === 0 ? (
-            /* Empty State - Estilo Adidas */
-            <div className="text-center py-16">
-              <Heart className="w-16 h-16 text-gray-300 mx-auto mb-6" />
+            /* Empty State */
+            <div className="bg-white border border-gray-200 rounded-md p-12 shadow-sm text-center">
+              <Heart className="w-16 h-16 text-gray-400 mx-auto mb-6" />
               <h3 className="text-xl font-semibold text-gray-900 mb-4">
-                Tu lista de deseos está vacía
+                NO TIENES PRODUCTOS EN TU LISTA DE DESEOS
               </h3>
               <p className="text-gray-600 mb-8 max-w-md mx-auto">
                 Agrega productos que te gusten para tenerlos siempre a mano

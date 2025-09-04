@@ -16,7 +16,8 @@ from .serializers import (
     UserCreateSerializer,
     UserUpdateSerializer,
     UserAddressSerializer,
-    UserAddressCreateSerializer
+    UserAddressCreateSerializer,
+    ChangePasswordSerializer
 )
 from .models import User, UserAddress
 
@@ -79,6 +80,53 @@ class UserProfileView(APIView):
             print(f"❌ Traceback: {traceback.format_exc()}")
             return Response(
                 {'detail': f'Error interno del servidor: {str(e)}'}, 
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+
+class ChangePasswordView(APIView):
+    """
+    Vista para cambiar la contraseña del usuario autenticado.
+    """
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request):
+        """
+        Cambiar la contraseña del usuario autenticado.
+        """
+        try:
+            print(f"🔍 Cambio de contraseña - Usuario: {request.user}")
+            print(f"📊 Datos recibidos: {request.data}")
+            
+            serializer = ChangePasswordSerializer(
+                data=request.data,
+                context={'request': request}
+            )
+
+            if serializer.is_valid():
+                print("✅ Datos de contraseña válidos")
+                
+                # Obtener el usuario y cambiar la contraseña
+                user = request.user
+                new_password = serializer.validated_data['new_password']
+                user.set_password(new_password)
+                user.save()
+                
+                print("✅ Contraseña actualizada exitosamente")
+                return Response(
+                    {'message': 'Contraseña actualizada exitosamente'},
+                    status=status.HTTP_200_OK
+                )
+            else:
+                print(f"❌ Errores de validación: {serializer.errors}")
+                return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        except Exception as e:
+            print(f"❌ Error en cambio de contraseña: {str(e)}")
+            import traceback
+            print(f"❌ Traceback: {traceback.format_exc()}")
+            return Response(
+                {'error': 'Error interno del servidor'},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
@@ -173,7 +221,7 @@ class UserAddressViewSet(viewsets.ModelViewSet):
     """
     ViewSet para gestionar direcciones de usuario.
     """
-    permission_classes = [permissions.AllowAny]  # Temporalmente AllowAny para debug
+    permission_classes = [permissions.IsAuthenticated]
     
     def get_permissions(self):
         """
@@ -181,7 +229,7 @@ class UserAddressViewSet(viewsets.ModelViewSet):
         """
         print(f"🔍 UserAddressViewSet.get_permissions - Action: {self.action}")
         print(f"🔍 UserAddressViewSet.get_permissions - Usuario: {self.request.user}")
-        return [permissions.AllowAny()]  # Temporalmente AllowAny para debug
+        return [permissions.IsAuthenticated()]
     
     def get_queryset(self):
         """Retorna solo las direcciones del usuario autenticado."""
@@ -218,6 +266,29 @@ class UserAddressViewSet(viewsets.ModelViewSet):
         
         serializer.save(user=self.request.user)
     
+    def destroy(self, request, *args, **kwargs):
+        """
+        Eliminar dirección con lógica de dirección predeterminada obligatoria.
+        """
+        address = self.get_object()
+        user = request.user
+        
+        # Verificar si es la dirección predeterminada
+        is_default = address.is_default
+        
+        # Eliminar la dirección
+        address.delete()
+        
+        # Si se eliminó la dirección predeterminada y quedan direcciones, marcar la primera como predeterminada
+        if is_default:
+            remaining_addresses = UserAddress.objects.filter(user=user).order_by('created_at')
+            if remaining_addresses.exists():
+                first_address = remaining_addresses.first()
+                first_address.is_default = True
+                first_address.save()
+        
+        return Response(status=status.HTTP_204_NO_CONTENT)
+    
     @action(detail=True, methods=['post'])
     def set_default(self, request, pk=None):
         """
@@ -252,18 +323,14 @@ class UserAddressViewSet(viewsets.ModelViewSet):
 
 
 @api_view(['GET', 'POST'])
-@permission_classes([AllowAny])
+@permission_classes([permissions.IsAuthenticated])
 def simple_addresses_endpoint(request):
     """
     Endpoint para direcciones que funciona con autenticación JWT.
     """
     if request.method == 'GET':
-        # Si el usuario está autenticado, filtrar por usuario
-        if not request.user.is_anonymous:
-            addresses = UserAddress.objects.filter(user=request.user)
-        else:
-            addresses = UserAddress.objects.none()
-        
+        # Obtener direcciones del usuario autenticado
+        addresses = UserAddress.objects.filter(user=request.user)
         serializer = UserAddressSerializer(addresses, many=True)
         return Response({
             'message': 'Direcciones obtenidas correctamente',
@@ -272,12 +339,6 @@ def simple_addresses_endpoint(request):
             'addresses': serializer.data
         })
     elif request.method == 'POST':
-        # Verificar que el usuario esté autenticado
-        if request.user.is_anonymous:
-            return Response({
-                'error': 'Usuario no autenticado'
-            }, status=status.HTTP_401_UNAUTHORIZED)
-        
         # Filtrar solo los campos necesarios
         filtered_data = {
             'title': request.data.get('title'),

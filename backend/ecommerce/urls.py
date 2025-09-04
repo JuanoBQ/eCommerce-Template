@@ -73,6 +73,7 @@ urlpatterns = [
     path('api/orders/', include('ecommerce.apps.orders.urls')),
     path('api/payments/', include('ecommerce.apps.payments.urls')),
     path('api/reports/', include('ecommerce.apps.reports.urls')),
+    path('api/admin/', include('ecommerce.apps.system_config.urls')),
 ]
 
 # Servir archivos media en desarrollo

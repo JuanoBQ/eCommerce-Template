@@ -423,6 +423,26 @@ class ProductCreateUpdateSerializer(serializers.ModelSerializer):
                         existing_variant_ids.append(new_variant.id)
                 else:
                     # Crear nueva variante
+                    # Verificar si ya existe una variante con la misma combinación de size y color
+                    size_id = variant_data.get('size')
+                    color_id = variant_data.get('color')
+                    
+                    if size_id and color_id:
+                        existing_variant = ProductVariant.objects.filter(
+                            product=instance,
+                            size_id=size_id,
+                            color_id=color_id
+                        ).first()
+                        
+                        if existing_variant:
+                            # Si ya existe, actualizar en lugar de crear
+                            for attr, value in variant_data.items():
+                                if attr != 'id':  # No actualizar el ID
+                                    setattr(existing_variant, attr, value)
+                            existing_variant.save()
+                            existing_variant_ids.append(existing_variant.id)
+                            continue
+                    
                     # Generar SKU automáticamente si no se proporciona
                     if 'sku' not in variant_data or not variant_data['sku']:
                         variant_data['sku'] = self.generate_variant_sku(instance, variant_data)
@@ -442,8 +462,24 @@ class ProductCreateUpdateSerializer(serializers.ModelSerializer):
                     variant_data.setdefault('low_stock_threshold', 5)
                     variant_data.setdefault('is_active', True)
                     
-                    new_variant = ProductVariant.objects.create(product=instance, **variant_data)
-                    existing_variant_ids.append(new_variant.id)
+                    try:
+                        new_variant = ProductVariant.objects.create(product=instance, **variant_data)
+                        existing_variant_ids.append(new_variant.id)
+                    except IntegrityError as e:
+                        if 'UNIQUE constraint failed: product_variants.product_id, product_variants.size_id, product_variants.color_id' in str(e):
+                            # Si hay conflicto de unicidad, buscar la variante existente y actualizarla
+                            existing_variant = ProductVariant.objects.get(
+                                product=instance,
+                                size_id=size_id,
+                                color_id=color_id
+                            )
+                            for attr, value in variant_data.items():
+                                if attr not in ['id', 'size', 'color']:  # No actualizar campos únicos
+                                    setattr(existing_variant, attr, value)
+                            existing_variant.save()
+                            existing_variant_ids.append(existing_variant.id)
+                        else:
+                            raise e
             
             # Solo eliminar variantes si se especifica explícitamente
             # (Por ahora, no eliminamos variantes automáticamente)

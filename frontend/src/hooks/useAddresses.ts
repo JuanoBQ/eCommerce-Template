@@ -50,10 +50,16 @@ export const useAddresses = () => {
     try {
       setIsLoading(true)
       setError(null)
+      console.log('🔍 Cargando direcciones...')
       
       const response = await apiClient.get('/users/simple-addresses/') as { addresses: UserAddress[] }
+      console.log('📊 Respuesta de direcciones:', response)
+      console.log('📊 Direcciones encontradas:', response.addresses?.length || 0)
+      
       setAddresses(response.addresses || [])
+      console.log('✅ Direcciones cargadas en el estado')
     } catch (err: any) {
+      console.error('❌ Error al cargar direcciones:', err)
       setError(err.response?.data?.detail || 'Error al cargar direcciones')
       toast.error('Error al cargar direcciones')
     } finally {
@@ -64,10 +70,29 @@ export const useAddresses = () => {
   // Crear dirección
   const createAddress = useCallback(async (data: CreateAddressData): Promise<UserAddress> => {
     try {
-      const response = await apiClient.post('/users/simple-addresses/', data) as { address: UserAddress }
+      // Si es la primera dirección, marcarla como predeterminada automáticamente
+      const isFirstAddress = addresses.length === 0
+      const addressData = {
+        ...data,
+        is_default: isFirstAddress || data.is_default
+      }
+      
+      const response = await apiClient.post('/users/simple-addresses/', addressData) as { address: UserAddress }
       
       // Actualizar la lista local
-      setAddresses(prev => [...prev, response.address])
+      setAddresses(prev => {
+        const newAddresses = [...prev, response.address]
+        
+        // Si se marcó como predeterminada, desmarcar las otras
+        if (response.address.is_default) {
+          return newAddresses.map(addr => ({
+            ...addr,
+            is_default: addr.id === response.address.id
+          }))
+        }
+        
+        return newAddresses
+      })
       
       toast.success('Dirección creada exitosamente')
       
@@ -85,6 +110,30 @@ export const useAddresses = () => {
       toast.error(errorMessage)
       throw new Error(errorMessage)
     }
+  }, [addresses.length])
+
+  // Marcar como predeterminada
+  const setDefaultAddress = useCallback(async (id: number): Promise<void> => {
+    try {
+      console.log('⭐ Marcando dirección como predeterminada:', id)
+      
+      await apiClient.post(`/users/addresses/${id}/set_default/`)
+      
+      // Actualizar la lista local
+      setAddresses(prev => prev.map(addr => ({
+        ...addr,
+        is_default: addr.id === id
+      })))
+      
+      toast.success('Dirección predeterminada actualizada')
+      console.log('✅ Dirección predeterminada actualizada')
+    } catch (err: any) {
+      console.error('❌ Error al marcar dirección como predeterminada:', err)
+      const errorMessage = err.response?.data?.detail || 'Error al actualizar la dirección predeterminada'
+      
+      toast.error(errorMessage)
+      throw new Error(errorMessage)
+    }
   }, [])
 
   // Actualizar dirección
@@ -96,7 +145,19 @@ export const useAddresses = () => {
       const response = await apiClient.patch(`/users/addresses/${id}/`, updateData) as UserAddress
       
       // Actualizar la lista local
-      setAddresses(prev => prev.map(addr => addr.id === id ? response : addr))
+      setAddresses(prev => {
+        const updatedAddresses = prev.map(addr => addr.id === id ? response : addr)
+        
+        // Si se marcó como predeterminada, desmarcar las otras
+        if (response.is_default) {
+          return updatedAddresses.map(addr => ({
+            ...addr,
+            is_default: addr.id === id
+          }))
+        }
+        
+        return updatedAddresses
+      })
       
       toast.success('Dirección actualizada exitosamente')
       console.log('✅ Dirección actualizada:', response)
@@ -125,10 +186,43 @@ export const useAddresses = () => {
     try {
       console.log('🗑️ Eliminando dirección:', id)
       
+      // Verificar si la dirección a eliminar es la predeterminada
+      const addressToDelete = addresses.find(addr => addr.id === id)
+      const isDeletingDefault = addressToDelete?.is_default
+      
       await apiClient.delete(`/users/addresses/${id}/`)
       
       // Actualizar la lista local
-      setAddresses(prev => prev.filter(addr => addr.id !== id))
+      setAddresses(prev => {
+        const remainingAddresses = prev.filter(addr => addr.id !== id)
+        
+        // Si se eliminó la dirección predeterminada y quedan direcciones, marcar la primera como predeterminada
+        if (isDeletingDefault && remainingAddresses.length > 0) {
+          // Marcar la primera dirección restante como predeterminada
+          return remainingAddresses.map((addr, index) => ({
+            ...addr,
+            is_default: index === 0
+          }))
+        }
+        
+        return remainingAddresses
+      })
+      
+      // Si se eliminó la dirección predeterminada y quedan direcciones, actualizar en el backend
+      if (isDeletingDefault) {
+        const remainingAddresses = addresses.filter(addr => addr.id !== id)
+        if (remainingAddresses.length > 0) {
+          const firstRemainingAddress = remainingAddresses[0]
+          if (firstRemainingAddress && firstRemainingAddress.id) {
+            try {
+              console.log('🔄 Actualizando dirección predeterminada en backend:', firstRemainingAddress.id)
+              await setDefaultAddress(firstRemainingAddress.id)
+            } catch (err) {
+              console.warn('No se pudo actualizar la dirección predeterminada automáticamente:', err)
+            }
+          }
+        }
+      }
       
       toast.success('Dirección eliminada exitosamente')
       console.log('✅ Dirección eliminada')
@@ -139,31 +233,7 @@ export const useAddresses = () => {
       toast.error(errorMessage)
       throw new Error(errorMessage)
     }
-  }, [])
-
-  // Marcar como predeterminada
-  const setDefaultAddress = useCallback(async (id: number): Promise<void> => {
-    try {
-      console.log('⭐ Marcando dirección como predeterminada:', id)
-      
-      await apiClient.post(`/users/addresses/${id}/set_default/`)
-      
-      // Actualizar la lista local
-      setAddresses(prev => prev.map(addr => ({
-        ...addr,
-        is_default: addr.id === id
-      })))
-      
-      toast.success('Dirección predeterminada actualizada')
-      console.log('✅ Dirección predeterminada actualizada')
-    } catch (err: any) {
-      console.error('❌ Error al marcar dirección como predeterminada:', err)
-      const errorMessage = err.response?.data?.detail || 'Error al actualizar la dirección predeterminada'
-      
-      toast.error(errorMessage)
-      throw new Error(errorMessage)
-    }
-  }, [])
+  }, [addresses, setDefaultAddress])
 
   // Obtener dirección predeterminada
   const getDefaultAddress = useCallback(async (): Promise<UserAddress | null> => {

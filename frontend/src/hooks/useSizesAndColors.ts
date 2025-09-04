@@ -13,7 +13,7 @@ export interface Size {
 export interface Color {
   id: number
   name: string
-  hex_code: string
+  hex_code?: string
   is_active: boolean
 }
 
@@ -108,74 +108,86 @@ export const useSizesAndColors = () => {
 
   const createSize = useCallback(async (sizeData: Omit<Size, 'id'>) => {
     try {
-      const newSize: Size = {
-        id: Date.now(), // ID temporal
-        ...sizeData
-      }
-      setSizes(prev => [...prev, newSize])
+      const newSize = await categoriesApi.createSize(sizeData)
+      setSizes(prev => [...prev, newSize as Size])
+      toast.success('Talla creada exitosamente')
       return newSize
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error creating size:', err)
-      toast.error('Error al crear talla')
+      const errorMessage = err.response?.data?.detail || 'Error al crear talla'
+      toast.error(errorMessage)
       throw err
     }
   }, [])
 
   const updateSize = useCallback(async (id: number, sizeData: Partial<Size>) => {
     try {
+      const updatedSize = await categoriesApi.updateSize(id, sizeData)
       setSizes(prev => prev.map(size => 
-        size.id === id ? { ...size, ...sizeData } : size
+        size.id === id ? (updatedSize as Size) : size
       ))
-    } catch (err) {
+      toast.success('Talla actualizada exitosamente')
+      return updatedSize
+    } catch (err: any) {
       console.error('Error updating size:', err)
-      toast.error('Error al actualizar talla')
+      const errorMessage = err.response?.data?.detail || 'Error al actualizar talla'
+      toast.error(errorMessage)
       throw err
     }
   }, [])
 
   const deleteSize = useCallback(async (id: number) => {
     try {
+      await categoriesApi.deleteSize(id)
       setSizes(prev => prev.filter(size => size.id !== id))
-    } catch (err) {
+      toast.success('Talla eliminada exitosamente')
+    } catch (err: any) {
       console.error('Error deleting size:', err)
-      toast.error('Error al eliminar talla')
+      const errorMessage = err.response?.data?.detail || 'Error al eliminar talla'
+      toast.error(errorMessage)
       throw err
     }
   }, [])
 
   const createColor = useCallback(async (colorData: Omit<Color, 'id'>) => {
     try {
-      const newColor: Color = {
-        id: Date.now(), // ID temporal
-        ...colorData
-      }
-      setColors(prev => [...prev, newColor])
+      const newColor = await categoriesApi.createColor(colorData)
+      setColors(prev => [...prev, newColor as Color])
+      toast.success('Color creado exitosamente')
       return newColor
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error creating color:', err)
-      toast.error('Error al crear color')
+      const errorMessage = err.response?.data?.detail || 'Error al crear color'
+      toast.error(errorMessage)
       throw err
     }
   }, [])
 
   const updateColor = useCallback(async (id: number, colorData: Partial<Color>) => {
     try {
+      const updatedColor = await categoriesApi.updateColor(id, colorData)
       setColors(prev => prev.map(color => 
-        color.id === id ? { ...color, ...colorData } : color
+        color.id === id ? (updatedColor as Color) : color
       ))
-    } catch (err) {
+      toast.success('Color actualizado exitosamente')
+      return updatedColor
+    } catch (err: any) {
       console.error('Error updating color:', err)
-      toast.error('Error al actualizar color')
+      const errorMessage = err.response?.data?.detail || 'Error al actualizar color'
+      toast.error(errorMessage)
       throw err
     }
   }, [])
 
   const deleteColor = useCallback(async (id: number) => {
     try {
+      await categoriesApi.deleteColor(id)
       setColors(prev => prev.filter(color => color.id !== id))
-    } catch (err) {
+      toast.success('Color eliminado exitosamente')
+    } catch (err: any) {
       console.error('Error deleting color:', err)
-      toast.error('Error al eliminar color')
+      const errorMessage = err.response?.data?.detail || 'Error al eliminar color'
+      toast.error(errorMessage)
       throw err
     }
   }, [])

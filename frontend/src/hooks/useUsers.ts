@@ -2,23 +2,53 @@ import { useState, useEffect, useCallback } from 'react'
 import { apiClient } from '@/lib/api'
 import toast from 'react-hot-toast'
 
+export interface UserAddress {
+  id: number
+  title: string
+  first_name: string
+  last_name: string
+  address_line_1: string
+  address_line_2?: string
+  city: string
+  state: string
+  postal_code: string
+  country: string
+  is_default: boolean
+  is_billing: boolean
+  is_shipping: boolean
+  full_address: string
+  created_at: string
+  updated_at: string
+}
+
 export interface User {
   id: number
   email: string
+  username: string
   first_name: string
   last_name: string
   is_staff: boolean
+  is_superuser: boolean
   is_active: boolean
   date_joined: string
   last_login?: string
   phone?: string
-  address?: string
-  city?: string
-  country?: string
-  postal_code?: string
-  date_of_birth?: string
-  gender?: string
+  birth_date?: string
   avatar?: string
+  is_vendor?: boolean
+  is_customer?: boolean
+  default_address?: string
+  default_city?: string
+  default_state?: string
+  default_country?: string
+  default_postal_code?: string
+  email_notifications?: boolean
+  sms_notifications?: boolean
+  terms_accepted?: boolean
+  created_at?: string
+  updated_at?: string
+  addresses?: UserAddress[]
+  default_address_obj?: UserAddress
 }
 
 export interface UserStats {

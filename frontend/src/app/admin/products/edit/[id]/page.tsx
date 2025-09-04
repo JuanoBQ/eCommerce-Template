@@ -136,6 +136,17 @@ export default function EditProductPage() {
       const productData = await getProduct(parseInt(productId)) as Product
       setProduct(productData)
       
+      // Transform existing variants to match the expected format
+      const existingVariants = (productData.variants || []).map(variant => ({
+        id: variant.id,
+        size: variant.size,
+        color: variant.color,
+        size_details: variant.size_details,
+        color_details: variant.color_details,
+        inventory_quantity: variant.inventory_quantity || 0,
+        image_url: variant.image || undefined
+      }))
+      
       // Populate form with existing data
       setFormData({
         name: productData.name,
@@ -160,7 +171,7 @@ export default function EditProductPage() {
         meta_title: productData.meta_title || '',
         meta_description: productData.meta_description || '',
         images: [],
-        variants: []
+        variants: existingVariants
       })
     } catch (error) {
       console.error('Error loading product:', error)

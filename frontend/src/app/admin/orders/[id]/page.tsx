@@ -288,141 +288,315 @@ export default function AdminOrderDetailPage() {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            {/* Order Items */}
-            <div className="lg:col-span-2">
-              <div className="bg-dark-800/50 backdrop-blur-md rounded-2xl border border-dark-700/50 overflow-hidden">
-                <div className="p-6 border-b border-dark-700/50">
-                  <h2 className="text-xl font-semibold text-white">Productos</h2>
-                </div>
-                <div className="divide-y divide-dark-700/50">
-                  {order.items.map((item) => (
-                    <div key={item.id} className="p-6">
-                      <div className="flex gap-4">
-                        {/* Product Image */}
-                        <div className="w-20 h-20 bg-dark-700 rounded-lg overflow-hidden flex-shrink-0">
-                          {item.product.images && item.product.images.length > 0 ? (
-                            <Image
-                              src={item.product.images[0].image}
-                              alt={item.product.name}
-                              width={80}
-                              height={80}
-                              className="w-full h-full object-cover"
-                            />
-                          ) : (
-                            <div className="w-full h-full flex items-center justify-center">
-                              <span className="text-dark-400 text-xs">Sin imagen</span>
-                            </div>
+          {/* Order Items - Full Width */}
+          <div className="mb-8">
+            <div className="bg-dark-800/50 backdrop-blur-md rounded-2xl border border-dark-700/50 overflow-hidden">
+              <div className="p-6 border-b border-dark-700/50">
+                <h2 className="text-xl font-semibold text-white">Productos</h2>
+              </div>
+              <div className="divide-y divide-dark-700/50">
+                {order.items.map((item) => (
+                  <div key={item.id} className="p-6">
+                    <div className="flex gap-4">
+                      {/* Product Image */}
+                      <div className="w-20 h-20 bg-dark-700 rounded-lg overflow-hidden flex-shrink-0">
+                        {item.product.images && item.product.images.length > 0 ? (
+                          <Image
+                            src={item.product.images[0].image}
+                            alt={item.product.name}
+                            width={80}
+                            height={80}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center">
+                            <span className="text-dark-400 text-xs">Sin imagen</span>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Product Info */}
+                      <div className="flex-1">
+                        <h3 className="text-lg font-semibold text-white mb-2">
+                          {item.product.name}
+                        </h3>
+                        
+                        <div className="flex flex-wrap gap-4 text-sm text-white/70 mb-2">
+                          {item.product.brand_details && (
+                            <span>Marca: {item.product.brand_details.name}</span>
                           )}
+                          {item.product.category_details && (
+                            <span>Categoría: {item.product.category_details.name}</span>
+                          )}
+                          {item.product_sku && (
+                            <span>SKU: {item.product_sku}</span>
+                          )}
+                          {item.variant_info && (
+                            <span>Variante: {item.variant_info}</span>
+                          )}
+                          {item.size && <span>Talla: {item.size}</span>}
+                          {item.color && <span>Color: {item.color}</span>}
                         </div>
 
-                        {/* Product Info */}
-                        <div className="flex-1">
-                          <h3 className="text-lg font-semibold text-white mb-2">
-                            {item.product.name}
-                          </h3>
-                          
-                          <div className="flex flex-wrap gap-4 text-sm text-white/70 mb-2">
-                            {item.product.brand_details && (
-                              <span>Marca: {item.product.brand_details.name}</span>
-                            )}
-                            {item.product.category_details && (
-                              <span>Categoría: {item.product.category_details.name}</span>
-                            )}
-                            {item.product_sku && (
-                              <span>SKU: {item.product_sku}</span>
-                            )}
-                            {item.variant_info && (
-                              <span>Variante: {item.variant_info}</span>
-                            )}
-                            {item.size && <span>Talla: {item.size}</span>}
-                            {item.color && <span>Color: {item.color}</span>}
-                          </div>
-
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-4">
-                              <span className="text-white/70">Cantidad: {item.quantity}</span>
-                              <span className="text-neon-green font-semibold">
-                                {formatPrice(item.total_price)}
-                              </span>
-                            </div>
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-4">
+                            <span className="text-white/70">Cantidad: {item.quantity}</span>
+                            <span className="text-neon-green font-semibold">
+                              {formatPrice(item.total_price)}
+                            </span>
                           </div>
                         </div>
                       </div>
                     </div>
-                  ))}
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Main Content Grid */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+            {/* Order Summary */}
+            <div className="bg-dark-800/50 backdrop-blur-md rounded-2xl p-6 border border-dark-700/50">
+              <h2 className="text-xl font-semibold text-white mb-4">Resumen del Pedido</h2>
+              <div className="space-y-3">
+                <div className="flex justify-between text-white/70">
+                  <span>Subtotal:</span>
+                  <span>{formatPrice(order.subtotal)}</span>
+                </div>
+                
+                {order.tax_amount > 0 && (
+                  <div className="flex justify-between text-white/70">
+                    <span>Impuestos:</span>
+                    <span>{formatPrice(order.tax_amount)}</span>
+                  </div>
+                )}
+                
+                <div className="flex justify-between text-white/70">
+                  <span>Envío:</span>
+                  <span>{order.shipping_amount > 0 ? formatPrice(order.shipping_amount) : 'Gratis'}</span>
+                </div>
+                
+                {order.discount_amount > 0 && (
+                  <div className="flex justify-between text-white/70">
+                    <span>Descuento:</span>
+                    <span className="text-green-400">-{formatPrice(order.discount_amount)}</span>
+                  </div>
+                )}
+                
+                <div className="border-t border-dark-700/50 pt-3">
+                  <div className="flex justify-between text-lg font-semibold text-white">
+                    <span>Total:</span>
+                    <span className="text-neon-green">{formatPrice(order.total_amount)}</span>
+                  </div>
                 </div>
               </div>
             </div>
 
-            {/* Order Summary & Details */}
-            <div className="space-y-6">
-              {/* Order Summary */}
+            {/* Customer Information */}
+            <div className="bg-dark-800/50 backdrop-blur-md rounded-2xl p-6 border border-dark-700/50">
+              <h2 className="text-xl font-semibold text-white mb-4">Información del Cliente</h2>
+              <div className="space-y-4">
+                <div className="flex items-start gap-3">
+                  <User className="w-5 h-5 text-white/70 mt-0.5" />
+                  <div>
+                    <p className="text-white/70 text-sm">Cliente</p>
+                    <p className="text-white">{order.user_name}</p>
+                  </div>
+                </div>
+                
+                <div className="flex items-start gap-3">
+                  <Mail className="w-5 h-5 text-white/70 mt-0.5" />
+                  <div>
+                    <p className="text-white/70 text-sm">Email</p>
+                    <p className="text-white">{order.email}</p>
+                  </div>
+                </div>
+                
+                <div className="flex items-start gap-3">
+                  <Phone className="w-5 h-5 text-white/70 mt-0.5" />
+                  <div>
+                    <p className="text-white/70 text-sm">Teléfono</p>
+                    <p className="text-white">{order.phone}</p>
+                  </div>
+                </div>
+                
+                <div className="flex items-start gap-3">
+                  <User className="w-5 h-5 text-white/70 mt-0.5" />
+                  <div>
+                    <p className="text-white/70 text-sm">Documento</p>
+                    <p className="text-white">{order.document_id}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Shipping Address */}
+            <div className="bg-dark-800/50 backdrop-blur-md rounded-2xl p-6 border border-dark-700/50">
+              <h2 className="text-xl font-semibold text-white mb-4">Dirección de Envío</h2>
+              <div className="space-y-3">
+                <div>
+                  <p className="text-white/70 text-sm">Nombre</p>
+                  <p className="text-white">{order.shipping_first_name} {order.shipping_last_name}</p>
+                </div>
+                
+                <div>
+                  <p className="text-white/70 text-sm">Dirección</p>
+                  <p className="text-white">{order.shipping_address}</p>
+                </div>
+                
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-white/70 text-sm">Ciudad</p>
+                    <p className="text-white">{order.shipping_city}</p>
+                  </div>
+                  <div>
+                    <p className="text-white/70 text-sm">Estado</p>
+                    <p className="text-white">{order.shipping_state}</p>
+                  </div>
+                </div>
+                
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-white/70 text-sm">País</p>
+                    <p className="text-white">{order.shipping_country}</p>
+                  </div>
+                  <div>
+                    <p className="text-white/70 text-sm">Código Postal</p>
+                    <p className="text-white">{order.shipping_postal_code}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Billing Address */}
+            {(order.billing_address && order.billing_address !== order.shipping_address) && (
               <div className="bg-dark-800/50 backdrop-blur-md rounded-2xl p-6 border border-dark-700/50">
-                <h2 className="text-xl font-semibold text-white mb-4">Resumen del Pedido</h2>
+                <h2 className="text-xl font-semibold text-white mb-4">Dirección de Facturación</h2>
                 <div className="space-y-3">
-                  <div className="flex justify-between text-white/70">
-                    <span>Subtotal:</span>
-                    <span>{formatPrice(order.total_amount)}</span>
+                  <div>
+                    <p className="text-white/70 text-sm">Nombre</p>
+                    <p className="text-white">{order.billing_first_name} {order.billing_last_name}</p>
                   </div>
-                  <div className="flex justify-between text-white/70">
-                    <span>Envío:</span>
-                    <span>Gratis</span>
+                  
+                  <div>
+                    <p className="text-white/70 text-sm">Dirección</p>
+                    <p className="text-white">{order.billing_address}</p>
                   </div>
-                  <div className="border-t border-dark-700/50 pt-3">
-                    <div className="flex justify-between text-lg font-semibold text-white">
-                      <span>Total:</span>
-                      <span className="text-neon-green">{formatPrice(order.total_amount)}</span>
+                  
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <p className="text-white/70 text-sm">Ciudad</p>
+                      <p className="text-white">{order.billing_city}</p>
+                    </div>
+                    <div>
+                      <p className="text-white/70 text-sm">Estado</p>
+                      <p className="text-white">{order.billing_state}</p>
+                    </div>
+                  </div>
+                  
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <p className="text-white/70 text-sm">País</p>
+                      <p className="text-white">{order.billing_country}</p>
+                    </div>
+                    <div>
+                      <p className="text-white/70 text-sm">Código Postal</p>
+                      <p className="text-white">{order.billing_postal_code}</p>
                     </div>
                   </div>
                 </div>
               </div>
+            )}
 
-              {/* Customer Information */}
+            {/* Order Tracking */}
+            {(order.tracking_number || order.shipped_at || order.delivered_at) && (
               <div className="bg-dark-800/50 backdrop-blur-md rounded-2xl p-6 border border-dark-700/50">
-                <h2 className="text-xl font-semibold text-white mb-4">Información del Cliente</h2>
-                <div className="space-y-4">
-                  <div className="flex items-start gap-3">
-                    <User className="w-5 h-5 text-white/70 mt-0.5" />
+                <h2 className="text-xl font-semibold text-white mb-4">Seguimiento</h2>
+                <div className="space-y-3">
+                  {order.tracking_number && (
                     <div>
-                      <p className="text-white/70 text-sm">Cliente</p>
-                      <p className="text-white">{order.user_name}</p>
+                      <p className="text-white/70 text-sm">Número de Seguimiento</p>
+                      <p className="text-white font-mono">{order.tracking_number}</p>
                     </div>
-                  </div>
+                  )}
                   
-                  <div className="flex items-start gap-3">
-                    <Mail className="w-5 h-5 text-white/70 mt-0.5" />
+                  {order.shipped_at && (
                     <div>
-                      <p className="text-white/70 text-sm">Email</p>
-                      <p className="text-white">{order.email}</p>
+                      <p className="text-white/70 text-sm">Fecha de Envío</p>
+                      <p className="text-white">
+                        {new Date(order.shipped_at).toLocaleDateString('es-ES', {
+                          year: 'numeric',
+                          month: 'long',
+                          day: 'numeric',
+                          hour: '2-digit',
+                          minute: '2-digit'
+                        })}
+                      </p>
                     </div>
-                  </div>
+                  )}
                   
-                  <div className="flex items-start gap-3">
-                    <Phone className="w-5 h-5 text-white/70 mt-0.5" />
+                  {order.delivered_at && (
                     <div>
-                      <p className="text-white/70 text-sm">Teléfono</p>
-                      <p className="text-white">{order.phone}</p>
+                      <p className="text-white/70 text-sm">Fecha de Entrega</p>
+                      <p className="text-white">
+                        {new Date(order.delivered_at).toLocaleDateString('es-ES', {
+                          year: 'numeric',
+                          month: 'long',
+                          day: 'numeric',
+                          hour: '2-digit',
+                          minute: '2-digit'
+                        })}
+                      </p>
                     </div>
-                  </div>
-                  
-                  <div className="flex items-start gap-3">
-                    <MapPin className="w-5 h-5 text-white/70 mt-0.5" />
-                    <div>
-                      <p className="text-white/70 text-sm">Dirección de Envío</p>
-                      <p className="text-white">{order.shipping_address}</p>
-                    </div>
-                  </div>
+                  )}
                 </div>
               </div>
+            )}
 
-              {/* Order Notes */}
-              {order.notes && (
-                <div className="bg-dark-800/50 backdrop-blur-md rounded-2xl p-6 border border-dark-700/50">
-                  <h2 className="text-xl font-semibold text-white mb-4">Notas</h2>
-                  <p className="text-white/70">{order.notes}</p>
+            {/* Order Notes */}
+            {order.notes && (
+              <div className="bg-dark-800/50 backdrop-blur-md rounded-2xl p-6 border border-dark-700/50">
+                <h2 className="text-xl font-semibold text-white mb-4">Notas</h2>
+                <p className="text-white/70">{order.notes}</p>
+              </div>
+            )}
+
+            {/* Order Timestamps */}
+            <div className="bg-dark-800/50 backdrop-blur-md rounded-2xl p-6 border border-dark-700/50">
+              <h2 className="text-xl font-semibold text-white mb-4">Información del Sistema</h2>
+              <div className="space-y-3">
+                <div>
+                  <p className="text-white/70 text-sm">Creada</p>
+                  <p className="text-white">
+                    {new Date(order.created_at).toLocaleDateString('es-ES', {
+                      year: 'numeric',
+                      month: 'long',
+                      day: 'numeric',
+                      hour: '2-digit',
+                      minute: '2-digit'
+                    })}
+                  </p>
                 </div>
-              )}
+                
+                <div>
+                  <p className="text-white/70 text-sm">Última Actualización</p>
+                  <p className="text-white">
+                    {new Date(order.updated_at).toLocaleDateString('es-ES', {
+                      year: 'numeric',
+                      month: 'long',
+                      day: 'numeric',
+                      hour: '2-digit',
+                      minute: '2-digit'
+                    })}
+                  </p>
+                </div>
+                
+                <div>
+                  <p className="text-white/70 text-sm">UUID</p>
+                  <p className="text-white font-mono text-xs">{order.uuid}</p>
+                </div>
+              </div>
             </div>
           </div>
         </div>
