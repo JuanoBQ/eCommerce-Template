@@ -70,12 +70,36 @@ def main():
     except ImportError:
         print("⚠️  django-redis no está disponible, usando cache local")
     
+    # Verificar instalación de drf-yasg
+    try:
+        import drf_yasg
+        print("✅ drf-yasg instalado correctamente")
+    except ImportError:
+        print("❌ drf-yasg no se instaló correctamente")
+        sys.exit(1)
+    
     # Verificar instalación de Celery
     try:
         import celery
         print("✅ Celery instalado correctamente")
     except ImportError:
         print("⚠️  Celery no está disponible")
+    
+    # Verificar instalación de Pillow
+    try:
+        import PIL
+        print("✅ Pillow instalado correctamente")
+    except ImportError:
+        print("❌ Pillow no se instaló correctamente")
+        sys.exit(1)
+    
+    # Verificar instalación de python-decouple
+    try:
+        import decouple
+        print("✅ python-decouple instalado correctamente")
+    except ImportError:
+        print("❌ python-decouple no se instaló correctamente")
+        sys.exit(1)
     
     print("🎉 ¡Todas las dependencias se instalaron correctamente!")
     print("\n📋 Próximos pasos:")
