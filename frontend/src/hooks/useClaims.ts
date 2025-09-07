@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
-import { reportsApi } from '@/lib/api'
+import { reportsApi, apiClient } from '@/lib/api'
 
 export interface ClaimMessage {
   id: number
@@ -18,6 +18,7 @@ export interface Claim {
   user: number
   user_name: string
   user_email: string
+  user_phone?: string
   claim_type: 'product_issue' | 'shipping_issue' | 'payment_issue' | 'service_issue' | 'other'
   title: string
   description: string
@@ -282,13 +283,14 @@ export function useReviewsReport() {
       setLoading(true)
       setError(null)
       console.log('🔍 Loading reviews report...')
-      const data = await reportsApi.getReviewsReport()
+      
+      // Usar el apiClient configurado
+      const data = await apiClient.get('/reports/reviews/')
       console.log('🔍 Reviews report data:', data)
       setReport(data as ReviewsReport)
     } catch (err: any) {
-      console.error('Error loading reviews report:', err)
-      console.error('Error details:', err.response)
-      setError(err.response?.data?.detail || 'Error al cargar el reporte de reviews')
+      console.error('❌ Error loading reviews report:', err)
+      setError(err.response?.data?.detail || err.message || 'Error al cargar el reporte de reviews')
     } finally {
       setLoading(false)
     }

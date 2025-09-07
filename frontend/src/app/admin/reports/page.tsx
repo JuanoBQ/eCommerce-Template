@@ -1,8 +1,8 @@
 "use client"
 
 import { useState, useEffect } from 'react'
-import { 
-  Download, 
+import {
+  Download,
   Calendar,
   TrendingUp,
   TrendingDown,
@@ -23,6 +23,7 @@ import { LineChart as RechartsLineChart, Line, XAxis, YAxis, CartesianGrid, Tool
 import { toast } from 'react-hot-toast'
 import { useReviewsReport } from '@/hooks/useClaims'
 import { useReports } from '@/hooks/useReports'
+import LoadingSpinner from '@/components/ui/LoadingSpinner'
 
 interface ReportData {
   period: string
@@ -80,8 +81,85 @@ export default function ReportsPage() {
 
   if (dashboardLoading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-neon-green"></div>
+      <div className="min-h-screen bg-gray-50 space-y-6">
+        {/* Header Skeleton */}
+        <div className="flex items-center justify-between">
+          <div>
+            <div className="h-8 bg-gray-200 rounded animate-pulse w-32 mb-2"></div>
+            <div className="h-4 bg-gray-200 rounded animate-pulse w-48"></div>
+          </div>
+          <div className="flex space-x-4">
+            <div className="h-10 bg-gray-200 rounded-lg animate-pulse w-32"></div>
+            <div className="h-10 bg-gray-200 rounded-lg animate-pulse w-24"></div>
+          </div>
+        </div>
+
+        {/* Stats Grid Skeleton */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          {Array.from({ length: 4 }).map((_, index) => (
+            <div key={index} className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
+              <div className="flex items-center justify-between">
+                <div className="space-y-2">
+                  <div className="h-4 bg-gray-200 rounded animate-pulse w-20"></div>
+                  <div className="h-6 bg-gray-200 rounded animate-pulse w-16"></div>
+                  <div className="h-3 bg-gray-200 rounded animate-pulse w-24"></div>
+                </div>
+                <div className="h-8 w-8 bg-gray-200 rounded animate-pulse"></div>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Charts Grid Skeleton */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Revenue Chart Skeleton */}
+          <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
+            <div className="space-y-4">
+              <div className="h-6 bg-gray-200 rounded animate-pulse w-32"></div>
+              <div className="h-64 bg-gray-200 rounded animate-pulse"></div>
+            </div>
+          </div>
+
+          {/* Orders Chart Skeleton */}
+          <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
+            <div className="space-y-4">
+              <div className="h-6 bg-gray-200 rounded animate-pulse w-32"></div>
+              <div className="h-64 bg-gray-200 rounded animate-pulse"></div>
+            </div>
+          </div>
+        </div>
+
+        {/* Bottom Charts Skeleton */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Top Products Skeleton */}
+          <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
+            <div className="space-y-4">
+              <div className="h-6 bg-gray-200 rounded animate-pulse w-40"></div>
+              <div className="space-y-3">
+                {Array.from({ length: 5 }).map((_, index) => (
+                  <div key={index} className="flex items-center justify-between">
+                    <div className="flex items-center space-x-3">
+                      <div className="h-8 w-8 bg-gray-200 rounded animate-pulse"></div>
+                      <div className="space-y-2">
+                        <div className="h-4 bg-gray-200 rounded animate-pulse w-32"></div>
+                        <div className="h-3 bg-gray-200 rounded animate-pulse w-20"></div>
+                      </div>
+                    </div>
+                    <div className="h-4 bg-gray-200 rounded animate-pulse w-16"></div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Reviews Chart Skeleton */}
+          <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
+            <div className="space-y-4">
+              <div className="h-6 bg-gray-200 rounded animate-pulse w-32"></div>
+              <div className="h-64 bg-gray-200 rounded animate-pulse"></div>
+            </div>
+          </div>
+        </div>
       </div>
     )
   }
@@ -97,19 +175,19 @@ export default function ReportsPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="min-h-screen bg-gray-50 space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-white">Reportes</h1>
-          <p className="text-dark-400 mt-2">Análisis y estadísticas de tu negocio</p>
+          <h1 className="text-3xl font-bold text-gray-900">Reportes</h1>
+          <p className="text-gray-600 mt-2">Análisis y estadísticas de tu negocio</p>
         </div>
-        
+
         <div className="flex items-center space-x-4">
           <select
             value={dateRange}
             onChange={(e) => setDateRange(e.target.value)}
-            className="px-4 py-2 bg-dark-700 border border-dark-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-neon-green focus:border-transparent"
+            className="px-4 py-2 bg-white border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
             title="Seleccionar rango de fechas"
             aria-label="Seleccionar rango de fechas para el reporte"
           >
@@ -118,25 +196,25 @@ export default function ReportsPage() {
             <option value="90">Últimos 90 días</option>
             <option value="365">Último año</option>
           </select>
-          
+
           <div className="flex items-center space-x-2">
             <button
               onClick={() => handleExportReport('pdf')}
-              className="flex items-center px-4 py-2 bg-red-600 text-white font-medium rounded-lg hover:bg-red-700 transition-colors"
+              className="flex items-center px-4 py-2 bg-red-500 text-white font-medium rounded-lg hover:bg-red-600 transition-colors"
             >
               <Download className="w-4 h-4 mr-2" />
               PDF
             </button>
             <button
               onClick={() => handleExportReport('excel')}
-              className="flex items-center px-4 py-2 bg-green-600 text-white font-medium rounded-lg hover:bg-green-700 transition-colors"
+              className="flex items-center px-4 py-2 bg-primary-600 text-white font-medium rounded-lg hover:bg-primary-700 transition-colors"
             >
               <Download className="w-4 h-4 mr-2" />
               Excel
             </button>
             <button
               onClick={() => handleExportReport('csv')}
-              className="flex items-center px-4 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors"
+              className="flex items-center px-4 py-2 bg-blue-500 text-white font-medium rounded-lg hover:bg-blue-600 transition-colors"
             >
               <Download className="w-4 h-4 mr-2" />
               CSV
@@ -146,13 +224,13 @@ export default function ReportsPage() {
       </div>
 
       {/* Navigation Tabs */}
-      <div className="flex space-x-1 bg-dark-800 p-1 rounded-lg">
+      <div className="flex space-x-1 bg-gray-100 p-1 rounded-lg">
         <button
           onClick={() => setActiveTab('overview')}
           className={`flex items-center px-4 py-2 rounded-md font-medium transition-colors ${
             activeTab === 'overview'
-              ? 'bg-neon-green text-black'
-              : 'text-dark-400 hover:text-white hover:bg-dark-700'
+              ? 'bg-primary-500 text-white'
+              : 'text-gray-600 hover:text-gray-900 hover:bg-gray-200'
           }`}
         >
           <BarChart3 className="w-4 h-4 mr-2" />
@@ -162,14 +240,13 @@ export default function ReportsPage() {
           onClick={() => setActiveTab('reviews')}
           className={`flex items-center px-4 py-2 rounded-md font-medium transition-colors ${
             activeTab === 'reviews'
-              ? 'bg-neon-green text-black'
-              : 'text-dark-400 hover:text-white hover:bg-dark-700'
+              ? 'bg-primary-500 text-white'
+              : 'text-gray-600 hover:text-gray-900 hover:bg-gray-200'
           }`}
         >
           <Star className="w-4 h-4 mr-2" />
           Reviews
         </button>
-
       </div>
 
       {/* Tab Content */}
@@ -177,203 +254,203 @@ export default function ReportsPage() {
         <>
           {/* Key Metrics */}
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <div className="bg-dark-800 border border-dark-700 rounded-xl p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-dark-400 text-sm font-medium">Ingresos Totales</p>
-              <p className="text-2xl font-bold text-white mt-2">
-                ${currentPeriod.total_revenue.toLocaleString()}
-              </p>
-              <div className="flex items-center mt-2">
-                <TrendingUp className="w-4 h-4 text-green-500 mr-1" />
-                <span className="text-sm font-medium text-green-500">
-                  0.0%
-                </span>
-              </div>
-            </div>
-            <DollarSign className="w-8 h-8 text-neon-green" />
-          </div>
-        </div>
-        
-        <div className="bg-dark-800 border border-dark-700 rounded-xl p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-dark-400 text-sm font-medium">Total Pedidos</p>
-              <p className="text-2xl font-bold text-white mt-2">
-                {currentPeriod.total_orders}
-              </p>
-              <div className="flex items-center mt-2">
-                <TrendingUp className="w-4 h-4 text-green-500 mr-1" />
-                <span className="text-sm font-medium text-green-500">
-                  0.0%
-                </span>
-              </div>
-            </div>
-            <ShoppingCart className="w-8 h-8 text-neon-blue" />
-          </div>
-        </div>
-        
-        <div className="bg-dark-800 border border-dark-700 rounded-xl p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-dark-400 text-sm font-medium">Nuevos Clientes</p>
-              <p className="text-2xl font-bold text-white mt-2">
-                {currentPeriod.total_customers}
-              </p>
-              <div className="flex items-center mt-2">
-                <TrendingUp className="w-4 h-4 text-green-500 mr-1" />
-                <span className="text-sm font-medium text-green-500">
-                  0.0%
-                </span>
-              </div>
-            </div>
-            <Users className="w-8 h-8 text-neon-purple" />
-          </div>
-        </div>
-        
-        <div className="bg-dark-800 border border-dark-700 rounded-xl p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-dark-400 text-sm font-medium">Productos Vendidos</p>
-              <p className="text-2xl font-bold text-white mt-2">
-                {currentPeriod.total_products}
-              </p>
-              <div className="flex items-center mt-2">
-                <TrendingUp className="w-4 h-4 text-green-500 mr-1" />
-                <span className="text-sm font-medium text-green-500">
-                  0.0%
-                </span>
-              </div>
-            </div>
-            <Package className="w-8 h-8 text-neon-pink" />
-          </div>
-        </div>
-      </div>
-
-      {/* Charts */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        {/* Revenue Chart */}
-        <div className="bg-dark-800 border border-dark-700 rounded-xl p-6">
-          <div className="flex items-center justify-between mb-6">
-            <h3 className="text-lg font-semibold text-white">Ingresos Mensuales</h3>
-            <LineChart className="w-5 h-5 text-neon-green" />
-          </div>
-          <ResponsiveContainer width="100%" height={300}>
-            <RechartsLineChart data={reportData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-              <XAxis dataKey="period" stroke="#9CA3AF" />
-              <YAxis stroke="#9CA3AF" />
-              <Tooltip 
-                contentStyle={{ 
-                  backgroundColor: '#1F2937', 
-                  border: '1px solid #374151',
-                  borderRadius: '8px',
-                  color: '#F9FAFB'
-                }} 
-              />
-              <Line 
-                type="monotone" 
-                dataKey="revenue" 
-                stroke="#00ff88" 
-                strokeWidth={3}
-                dot={{ fill: '#00ff88', strokeWidth: 2, r: 4 }}
-              />
-            </RechartsLineChart>
-          </ResponsiveContainer>
-        </div>
-
-        {/* Orders Chart */}
-        <div className="bg-dark-800 border border-dark-700 rounded-xl p-6">
-          <div className="flex items-center justify-between mb-6">
-            <h3 className="text-lg font-semibold text-white">Pedidos Mensuales</h3>
-            <BarChart3 className="w-5 h-5 text-neon-blue" />
-          </div>
-          <ResponsiveContainer width="100%" height={300}>
-            <BarChart data={reportData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-              <XAxis dataKey="period" stroke="#9CA3AF" />
-              <YAxis stroke="#9CA3AF" />
-              <Tooltip 
-                contentStyle={{ 
-                  backgroundColor: '#1F2937', 
-                  border: '1px solid #374151',
-                  borderRadius: '8px',
-                  color: '#F9FAFB'
-                }} 
-              />
-              <Bar dataKey="orders" fill="#00d4aa" radius={[4, 4, 0, 0]} />
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
-      </div>
-
-      {/* Top Products and Customers */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        {/* Top Products */}
-        <div className="bg-dark-800 border border-dark-700 rounded-xl p-6">
-          <div className="flex items-center justify-between mb-6">
-            <h3 className="text-lg font-semibold text-white">Productos Más Vendidos</h3>
-            <a
-              href="/admin/products"
-              className="flex items-center px-4 py-2 bg-neon-green text-dark-900 rounded-lg font-medium hover:bg-neon-green/90 transition-colors"
-            >
-              <Eye className="w-4 h-4 mr-2" />
-              Ver Productos
-            </a>
-          </div>
-          <div className="space-y-4">
-            {topProducts.map((product, index) => (
-              <a
-                key={product.id}
-                href={`/admin/products?product=${product.id}`}
-                className="block p-4 bg-dark-700 rounded-lg hover:bg-dark-600 transition-colors cursor-pointer"
-              >
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center">
-                    <div className="w-8 h-8 bg-neon-green/20 text-neon-green rounded-full flex items-center justify-center mr-4 font-bold">
-                      {index + 1}
-                    </div>
-                    <div>
-                      <p className="text-white font-medium">{product.name}</p>
-                      <p className="text-dark-400 text-sm">{product.sales} ventas</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center">
-                    <div className="text-right mr-4">
-                      <p className="text-neon-green font-semibold">${product.revenue.toFixed(2)}</p>
-                    </div>
-                    <Eye className="w-4 h-4 text-dark-400" />
+            <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-gray-600 text-sm font-medium">Ingresos Totales</p>
+                  <p className="text-2xl font-bold text-gray-900 mt-2">
+                    ${currentPeriod.total_revenue.toLocaleString()}
+                  </p>
+                  <div className="flex items-center mt-2">
+                    <TrendingUp className="w-4 h-4 text-primary-600 mr-1" />
+                    <span className="text-sm font-medium text-primary-600">
+                      0.0%
+                    </span>
                   </div>
                 </div>
-              </a>
-            ))}
-          </div>
-        </div>
-
-        {/* Top Customers */}
-        <div className="bg-dark-800 border border-dark-700 rounded-xl p-6">
-          <h3 className="text-lg font-semibold text-white mb-6">Mejores Clientes</h3>
-          <div className="space-y-4">
-            {topCustomers.map((customer, index) => (
-              <div key={customer.id} className="flex items-center justify-between p-4 bg-dark-700 rounded-lg">
-                <div className="flex items-center">
-                  <div className="w-8 h-8 bg-neon-blue/20 text-neon-blue rounded-full flex items-center justify-center mr-4 font-bold">
-                    {index + 1}
-                  </div>
-                  <div>
-                    <p className="text-white font-medium">{customer.name}</p>
-                    <p className="text-dark-400 text-sm">{customer.email}</p>
-                  </div>
-                </div>
-                <div className="text-right">
-                  <p className="text-neon-blue font-semibold">${customer.totalSpent.toFixed(2)}</p>
-                  <p className="text-dark-400 text-sm">{customer.orders} pedidos</p>
-                </div>
+                <DollarSign className="w-8 h-8 text-primary-500" />
               </div>
-            ))}
+            </div>
+
+            <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-gray-600 text-sm font-medium">Total Órdenes</p>
+                  <p className="text-2xl font-bold text-gray-900 mt-2">
+                    {currentPeriod.total_orders}
+                  </p>
+                  <div className="flex items-center mt-2">
+                    <TrendingUp className="w-4 h-4 text-primary-600 mr-1" />
+                    <span className="text-sm font-medium text-primary-600">
+                      0.0%
+                    </span>
+                  </div>
+                </div>
+                <ShoppingCart className="w-8 h-8 text-blue-500" />
+              </div>
+            </div>
+
+            <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-gray-600 text-sm font-medium">Nuevos Clientes</p>
+                  <p className="text-2xl font-bold text-gray-900 mt-2">
+                    {currentPeriod.total_customers}
+                  </p>
+                  <div className="flex items-center mt-2">
+                    <TrendingUp className="w-4 h-4 text-primary-600 mr-1" />
+                    <span className="text-sm font-medium text-primary-600">
+                      0.0%
+                    </span>
+                  </div>
+                </div>
+                <Users className="w-8 h-8 text-purple-500" />
+              </div>
+            </div>
+
+            <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-gray-600 text-sm font-medium">Órdenes Pagadas</p>
+                  <p className="text-2xl font-bold text-gray-900 mt-2">
+                    {currentPeriod.total_products}
+                  </p>
+                  <div className="flex items-center mt-2">
+                    <TrendingUp className="w-4 h-4 text-primary-600 mr-1" />
+                    <span className="text-sm font-medium text-primary-600">
+                      0.0%
+                    </span>
+                  </div>
+                </div>
+                <CheckCircle className="w-8 h-8 text-green-500" />
+              </div>
+            </div>
           </div>
-        </div>
-      </div>
+
+          {/* Charts */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            {/* Revenue Chart */}
+            <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-lg font-semibold text-gray-900">Ingresos Mensuales</h3>
+                <LineChart className="w-5 h-5 text-primary-500" />
+              </div>
+              <ResponsiveContainer width="100%" height={300}>
+                <RechartsLineChart data={reportData}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+                  <XAxis dataKey="period" stroke="#9CA3AF" />
+                  <YAxis stroke="#9CA3AF" />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: '#FFFFFF',
+                      border: '1px solid #E5E7EB',
+                      borderRadius: '8px',
+                      color: '#1F2937'
+                    }}
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey="revenue"
+                    stroke="#0ea5e9"
+                    strokeWidth={3}
+                    dot={{ fill: '#0ea5e9', strokeWidth: 2, r: 4 }}
+                  />
+                </RechartsLineChart>
+              </ResponsiveContainer>
+            </div>
+
+            {/* Orders Chart */}
+            <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-lg font-semibold text-gray-900">Pedidos Mensuales</h3>
+                <BarChart3 className="w-5 h-5 text-blue-500" />
+              </div>
+              <ResponsiveContainer width="100%" height={300}>
+                <BarChart data={reportData}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+                  <XAxis dataKey="period" stroke="#9CA3AF" />
+                  <YAxis stroke="#9CA3AF" />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: '#FFFFFF',
+                      border: '1px solid #E5E7EB',
+                      borderRadius: '8px',
+                      color: '#1F2937'
+                    }}
+                  />
+                  <Bar dataKey="orders" fill="#3B82F6" radius={[4, 4, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+
+          {/* Top Products and Customers */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            {/* Top Products */}
+            <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-lg font-semibold text-gray-900">Productos Más Vendidos</h3>
+                <a
+                  href="/admin/products"
+                  className="flex items-center px-4 py-2 bg-primary-500 text-white rounded-lg font-medium hover:bg-primary-600 transition-colors"
+                >
+                  <Eye className="w-4 h-4 mr-2" />
+                  Ver Productos
+                </a>
+              </div>
+              <div className="space-y-4">
+                {topProducts.map((product, index) => (
+                  <a
+                    key={product.id}
+                    href={`/admin/products?product=${product.id}`}
+                    className="block p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer"
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center">
+                        <div className="w-8 h-8 bg-primary-100 text-primary-500 rounded-full flex items-center justify-center mr-4 font-bold">
+                          {index + 1}
+                        </div>
+                        <div>
+                          <p className="text-gray-900 font-medium">{product.name}</p>
+                          <p className="text-gray-500 text-sm">{product.sales} ventas</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center">
+                        <div className="text-right mr-4">
+                          <p className="text-primary-500 font-semibold">${product.revenue.toFixed(2)}</p>
+                        </div>
+                        <Eye className="w-4 h-4 text-gray-500" />
+                      </div>
+                    </div>
+                  </a>
+                ))}
+              </div>
+            </div>
+
+            {/* Top Customers */}
+            <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
+              <h3 className="text-lg font-semibold text-gray-900 mb-6">Mejores Clientes</h3>
+              <div className="space-y-4">
+                {topCustomers.map((customer, index) => (
+                  <div key={customer.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                    <div className="flex items-center">
+                      <div className="w-8 h-8 bg-blue-100 text-blue-500 rounded-full flex items-center justify-center mr-4 font-bold">
+                        {index + 1}
+                      </div>
+                      <div>
+                        <p className="text-gray-900 font-medium">{customer.name}</p>
+                        <p className="text-gray-500 text-sm">{customer.email}</p>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-blue-500 font-semibold">${customer.totalSpent.toFixed(2)}</p>
+                      <p className="text-gray-500 text-sm">{customer.orders} pedidos</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
         </>
       )}
 
@@ -382,61 +459,61 @@ export default function ReportsPage() {
         <div className="space-y-6">
           {reviewsLoading ? (
             <div className="flex items-center justify-center h-64">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-neon-green"></div>
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-500"></div>
             </div>
           ) : reviewsError ? (
-            <div className="bg-red-900/20 border border-red-500/50 rounded-lg p-4">
-              <p className="text-red-400">Error al cargar reporte de reviews: {reviewsError}</p>
+            <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+              <p className="text-red-600">Error al cargar reporte de reviews: {reviewsError}</p>
             </div>
           ) : reviewsReport ? (
             <>
               {/* Reviews Summary */}
               <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-                <div className="bg-dark-800 border border-dark-700 rounded-xl p-6">
+                <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-dark-400 text-sm font-medium">Total Reviews</p>
-                      <p className="text-2xl font-bold text-white mt-2">
+                      <p className="text-gray-600 text-sm font-medium">Total Reviews</p>
+                      <p className="text-2xl font-bold text-gray-900 mt-2">
                         {reviewsReport.summary.total_reviews}
                       </p>
                     </div>
-                    <MessageSquare className="w-8 h-8 text-neon-blue" />
+                    <MessageSquare className="w-8 h-8 text-blue-500" />
                   </div>
                 </div>
-                
-                <div className="bg-dark-800 border border-dark-700 rounded-xl p-6">
+
+                <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-dark-400 text-sm font-medium">Reviews Aprobadas</p>
-                      <p className="text-2xl font-bold text-white mt-2">
+                      <p className="text-gray-600 text-sm font-medium">Reviews Aprobadas</p>
+                      <p className="text-2xl font-bold text-gray-900 mt-2">
                         {reviewsReport.summary.approved_reviews}
                       </p>
                     </div>
-                    <CheckCircle className="w-8 h-8 text-green-500" />
+                    <CheckCircle className="w-8 h-8 text-primary-600" />
                   </div>
                 </div>
-                
-                <div className="bg-dark-800 border border-dark-700 rounded-xl p-6">
+
+                <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-dark-400 text-sm font-medium">Reviews Pendientes</p>
-                      <p className="text-2xl font-bold text-white mt-2">
+                      <p className="text-gray-600 text-sm font-medium">Reviews Pendientes</p>
+                      <p className="text-2xl font-bold text-gray-900 mt-2">
                         {reviewsReport.summary.pending_reviews}
                       </p>
                     </div>
                     <Clock className="w-8 h-8 text-yellow-500" />
                   </div>
                 </div>
-                
-                <div className="bg-dark-800 border border-dark-700 rounded-xl p-6">
+
+                <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-dark-400 text-sm font-medium">Rating Promedio</p>
-                      <p className="text-2xl font-bold text-white mt-2">
+                      <p className="text-gray-600 text-sm font-medium">Rating Promedio</p>
+                      <p className="text-2xl font-bold text-gray-900 mt-2">
                         {reviewsReport.summary.average_rating.toFixed(1)}
                       </p>
                     </div>
-                    <Star className="w-8 h-8 text-neon-green" />
+                    <Star className="w-8 h-8 text-primary-500" />
                   </div>
                 </div>
               </div>
@@ -444,8 +521,8 @@ export default function ReportsPage() {
               {/* Charts */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                 {/* Rating Distribution */}
-                <div className="bg-dark-800 border border-dark-700 rounded-xl p-6">
-                  <h3 className="text-lg font-semibold text-white mb-6">Distribución de Ratings</h3>
+                <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-6">Distribución de Ratings</h3>
                   <ResponsiveContainer width="100%" height={300}>
                     <RechartsPieChart>
                       <Pie
@@ -468,27 +545,27 @@ export default function ReportsPage() {
                 </div>
 
                 {/* Monthly Reviews */}
-                <div className="bg-dark-800 border border-dark-700 rounded-xl p-6">
-                  <h3 className="text-lg font-semibold text-white mb-6">Reviews por Mes</h3>
+                <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-6">Reviews por Mes</h3>
                   <ResponsiveContainer width="100%" height={300}>
                     <RechartsLineChart data={reviewsReport.monthly_reviews}>
                       <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
                       <XAxis dataKey="month" stroke="#9CA3AF" />
                       <YAxis stroke="#9CA3AF" />
-                      <Tooltip 
-                        contentStyle={{ 
-                          backgroundColor: '#1F2937', 
-                          border: '1px solid #374151',
+                      <Tooltip
+                        contentStyle={{
+                          backgroundColor: '#FFFFFF',
+                          border: '1px solid #E5E7EB',
                           borderRadius: '8px',
-                          color: '#F9FAFB'
-                        }} 
+                          color: '#1F2937'
+                        }}
                       />
-                      <Line 
-                        type="monotone" 
-                        dataKey="count" 
-                        stroke="#00ff88" 
+                      <Line
+                        type="monotone"
+                        dataKey="count"
+                        stroke="#0ea5e9"
                         strokeWidth={3}
-                        dot={{ fill: '#00ff88', strokeWidth: 2, r: 4 }}
+                        dot={{ fill: '#0ea5e9', strokeWidth: 2, r: 4 }}
                       />
                     </RechartsLineChart>
                   </ResponsiveContainer>
@@ -496,12 +573,12 @@ export default function ReportsPage() {
               </div>
 
               {/* Top Reviewed Products */}
-              <div className="bg-dark-800 border border-dark-700 rounded-xl p-6">
+              <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
                 <div className="flex items-center justify-between mb-6">
-                  <h3 className="text-lg font-semibold text-white">Productos Más Revisados</h3>
+                  <h3 className="text-lg font-semibold text-gray-900">Productos Más Revisados</h3>
                   <a
                     href="/admin/products"
-                    className="flex items-center px-4 py-2 bg-neon-green text-dark-900 rounded-lg font-medium hover:bg-neon-green/90 transition-colors"
+                    className="flex items-center px-4 py-2 bg-primary-500 text-white rounded-lg font-medium hover:bg-primary-600 transition-colors"
                   >
                     <Eye className="w-4 h-4 mr-2" />
                     Ver Productos
@@ -512,16 +589,16 @@ export default function ReportsPage() {
                     <a
                       key={product.id}
                       href={`/admin/products?product=${product.id}`}
-                      className="block p-4 bg-dark-700 rounded-lg hover:bg-dark-600 transition-colors cursor-pointer"
+                      className="block p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer"
                     >
                       <div className="flex items-center justify-between">
                         <div className="flex items-center">
-                          <div className="w-8 h-8 bg-neon-green/20 text-neon-green rounded-full flex items-center justify-center mr-4 font-bold">
+                          <div className="w-8 h-8 bg-primary-100 text-primary-500 rounded-full flex items-center justify-center mr-4 font-bold">
                             {index + 1}
                           </div>
                           <div>
-                            <p className="text-white font-medium">{product.name}</p>
-                            <p className="text-dark-400 text-sm">{product.review_count} reviews</p>
+                            <p className="text-gray-900 font-medium">{product.name}</p>
+                            <p className="text-gray-500 text-sm">{product.review_count} reviews</p>
                           </div>
                         </div>
                         <div className="flex items-center">
@@ -537,8 +614,8 @@ export default function ReportsPage() {
                               />
                             ))}
                           </div>
-                          <p className="text-neon-green font-semibold mr-4">{product.average_rating.toFixed(1)}</p>
-                          <Eye className="w-4 h-4 text-dark-400" />
+                          <p className="text-primary-500 font-semibold mr-4">{product.average_rating.toFixed(1)}</p>
+                          <Eye className="w-4 h-4 text-gray-500" />
                         </div>
                       </div>
                     </a>
@@ -549,8 +626,6 @@ export default function ReportsPage() {
           ) : null}
         </div>
       )}
-
-
     </div>
   )
 }

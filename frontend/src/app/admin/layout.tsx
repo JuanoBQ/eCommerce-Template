@@ -54,25 +54,25 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
 
   return (
     <ProtectedRoute requireAdmin={true}>
-      <div className="min-h-screen bg-dark-900">
+      <div className="min-h-screen bg-black">
       {/* Mobile sidebar */}
       <div className={`fixed inset-0 z-50 lg:hidden ${sidebarOpen ? 'block' : 'hidden'}`}>
-        <div className="fixed inset-0 bg-dark-900/80 backdrop-blur-sm" onClick={() => setSidebarOpen(false)} />
-        <div className="fixed inset-y-0 left-0 w-64 bg-dark-800/95 backdrop-blur-sm border-r border-dark-700">
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm" onClick={() => setSidebarOpen(false)} />
+        <div className="fixed inset-y-0 left-0 w-64 bg-gray-900/95 backdrop-blur-sm border-r border-gray-700">
           {/* Header */}
-          <div className="flex items-center justify-between h-16 px-6 border-b border-dark-700">
+          <div className="flex items-center justify-between h-16 px-6 border-b border-gray-700">
             <div className="flex items-center space-x-3">
-              <div className="w-8 h-8 bg-gradient-to-r from-neon-green to-neon-blue rounded-lg flex items-center justify-center">
-                <span className="text-dark-900 font-bold text-lg">A</span>
+              <div className="w-8 h-8 bg-gradient-to-r from-gray-700 via-gray-600 to-primary-800 rounded-lg flex items-center justify-center">
+                <span className="text-white font-bold text-lg">A</span>
               </div>
               <div>
                 <h1 className="text-lg font-bold text-white">Admin Panel</h1>
-                <p className="text-xs text-dark-400">FitStore</p>
+                <p className="text-xs text-gray-400">FitStore</p>
               </div>
             </div>
             <button
               onClick={() => setSidebarOpen(false)}
-              className="p-2 rounded-lg text-dark-400 hover:text-white hover:bg-dark-700 transition-colors"
+              className="p-2 rounded-lg text-gray-400 hover:text-white hover:bg-gray-800 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
               title="Cerrar menú"
               aria-label="Cerrar menú lateral"
             >
@@ -86,35 +86,35 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
               <Link
                 key={item.name}
                 href={item.href}
-                className={`group flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-all duration-200 ${
+                className={`group flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 ${
                   item.current
-                    ? 'bg-neon-green/20 text-neon-green border border-neon-green/30 shadow-lg shadow-neon-green/10'
-                    : 'text-dark-300 hover:text-white hover:bg-dark-700/50 hover:shadow-md'
+                    ? 'bg-gray-700/50 text-white border border-gray-600 shadow-lg focus:ring-gray-500'
+                    : 'text-gray-300 hover:text-white hover:bg-gray-800 focus:ring-gray-500'
                 }`}
                 onClick={() => setSidebarOpen(false)}
               >
                 <item.icon className={`w-5 h-5 mr-3 transition-colors ${
-                  item.current ? 'text-neon-green' : 'text-dark-400 group-hover:text-white'
+                  item.current ? 'text-white' : 'text-gray-400 group-hover:text-white'
                 }`} />
                 {item.name}
                 {item.current && (
-                  <div className="ml-auto w-2 h-2 bg-neon-green rounded-full"></div>
+                  <div className="ml-auto w-2 h-2 bg-primary-500 rounded-full"></div>
                 )}
               </Link>
             ))}
           </nav>
           
           {/* Footer */}
-          <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-dark-700">
-            <div className="flex items-center space-x-3 p-3 bg-dark-700/50 rounded-lg">
-              <div className="w-8 h-8 bg-gradient-to-r from-neon-green to-neon-blue rounded-full flex items-center justify-center">
-                <User className="w-4 h-4 text-dark-900" />
+          <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-gray-700">
+            <div className="flex items-center space-x-3 p-3 bg-gray-800/50 rounded-lg">
+              <div className="w-8 h-8 bg-gradient-to-r from-gray-700 via-gray-600 to-primary-800 rounded-full flex items-center justify-center">
+                <User className="w-4 h-4 text-white" />
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium text-white truncate">
                   {user?.first_name} {user?.last_name}
                 </p>
-                <p className="text-xs text-dark-400">Administrador</p>
+                <p className="text-xs text-gray-400">Administrador</p>
               </div>
             </div>
           </div>
@@ -123,16 +123,16 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
 
       {/* Desktop sidebar */}
       <div className="hidden lg:fixed lg:inset-y-0 lg:flex lg:w-64 lg:flex-col">
-        <div className="flex flex-col flex-grow bg-dark-800/95 backdrop-blur-sm border-r border-dark-700">
+        <div className="flex flex-col flex-grow bg-gray-900/95 backdrop-blur-sm border-r border-gray-700">
           {/* Logo section */}
-          <div className="flex items-center h-16 px-6 border-b border-dark-700">
+          <div className="flex items-center h-16 px-6 border-b border-gray-700">
             <div className="flex items-center space-x-3">
-              <div className="w-8 h-8 bg-gradient-to-r from-neon-green to-neon-blue rounded-lg flex items-center justify-center">
-                <span className="text-dark-900 font-bold text-lg">A</span>
+              <div className="w-8 h-8 bg-gradient-to-r from-gray-700 via-gray-600 to-primary-800 rounded-lg flex items-center justify-center">
+                <span className="text-white font-bold text-lg">A</span>
               </div>
               <div>
                 <h1 className="text-lg font-bold text-white">Admin Panel</h1>
-                <p className="text-xs text-dark-400">FitStore</p>
+                <p className="text-xs text-gray-400">FitStore</p>
               </div>
             </div>
           </div>
@@ -143,34 +143,34 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
               <Link
                 key={item.name}
                 href={item.href}
-                className={`group flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-all duration-200 ${
+                className={`group flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 ${
                   item.current
-                    ? 'bg-neon-green/20 text-neon-green border border-neon-green/30 shadow-lg shadow-neon-green/10'
-                    : 'text-dark-300 hover:text-white hover:bg-dark-700/50 hover:shadow-md'
+                    ? 'bg-gray-700/50 text-white border border-gray-600 shadow-lg focus:ring-gray-500'
+                    : 'text-gray-300 hover:text-white hover:bg-gray-800 focus:ring-gray-500'
                 }`}
               >
                 <item.icon className={`w-5 h-5 mr-3 transition-colors ${
-                  item.current ? 'text-neon-green' : 'text-dark-400 group-hover:text-white'
+                  item.current ? 'text-white' : 'text-gray-400 group-hover:text-white'
                 }`} />
                 {item.name}
                 {item.current && (
-                  <div className="ml-auto w-2 h-2 bg-neon-green rounded-full"></div>
+                  <div className="ml-auto w-2 h-2 bg-primary-500 rounded-full"></div>
                 )}
               </Link>
             ))}
           </nav>
           
           {/* Footer section */}
-          <div className="p-4 border-t border-dark-700">
-            <div className="flex items-center space-x-3 p-3 bg-dark-700/50 rounded-lg">
-              <div className="w-8 h-8 bg-gradient-to-r from-neon-green to-neon-blue rounded-full flex items-center justify-center">
-                <User className="w-4 h-4 text-dark-900" />
+          <div className="p-4 border-t border-gray-700">
+            <div className="flex items-center space-x-3 p-3 bg-gray-800/50 rounded-lg">
+              <div className="w-8 h-8 bg-gradient-to-r from-gray-700 via-gray-600 to-primary-800 rounded-full flex items-center justify-center">
+                <User className="w-4 h-4 text-white" />
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium text-white truncate">
                   {user?.first_name} {user?.last_name}
                 </p>
-                <p className="text-xs text-dark-400">Administrador</p>
+                <p className="text-xs text-gray-400">Administrador</p>
               </div>
             </div>
           </div>
@@ -178,14 +178,14 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
       </div>
 
       {/* Main content */}
-      <div className="lg:pl-64">
+      <div className="lg:pl-64 bg-gray-50">
         {/* Top bar */}
-        <div className="sticky top-0 z-40 bg-dark-800/95 backdrop-blur-sm border-b border-dark-700">
+        <div className="sticky top-0 z-40 bg-gray-900/95 backdrop-blur-sm border-b border-gray-700">
           <div className="flex items-center justify-between h-16 px-4 sm:px-6 lg:px-8">
             <div className="flex items-center space-x-4">
               <button
                 onClick={() => setSidebarOpen(true)}
-                className="lg:hidden p-2 rounded-lg text-dark-400 hover:text-white hover:bg-dark-700 transition-colors"
+                className="lg:hidden p-2 rounded-lg text-gray-400 hover:text-white hover:bg-primary-700/20 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
                 title="Abrir menú"
                 aria-label="Abrir menú lateral"
               >
@@ -194,8 +194,8 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
               
               {/* Breadcrumb */}
               <div className="hidden sm:flex items-center space-x-2 text-sm">
-                <span className="text-dark-400">Admin</span>
-                <span className="text-dark-600">/</span>
+                <span className="text-gray-400">Admin</span>
+                <span className="text-gray-500">/</span>
                 <span className="text-white font-medium">
                   {navigation.find(item => item.current)?.name || 'Dashboard'}
                 </span>
@@ -209,21 +209,21 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
               <div className="hidden lg:flex items-center space-x-2">
                 <Link
                   href="/admin/products/new"
-                  className="px-3 py-1.5 bg-neon-green text-dark-900 text-sm font-medium rounded-lg hover:bg-neon-green/90 transition-colors"
+                  className="px-3 py-1.5 bg-gray-700 text-white text-sm font-medium rounded-lg hover:bg-primary-600 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
                 >
                   + Producto
                 </Link>
                 <Link
                   href="/"
-                  className="px-3 py-1.5 border border-dark-600 text-white text-sm font-medium rounded-lg hover:bg-dark-700 transition-colors"
+                  className="px-3 py-1.5 border border-gray-600 text-white text-sm font-medium rounded-lg hover:bg-gray-800 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
                 >
                   Ver Tienda
                 </Link>
               </div>
 
               {/* Notifications */}
-              <button 
-                className="p-2 rounded-lg text-dark-400 hover:text-white hover:bg-dark-700 relative transition-colors"
+              <button
+                className="p-2 rounded-lg text-gray-400 hover:text-white hover:bg-primary-700/20 relative transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
                 title="Notificaciones"
                 aria-label="Ver notificaciones"
               >
@@ -234,19 +234,19 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
               </button>
 
               {/* User menu */}
-              <div className="flex items-center space-x-3 pl-3 border-l border-dark-700">
+              <div className="flex items-center space-x-3 pl-3 border-l border-gray-700">
                 <div className="text-right hidden sm:block">
                   <p className="text-sm font-medium text-white">
                     {user?.first_name} {user?.last_name}
                   </p>
-                  <p className="text-xs text-dark-400">Administrador</p>
+                  <p className="text-xs text-gray-400">Administrador</p>
                 </div>
-                <div className="w-8 h-8 bg-gradient-to-r from-neon-green to-neon-blue rounded-full flex items-center justify-center">
-                  <User className="w-4 h-4 text-dark-900" />
+                <div className="w-8 h-8 bg-gradient-to-r from-gray-700 via-gray-600 to-primary-800 rounded-full flex items-center justify-center">
+                  <User className="w-4 h-4 text-white" />
                 </div>
                 <button
                   onClick={handleLogout}
-                  className="p-2 rounded-lg text-dark-400 hover:text-white hover:bg-dark-700 transition-colors"
+                  className="p-2 rounded-lg text-gray-400 hover:text-white hover:bg-primary-700/20 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
                   title="Cerrar sesión"
                   aria-label="Cerrar sesión"
                 >

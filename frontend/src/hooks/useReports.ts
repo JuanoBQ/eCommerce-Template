@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
+import { apiClient } from '@/lib/api'
 import { reportsApi } from '@/lib/api'
 
 export interface ReportData {
@@ -49,11 +50,27 @@ export function useReports(dateRange: string = '30') {
     try {
       setLoading(true)
       setError(null)
-      const response = await reportsApi.getDashboardData()
-      setReport((response as any).data)
+      console.log('🔄 Cargando reporte del dashboard...')
+      
+      // Usar el apiClient configurado
+      const data = await apiClient.get(`/reports/dashboard/?days=${dateRange}`)
+      console.log('📊 Datos del API:', data)
+      console.log('📊 Tipo de datos:', typeof data)
+      
+      if (!data) {
+        throw new Error('No se recibieron datos del servidor')
+      }
+      
+      console.log('📊 Estructura de datos:', {
+        summary: data.summary,
+        monthly_data: data.monthly_data,
+        top_products: data.top_products,
+        top_customers: data.top_customers
+      })
+      setReport(data)
     } catch (err: any) {
-      console.error('Error loading dashboard report:', err)
-      setError(err.response?.data?.detail || 'Error al cargar el reporte')
+      console.error('❌ Error loading dashboard report:', err)
+      setError(err.response?.data?.detail || err.message || 'Error al cargar el reporte')
     } finally {
       setLoading(false)
     }

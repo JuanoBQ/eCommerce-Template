@@ -1,522 +1,566 @@
-from rest_framework import viewsets, status, permissions
-from rest_framework.decorators import action
+from rest_framework import status, permissions
+from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
-from rest_framework.views import APIView
-from django.db.models import Sum, Count, Avg, F, Q
+from django.db.models import Sum, Count, Avg, F
 from django.utils import timezone
 from datetime import timedelta
-from .models import Report, Claim, ClaimMessage
-from .serializers import ReportSerializer, ClaimSerializer, ClaimCreateSerializer, ClaimUpdateSerializer, ClaimMessageSerializer, ClaimMessageCreateSerializer
-from ecommerce.apps.orders.models import Order
-from ecommerce.apps.products.models import Product, ProductReview
+from decimal import Decimal
+from ecommerce.apps.orders.models import Order, OrderItem
+from ecommerce.apps.products.models import Product
 from ecommerce.apps.users.models import User
+from ecommerce.apps.products.models import ProductReview
+from .models import Claim, ClaimMessage
 
 
-class ReportViewSet(viewsets.ModelViewSet):
+@api_view(['GET'])
+@permission_classes([permissions.IsAuthenticated])
+def dashboard_report(request):
     """
-    ViewSet para gestionar reportes.
+    Vista para obtener reporte completo del dashboard.
     """
-    serializer_class = ReportSerializer
-    permission_classes = [permissions.IsAuthenticated, permissions.IsAdminUser]
-    
-    def get_queryset(self):
-        """
-        Filtra los reportes según el usuario.
-        """
-        if self.request.user.is_staff:
-            return Report.objects.all().select_related('generated_by')
-        return Report.objects.filter(generated_by=self.request.user).select_related('generated_by')
-    
-    def perform_create(self, serializer):
-        """
-        Asigna el usuario actual al reporte.
-        """
-        serializer.save(generated_by=self.request.user)
-
-
-class SalesReportView(APIView):
-    """
-    Vista para generar reportes de ventas.
-    """
-    permission_classes = [permissions.IsAuthenticated, permissions.IsAdminUser]
-    
-    def get(self, request):
-        """
-        Genera un reporte de ventas.
-        """
+    try:
         # Obtener parámetros de fecha
-        start_date = request.query_params.get('start_date')
-        end_date = request.query_params.get('end_date')
+        days = int(request.GET.get('days', 30))
+        end_date = timezone.now()
+        start_date = end_date - timedelta(days=days)
         
-        if not start_date:
-            start_date = timezone.now() - timedelta(days=30)
-        if not end_date:
-            end_date = timezone.now()
+        # Estadísticas generales
+        total_orders = Order.objects.count()  # Total de órdenes (todos los estados)
+        total_revenue = Order.objects.filter(payment_status='completed').aggregate(
+            total=Sum('total_amount')
+        )['total'] or Decimal('0.00')
         
-        # Calcular métricas de ventas
-        orders = Order.objects.filter(
-            created_at__date__range=[start_date, end_date],
-            status='completed'
-        )
+        total_customers = User.objects.filter(is_active=True).count()
+        total_products = Order.objects.filter(payment_status='completed').count()  # Órdenes con pago aprobado/confirmado
         
-        total_sales = orders.aggregate(total=Sum('total_amount'))['total'] or 0
-        total_orders = orders.count()
-        average_order_value = orders.aggregate(avg=Avg('total_amount'))['avg'] or 0
+        # Estadísticas del período seleccionado (solo pedidos con pago completado)
+        period_orders = Order.objects.filter(
+            created_at__gte=start_date,
+            created_at__lte=end_date,
+            payment_status='completed'
+        ).count()
         
-        # Ventas por día
-        daily_sales = orders.extra(
-            select={'day': 'date(created_at)'}
-        ).values('day').annotate(
-            total=Sum('total_amount'),
-            count=Count('id')
-        ).order_by('day')
+        period_revenue = Order.objects.filter(
+            created_at__gte=start_date,
+            created_at__lte=end_date,
+            payment_status='completed'
+        ).aggregate(
+            total=Sum('total_amount')
+        )['total'] or Decimal('0.00')
         
-        return Response({
-            'period': {
-                'start_date': start_date,
-                'end_date': end_date
-            },
-            'summary': {
-                'total_sales': total_sales,
-                'total_orders': total_orders,
-                'average_order_value': average_order_value
-            },
-            'daily_sales': list(daily_sales)
-        })
-
-
-class ProductReportView(APIView):
-    """
-    Vista para generar reportes de productos.
-    """
-    permission_classes = [permissions.IsAuthenticated, permissions.IsAdminUser]
-    
-    def get(self, request):
-        """
-        Genera un reporte de productos.
-        """
+        period_customers = User.objects.filter(
+            date_joined__gte=start_date,
+            date_joined__lte=end_date
+        ).count()
+        
+        # Calcular crecimiento (comparar con período anterior, solo pedidos con pago completado)
+        prev_start_date = start_date - timedelta(days=days)
+        prev_orders = Order.objects.filter(
+            created_at__gte=prev_start_date,
+            created_at__lt=start_date,
+            payment_status='completed'
+        ).count()
+        
+        prev_revenue = Order.objects.filter(
+            created_at__gte=prev_start_date,
+            created_at__lt=start_date,
+            payment_status='completed'
+        ).aggregate(
+            total=Sum('total_amount')
+        )['total'] or Decimal('0.00')
+        
+        prev_customers = User.objects.filter(
+            date_joined__gte=prev_start_date,
+            date_joined__lt=start_date
+        ).count()
+        
+        # Calcular porcentajes de crecimiento
+        revenue_growth = calculate_growth(period_revenue, prev_revenue)
+        orders_growth = calculate_growth(period_orders, prev_orders)
+        customers_growth = calculate_growth(period_customers, prev_customers)
+        
+        # Datos mensuales para gráficos
+        monthly_data = get_monthly_data(days)
+        
         # Productos más vendidos
-        top_products = Product.objects.annotate(
-            total_sold=Sum('orderitem__quantity')
-        ).order_by('-total_sold')[:10]
+        top_products = get_top_products(start_date, end_date)
         
-        # Productos con stock bajo
-        low_stock_products = Product.objects.filter(
-            inventory_quantity__lte=models.F('low_stock_threshold')
-        )
-        
-        # Productos inactivos
-        inactive_products = Product.objects.filter(is_active=False)
+        # Mejores clientes
+        top_customers = get_top_customers(start_date, end_date)
         
         return Response({
-            'top_products': [
-                {
-                    'id': product.id,
-                    'name': product.name,
-                    'total_sold': product.total_sold or 0
-                }
-                for product in top_products
-            ],
-            'low_stock_products': [
-                {
-                    'id': product.id,
-                    'name': product.name,
-                    'current_stock': product.inventory_quantity,
-                    'low_stock_threshold': product.low_stock_threshold
-                }
-                for product in low_stock_products
-            ],
-            'inactive_products': [
-                {
-                    'id': product.id,
-                    'name': product.name,
-                    'status': product.status
-                }
-                for product in inactive_products
-            ]
-        })
-
-
-class UserReportView(APIView):
-    """
-    Vista para generar reportes de usuarios.
-    """
-    permission_classes = [permissions.IsAuthenticated, permissions.IsAdminUser]
-    
-    def get(self, request):
-        """
-        Genera un reporte de usuarios.
-        """
-        # Usuarios más activos
-        top_users = User.objects.annotate(
-            total_orders=Count('orders'),
-            total_spent=Sum('orders__total_amount')
-        ).order_by('-total_spent')[:10]
-        
-        # Nuevos usuarios
-        new_users = User.objects.filter(
-            date_joined__date__gte=timezone.now().date() - timedelta(days=30)
-        ).count()
-        
-        # Usuarios inactivos
-        inactive_users = User.objects.filter(
-            last_login__date__lt=timezone.now().date() - timedelta(days=90)
-        ).count()
-        
-        return Response({
-            'top_users': [
-                {
-                    'id': user.id,
-                    'name': user.get_full_name(),
-                    'email': user.email,
-                    'total_orders': user.total_orders or 0,
-                    'total_spent': user.total_spent or 0
-                }
-                for user in top_users
-            ],
             'summary': {
-                'new_users': new_users,
-                'inactive_users': inactive_users
-            }
-        })
-
-
-class ClaimViewSet(viewsets.ModelViewSet):
-    """
-    ViewSet para gestionar reclamos.
-    """
-    permission_classes = [permissions.IsAuthenticated]
-    
-    def get_serializer_class(self):
-        if self.action == 'create':
-            return ClaimCreateSerializer
-        elif self.action in ['update', 'partial_update']:
-            return ClaimUpdateSerializer
-        return ClaimSerializer
-    
-    def get_queryset(self):
-        """
-        Filtra los reclamos según el usuario.
-        """
-        if self.request.user.is_staff:
-            return Claim.objects.all().select_related('user', 'order', 'product', 'resolved_by')
-        return Claim.objects.filter(user=self.request.user).select_related('user', 'order', 'product', 'resolved_by')
-    
-    def perform_create(self, serializer):
-        """
-        Asigna el usuario actual al reclamo.
-        """
-        serializer.save(user=self.request.user)
-    
-    def perform_update(self, serializer):
-        """
-        Actualiza el reclamo y marca como resuelto si es necesario.
-        """
-        instance = serializer.save()
+                'total_revenue': float(total_revenue),
+                'total_orders': total_orders,
+                'total_customers': total_customers,
+                'total_products': total_products,
+                'revenue_growth': revenue_growth,
+                'orders_growth': orders_growth,
+                'customers_growth': customers_growth,
+                'products_growth': 0  # No calculamos crecimiento de productos por ahora
+            },
+            'monthly_data': monthly_data,
+            'top_products': top_products,
+            'top_customers': top_customers
+        }, status=status.HTTP_200_OK)
         
-        # Si se marca como resuelto, actualizar campos de resolución
-        if instance.status == 'resolved' and not instance.resolved_at:
-            instance.resolved_by = self.request.user
-            instance.resolved_at = timezone.now()
-            instance.save()
-    
-    @action(detail=True, methods=['post'])
-    def add_message(self, request, pk=None):
-        """
-        Agrega un mensaje al reclamo.
-        """
-        claim = self.get_object()
-        serializer = ClaimMessageCreateSerializer(data=request.data)
-        
-        if serializer.is_valid():
-            # Determinar el tipo de mensaje basado en el usuario
-            if request.user.is_staff:
-                message_type = 'admin_response'
-            else:
-                message_type = 'user_message'
-            
-            message = serializer.save(
-                claim=claim,
-                author=request.user,
-                message_type=message_type
-            )
-            
-            return Response(ClaimMessageSerializer(message).data, status=status.HTTP_201_CREATED)
-        
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    except Exception as e:
+        import traceback
+        error_details = traceback.format_exc()
+        print(f"Error en dashboard_report: {str(e)}")
+        print(f"Traceback: {error_details}")
+        return Response(
+            {'error': f'Error al generar reporte: {str(e)}', 'details': error_details},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
 
 
-class ReviewsReportView(APIView):
+@api_view(['GET'])
+@permission_classes([permissions.IsAuthenticated])
+def reviews_report(request):
     """
-    Vista para generar reportes de reviews.
+    Vista para obtener reporte de reviews.
     """
-    permission_classes = [permissions.IsAuthenticated, permissions.IsAdminUser]
-    
-    def get(self, request):
-        """
-        Genera un reporte de reviews.
-        """
-        # Estadísticas generales de reviews
+    try:
+        # Estadísticas de reviews
         total_reviews = ProductReview.objects.count()
         approved_reviews = ProductReview.objects.filter(is_approved=True).count()
         pending_reviews = ProductReview.objects.filter(is_approved=False).count()
-        average_rating = ProductReview.objects.filter(is_approved=True).aggregate(avg=Avg('rating'))['avg'] or 0
+        
+        # Rating promedio
+        average_rating = ProductReview.objects.filter(
+            is_approved=True
+        ).aggregate(
+            avg_rating=Avg('rating')
+        )['avg_rating'] or 0
         
         # Distribución de ratings
-        rating_distribution = ProductReview.objects.filter(is_approved=True).values('rating').annotate(
-            count=Count('id')
-        ).order_by('rating')
-        
-        # Productos con más reviews
-        top_reviewed_products = Product.objects.annotate(
-            review_count=Count('reviews', filter=Q(reviews__is_approved=True))
-        ).filter(review_count__gt=0).order_by('-review_count')[:10]
-        
-        # Reviews recientes
-        recent_reviews = ProductReview.objects.filter(
-            is_approved=True
-        ).select_related('user', 'product').order_by('-created_at')[:10]
+        rating_distribution = get_rating_distribution()
         
         # Reviews por mes
-        monthly_reviews = ProductReview.objects.filter(
-            is_approved=True,
-            created_at__date__gte=timezone.now().date() - timedelta(days=365)
-        ).extra(
-            select={'month': 'strftime("%%Y-%%m", created_at)'}
-        ).values('month').annotate(
-            count=Count('id'),
-            avg_rating=Avg('rating')
-        ).order_by('month')
+        monthly_reviews = get_monthly_reviews()
+        
+        # Productos más revisados
+        top_reviewed_products = get_top_reviewed_products()
         
         return Response({
             'summary': {
                 'total_reviews': total_reviews,
                 'approved_reviews': approved_reviews,
                 'pending_reviews': pending_reviews,
-                'average_rating': round(average_rating, 2)
+                'average_rating': float(average_rating)
             },
-            'rating_distribution': list(rating_distribution),
-            'top_reviewed_products': [
-                {
-                    'id': product.id,
-                    'name': product.name,
-                    'review_count': product.review_count,
-                    'average_rating': product.reviews.filter(is_approved=True).aggregate(avg=Avg('rating'))['avg'] or 0
-                }
-                for product in top_reviewed_products
-            ],
-            'recent_reviews': [
-                {
-                    'id': review.id,
-                    'user_name': review.user.get_full_name(),
-                    'product_name': review.product.name,
-                    'rating': review.rating,
-                    'title': review.title,
-                    'created_at': review.created_at
-                }
-                for review in recent_reviews
-            ],
-            'monthly_reviews': list(monthly_reviews)
-        })
+            'rating_distribution': rating_distribution,
+            'monthly_reviews': monthly_reviews,
+            'top_reviewed_products': top_reviewed_products
+        }, status=status.HTTP_200_OK)
+        
+    except Exception as e:
+        return Response(
+            {'error': f'Error al generar reporte de reviews: {str(e)}'},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
 
 
-class ClaimsReportView(APIView):
-    """
-    Vista para generar reportes de reclamos.
-    """
-    permission_classes = [permissions.IsAuthenticated, permissions.IsAdminUser]
+def calculate_growth(current, previous):
+    """Calcular porcentaje de crecimiento."""
+    if previous == 0:
+        return 100 if current > 0 else 0
+    return round(((current - previous) / previous) * 100, 1)
+
+
+def get_monthly_data(days):
+    """Obtener datos mensuales para gráficos."""
+    from django.db.models.functions import TruncMonth
     
-    def get(self, request):
-        """
-        Genera un reporte de reclamos.
-        """
-        # Estadísticas generales de reclamos
-        total_claims = Claim.objects.count()
-        pending_claims = Claim.objects.filter(status='pending').count()
-        in_review_claims = Claim.objects.filter(status='in_review').count()
-        resolved_claims = Claim.objects.filter(status='resolved').count()
-        rejected_claims = Claim.objects.filter(status='rejected').count()
+    # Obtener datos de los últimos meses
+    months_ago = timezone.now() - timedelta(days=days)
+    
+    monthly_data = Order.objects.filter(
+        created_at__gte=months_ago,
+        payment_status='completed'  # Solo pedidos con pago completado
+    ).annotate(
+        month=TruncMonth('created_at')
+    ).values('month').annotate(
+        revenue=Sum('total_amount'),
+        orders=Count('id')
+    ).order_by('month')
+    
+    # Crear datos con nombres de meses
+    months_es = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic']
+    result = []
+    
+    for data in monthly_data:
+        month_date = data['month']
+        month_name = months_es[month_date.month - 1]
+        result.append({
+            'period': month_name,
+            'revenue': float(data['revenue'] or 0),
+            'orders': data['orders'],
+            'customers': 0,  # No calculamos clientes por mes por ahora
+            'products': 0    # No calculamos productos por mes por ahora
+        })
+    
+    return result
+
+
+def get_top_products(start_date, end_date):
+    """Obtener productos más vendidos (solo pedidos con pago completado)."""
+    top_products = OrderItem.objects.filter(
+        order__created_at__gte=start_date,
+        order__created_at__lte=end_date,
+        order__payment_status='completed'  # Solo pedidos con pago completado
+    ).values(
+        'product__id',
+        'product__name'
+    ).annotate(
+        sales=Sum('quantity'),
+        revenue=Sum(F('quantity') * F('unit_price'))
+    ).order_by('-sales')[:10]
+    
+    result = []
+    for item in top_products:
+        result.append({
+            'id': item['product__id'],
+            'name': item['product__name'],
+            'sales': item['sales'],
+            'revenue': float(item['revenue'] or 0)
+        })
+    
+    return result
+
+
+def get_top_customers(start_date, end_date):
+    """Obtener mejores clientes (solo pedidos con pago completado)."""
+    top_customers = Order.objects.filter(
+        created_at__gte=start_date,
+        created_at__lte=end_date,
+        payment_status='completed'  # Solo pedidos con pago completado
+    ).values(
+        'user',
+        'first_name',
+        'last_name',
+        'email'
+    ).annotate(
+        orders=Count('id'),
+        total_spent=Sum('total_amount')
+    ).order_by('-total_spent')[:10]
+    
+    result = []
+    for customer in top_customers:
+        result.append({
+            'id': customer['user'],
+            'name': f"{customer['first_name']} {customer['last_name']}",
+            'email': customer['email'],
+            'orders': customer['orders'],
+            'totalSpent': float(customer['total_spent'] or 0)
+        })
+    
+    return result
+
+
+def get_rating_distribution():
+    """Obtener distribución de ratings."""
+    distribution = ProductReview.objects.filter(
+        is_approved=True
+    ).values('rating').annotate(
+        count=Count('id')
+    ).order_by('rating')
+    
+    result = []
+    for item in distribution:
+        result.append({
+            'rating': item['rating'],
+            'count': item['count']
+        })
+    
+    return result
+
+
+def get_monthly_reviews():
+    """Obtener reviews por mes."""
+    from django.db.models.functions import TruncMonth
+    
+    monthly_reviews = ProductReview.objects.annotate(
+        month=TruncMonth('created_at')
+    ).values('month').annotate(
+        count=Count('id')
+    ).order_by('month')
+    
+    months_es = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic']
+    result = []
+    
+    for data in monthly_reviews:
+        month_date = data['month']
+        month_name = months_es[month_date.month - 1]
+        result.append({
+            'month': month_name,
+            'count': data['count']
+        })
+    
+    return result
+
+
+def get_top_reviewed_products():
+    """Obtener productos más revisados."""
+    top_products = ProductReview.objects.filter(
+        is_approved=True
+    ).values(
+        'product__id',
+        'product__name'
+    ).annotate(
+        review_count=Count('id'),
+        average_rating=Avg('rating')
+    ).order_by('-review_count')[:10]
+    
+    result = []
+    for product in top_products:
+        result.append({
+            'id': product['product__id'],
+            'name': product['product__name'],
+            'review_count': product['review_count'],
+            'average_rating': float(product['average_rating'] or 0)
+        })
+    
+    return result
+
+
+# Claims endpoints
+@api_view(['GET'])
+@permission_classes([permissions.IsAuthenticated])
+def claims_list(request):
+    """Listar todos los reclamos."""
+    try:
+        claims = Claim.objects.select_related('user', 'order', 'product', 'resolved_by').all()
         
-        # Reclamos por tipo
-        claims_by_type = Claim.objects.values('claim_type').annotate(
-            count=Count('id')
-        ).order_by('-count')
+        # Filtrar por estado si se proporciona
+        status_filter = request.GET.get('status')
+        if status_filter:
+            claims = claims.filter(status=status_filter)
         
-        # Reclamos por prioridad
-        claims_by_priority = Claim.objects.values('priority').annotate(
-            count=Count('id')
-        ).order_by('-count')
+        # Filtrar por prioridad si se proporciona
+        priority = request.GET.get('priority')
+        if priority:
+            claims = claims.filter(priority=priority)
         
-        # Reclamos recientes
-        recent_claims = Claim.objects.select_related('user', 'order', 'product').order_by('-created_at')[:10]
+        # Ordenar por fecha de creación (más recientes primero)
+        claims = claims.order_by('-created_at')
         
-        # Tiempo promedio de resolución
-        resolved_claims_with_time = Claim.objects.filter(
-            status='resolved',
-            resolved_at__isnull=False
-        ).annotate(
-            resolution_time=F('resolved_at') - F('created_at')
+        result = []
+        for claim in claims:
+            result.append({
+                'id': claim.id,
+                'user': claim.user.id,
+                'user_name': f"{claim.user.first_name} {claim.user.last_name}",
+                'user_email': claim.user.email,
+                'user_phone': getattr(claim.user, 'phone', ''),
+                'claim_type': claim.claim_type,
+                'title': claim.title,
+                'description': claim.description,
+                'status': claim.status,
+                'priority': claim.priority,
+                'order': claim.order.id if claim.order else None,
+                'order_number': claim.order.order_number if claim.order else None,
+                'product': claim.product.id if claim.product else None,
+                'product_name': claim.product.name if claim.product else None,
+                'product_sku': claim.product.sku if claim.product else None,
+                'admin_response': claim.admin_response,
+                'resolved_by': claim.resolved_by.id if claim.resolved_by else None,
+                'resolved_by_name': f"{claim.resolved_by.first_name} {claim.resolved_by.last_name}" if claim.resolved_by else None,
+                'resolved_at': claim.resolved_at.isoformat() if claim.resolved_at else None,
+                'created_at': claim.created_at.isoformat(),
+                'updated_at': claim.updated_at.isoformat()
+            })
+        
+        return Response(result, status=status.HTTP_200_OK)
+        
+    except Exception as e:
+        return Response(
+            {'error': f'Error al obtener reclamos: {str(e)}'},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
+
+
+@api_view(['GET'])
+@permission_classes([permissions.IsAuthenticated])
+def claim_detail(request, claim_id):
+    """Obtener detalles de un reclamo específico."""
+    try:
+        claim = Claim.objects.select_related('user', 'order', 'product', 'resolved_by').get(id=claim_id)
+        messages = ClaimMessage.objects.filter(claim=claim).order_by('created_at')
+        
+        claim_data = {
+            'id': claim.id,
+            'user': claim.user.id,
+            'user_name': f"{claim.user.first_name} {claim.user.last_name}",
+            'user_email': claim.user.email,
+            'user_phone': getattr(claim.user, 'phone', ''),
+            'claim_type': claim.claim_type,
+            'title': claim.title,
+            'description': claim.description,
+            'status': claim.status,
+            'priority': claim.priority,
+            'order': claim.order.id if claim.order else None,
+            'order_number': claim.order.order_number if claim.order else None,
+            'product': claim.product.id if claim.product else None,
+            'product_name': claim.product.name if claim.product else None,
+            'product_sku': claim.product.sku if claim.product else None,
+            'admin_response': claim.admin_response,
+            'resolved_by': claim.resolved_by.id if claim.resolved_by else None,
+            'resolved_by_name': f"{claim.resolved_by.first_name} {claim.resolved_by.last_name}" if claim.resolved_by else None,
+            'resolved_at': claim.resolved_at.isoformat() if claim.resolved_at else None,
+            'created_at': claim.created_at.isoformat(),
+            'updated_at': claim.updated_at.isoformat(),
+            'messages': []
+        }
+        
+        for message in messages:
+            claim_data['messages'].append({
+                'id': message.id,
+                'claim': message.claim.id,
+                'message_type': message.message_type,
+                'content': message.content,
+                'author': message.author.id,
+                'author_name': message.author_name,
+                'author_email': message.author_email,
+                'created_at': message.created_at.isoformat(),
+                'updated_at': message.updated_at.isoformat()
+            })
+        
+        return Response(claim_data, status=status.HTTP_200_OK)
+        
+    except Claim.DoesNotExist:
+        return Response(
+            {'error': 'Reclamo no encontrado'},
+            status=status.HTTP_404_NOT_FOUND
+        )
+    except Exception as e:
+        return Response(
+            {'error': f'Error al obtener reclamo: {str(e)}'},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
+
+
+@api_view(['POST'])
+@permission_classes([permissions.IsAuthenticated])
+def create_claim(request):
+    """Crear un nuevo reclamo."""
+    try:
+        data = request.data
+        data['user'] = request.user.id
+        
+        claim = Claim.objects.create(
+            user_id=data['user'],
+            claim_type=data.get('claim_type'),
+            title=data.get('title'),
+            description=data.get('description'),
+            order_id=data.get('order'),
+            product_id=data.get('product')
         )
         
-        avg_resolution_time = None
-        if resolved_claims_with_time.exists():
-            total_seconds = sum(
-                (claim.resolution_time.total_seconds() for claim in resolved_claims_with_time)
-            )
-            avg_resolution_time = total_seconds / resolved_claims_with_time.count()
-        
-        # Reclamos por mes
-        monthly_claims = Claim.objects.filter(
-            created_at__date__gte=timezone.now().date() - timedelta(days=365)
-        ).extra(
-            select={'month': 'strftime("%%Y-%%m", created_at)'}
-        ).values('month').annotate(
-            count=Count('id')
-        ).order_by('month')
-        
         return Response({
-            'summary': {
-                'total_claims': total_claims,
-                'pending_claims': pending_claims,
-                'in_review_claims': in_review_claims,
-                'resolved_claims': resolved_claims,
-                'rejected_claims': rejected_claims,
-                'avg_resolution_time_hours': round(avg_resolution_time / 3600, 2) if avg_resolution_time else None
-            },
-            'claims_by_type': list(claims_by_type),
-            'claims_by_priority': list(claims_by_priority),
-            'recent_claims': [
-                {
-                    'id': claim.id,
-                    'user_name': claim.user.get_full_name(),
-                    'title': claim.title,
-                    'claim_type': claim.get_claim_type_display(),
-                    'status': claim.get_status_display(),
-                    'priority': claim.get_priority_display(),
-                    'created_at': claim.created_at
-                }
-                for claim in recent_claims
-            ],
-            'monthly_claims': list(monthly_claims)
-        })
+            'id': claim.id,
+            'message': 'Reclamo creado exitosamente'
+        }, status=status.HTTP_201_CREATED)
+        
+    except Exception as e:
+        return Response(
+            {'error': f'Error al crear reclamo: {str(e)}'},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
 
 
-class DashboardReportView(APIView):
-    """
-    Vista para generar reportes del dashboard principal.
-    """
-    permission_classes = [permissions.IsAuthenticated, permissions.IsAdminUser]
-    
-    def get(self, request):
-        """
-        Genera un reporte del dashboard.
-        """
-        # Obtener parámetros de fecha
-        start_date = request.query_params.get('start_date')
-        end_date = request.query_params.get('end_date')
+@api_view(['PATCH'])
+@permission_classes([permissions.IsAuthenticated])
+def update_claim(request, claim_id):
+    """Actualizar un reclamo."""
+    try:
+        claim = Claim.objects.get(id=claim_id)
+        data = request.data
         
-        # Si no se proporcionan fechas, usar los últimos 30 días
-        if not start_date or not end_date:
-            end_date = timezone.now()
-            start_date = end_date - timedelta(days=30)
-        else:
-            start_date = timezone.datetime.strptime(start_date, '%Y-%m-%d')
-            end_date = timezone.datetime.strptime(end_date, '%Y-%m-%d')
+        # Solo permitir actualizar ciertos campos
+        if 'status' in data:
+            claim.status = data['status']
+        if 'priority' in data:
+            claim.priority = data['priority']
+        if 'admin_response' in data:
+            claim.admin_response = data['admin_response']
+        if 'resolved_by' in data:
+            claim.resolved_by_id = data['resolved_by']
+            claim.resolved_at = timezone.now()
         
-        # Período anterior para comparación
-        period_length = (end_date - start_date).days
-        previous_start = start_date - timedelta(days=period_length)
-        previous_end = start_date
-        
-        # Resumen actual
-        current_orders = Order.objects.filter(created_at__range=[start_date, end_date])
-        current_revenue = current_orders.aggregate(total=Sum('total_amount'))['total'] or 0
-        current_orders_count = current_orders.count()
-        current_customers = User.objects.filter(date_joined__range=[start_date, end_date]).count()
-        current_products = Product.objects.filter(created_at__range=[start_date, end_date]).count()
-        
-        # Resumen anterior
-        previous_orders = Order.objects.filter(created_at__range=[previous_start, previous_end])
-        previous_revenue = previous_orders.aggregate(total=Sum('total_amount'))['total'] or 0
-        previous_orders_count = previous_orders.count()
-        previous_customers = User.objects.filter(date_joined__range=[previous_start, previous_end]).count()
-        previous_products = Product.objects.filter(created_at__range=[previous_start, previous_end]).count()
-        
-        # Calcular crecimiento
-        revenue_growth = ((current_revenue - previous_revenue) / previous_revenue * 100) if previous_revenue > 0 else 0
-        orders_growth = ((current_orders_count - previous_orders_count) / previous_orders_count * 100) if previous_orders_count > 0 else 0
-        customers_growth = ((current_customers - previous_customers) / previous_customers * 100) if previous_customers > 0 else 0
-        products_growth = ((current_products - previous_products) / previous_products * 100) if previous_products > 0 else 0
-        
-        # Datos mensuales
-        monthly_data = []
-        for i in range(6):  # Últimos 6 meses
-            month_start = end_date - timedelta(days=30 * (i + 1))
-            month_end = end_date - timedelta(days=30 * i)
-            
-            month_orders = Order.objects.filter(created_at__range=[month_start, month_end])
-            month_revenue = month_orders.aggregate(total=Sum('total_amount'))['total'] or 0
-            month_orders_count = month_orders.count()
-            month_customers = User.objects.filter(date_joined__range=[month_start, month_end]).count()
-            month_products = Product.objects.filter(created_at__range=[month_start, month_end]).count()
-            
-            monthly_data.append({
-                'period': month_start.strftime('%b'),
-                'revenue': float(month_revenue),
-                'orders': month_orders_count,
-                'customers': month_customers,
-                'products': month_products
-            })
-        
-        monthly_data.reverse()
-        
-        # Top productos
-        top_products = Product.objects.filter(
-            orderitem__order__created_at__range=[start_date, end_date]
-        ).annotate(
-            sales=Count('orderitem'),
-            revenue=Sum('orderitem__total_price')
-        ).order_by('-sales')[:5]
-        
-        top_products_data = []
-        for product in top_products:
-            top_products_data.append({
-                'id': product.id,
-                'name': product.name,
-                'sales': product.sales,
-                'revenue': float(product.revenue or 0)
-            })
-        
-        # Top clientes
-        top_customers = User.objects.filter(
-            orders__created_at__range=[start_date, end_date]
-        ).annotate(
-            orders_count=Count('orders'),
-            total_spent=Sum('orders__total_amount')
-        ).order_by('-total_spent')[:5]
-        
-        top_customers_data = []
-        for customer in top_customers:
-            top_customers_data.append({
-                'id': customer.id,
-                'name': customer.get_full_name(),
-                'email': customer.email,
-                'orders': customer.orders_count,
-                'totalSpent': float(customer.total_spent or 0)
-            })
+        claim.save()
         
         return Response({
-            'summary': {
-                'total_revenue': float(current_revenue),
-                'total_orders': current_orders_count,
-                'total_customers': current_customers,
-                'total_products': current_products,
-                'revenue_growth': revenue_growth,
-                'orders_growth': orders_growth,
-                'customers_growth': customers_growth,
-                'products_growth': products_growth
-            },
-            'monthly_data': monthly_data,
-            'top_products': top_products_data,
-            'top_customers': top_customers_data
-        })
+            'id': claim.id,
+            'message': 'Reclamo actualizado exitosamente'
+        }, status=status.HTTP_200_OK)
+        
+    except Claim.DoesNotExist:
+        return Response(
+            {'error': 'Reclamo no encontrado'},
+            status=status.HTTP_404_NOT_FOUND
+        )
+    except Exception as e:
+        return Response(
+            {'error': f'Error al actualizar reclamo: {str(e)}'},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
+
+
+@api_view(['DELETE'])
+@permission_classes([permissions.IsAuthenticated])
+def delete_claim(request, claim_id):
+    """Eliminar un reclamo."""
+    try:
+        claim = Claim.objects.get(id=claim_id)
+        claim.delete()
+        
+        return Response({
+            'message': 'Reclamo eliminado exitosamente'
+        }, status=status.HTTP_200_OK)
+        
+    except Claim.DoesNotExist:
+        return Response(
+            {'error': 'Reclamo no encontrado'},
+            status=status.HTTP_404_NOT_FOUND
+        )
+    except Exception as e:
+        return Response(
+            {'error': f'Error al eliminar reclamo: {str(e)}'},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
+
+
+@api_view(['POST'])
+@permission_classes([permissions.IsAuthenticated])
+def add_claim_message(request, claim_id):
+    """Agregar un mensaje a un reclamo."""
+    try:
+        claim = Claim.objects.get(id=claim_id)
+        data = request.data
+        
+        message = ClaimMessage.objects.create(
+            claim=claim,
+            message_type=data.get('message_type', 'user_message'),
+            content=data.get('content'),
+            author_id=request.user.id,
+            author_name=f"{request.user.first_name} {request.user.last_name}",
+            author_email=request.user.email
+        )
+        
+        return Response({
+            'id': message.id,
+            'message': 'Mensaje agregado exitosamente'
+        }, status=status.HTTP_201_CREATED)
+        
+    except Claim.DoesNotExist:
+        return Response(
+            {'error': 'Reclamo no encontrado'},
+            status=status.HTTP_404_NOT_FOUND
+        )
+    except Exception as e:
+        return Response(
+            {'error': f'Error al agregar mensaje: {str(e)}'},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )

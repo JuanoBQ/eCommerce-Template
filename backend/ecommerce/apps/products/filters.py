@@ -1,16 +1,17 @@
 import django_filters
-from django.db.models import Q
+from django.db.models import Q, F
 from .models import Product
-from ecommerce.apps.categories.models import Category
+from ecommerce.apps.categories.models import Category, Brand
 
 
 class ProductFilter(django_filters.FilterSet):
     """
     Filtros para productos.
     """
-    # Filtros básicos
-    category = django_filters.ModelChoiceFilter(queryset=Category.objects.filter(is_active=True))
-    gender = django_filters.ChoiceFilter(choices=Product.GENDER_CHOICES)
+    # Filtros básicos - soporte para múltiples valores
+    category = django_filters.BaseInFilter(field_name='category', lookup_expr='in')
+    brand = django_filters.BaseInFilter(field_name='brand', lookup_expr='in')
+    gender = django_filters.BaseInFilter(field_name='gender', lookup_expr='in')
     
     # Filtros de precio
     min_price = django_filters.NumberFilter(field_name='price', lookup_expr='gte')
@@ -23,6 +24,9 @@ class ProductFilter(django_filters.FilterSet):
     
     # Filtros de inventario
     is_in_stock = django_filters.BooleanFilter(method='filter_in_stock')
+    
+    # Filtro de ofertas
+    sale = django_filters.BooleanFilter(method='filter_sale')
     
     # Filtros de búsqueda
     search = django_filters.CharFilter(method='filter_search')
@@ -47,6 +51,14 @@ class ProductFilter(django_filters.FilterSet):
             return queryset.filter(inventory_quantity__gt=0)
         else:
             return queryset.filter(inventory_quantity=0)
+    
+    def filter_sale(self, queryset, name, value):
+        """
+        Filtrar productos en oferta (con precio de comparación).
+        """
+        if value:
+            return queryset.filter(compare_price__isnull=False, compare_price__gt=F('price'))
+        return queryset
     
     def filter_search(self, queryset, name, value):
         """

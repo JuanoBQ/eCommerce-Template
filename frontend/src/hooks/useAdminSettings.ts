@@ -105,8 +105,8 @@ export const useAdminSettings = () => {
       setIsSaving(true)
       setError(null)
       
-      const response = await apiClient.post('/admin/settings/', newSettings)
-      setSettings(response.data as AdminSettings)
+      const response = await apiClient.post('/admin/settings/', newSettings) as { data: AdminSettings }
+      setSettings(response.data)
       toast.success('Configuraciones guardadas exitosamente')
     } catch (err: any) {
       const errorMessage = err.response?.data?.error || 'Error al guardar configuraciones'
@@ -125,8 +125,8 @@ export const useAdminSettings = () => {
       setIsSaving(true)
       setError(null)
       
-      const response = await apiClient.post('/admin/settings/reset/')
-      setSettings(response.data as AdminSettings)
+      const response = await apiClient.post('/admin/settings/reset/') as { data: AdminSettings }
+      setSettings(response.data)
       toast.success('Configuraciones restablecidas exitosamente')
     } catch (err: any) {
       const errorMessage = err.response?.data?.error || 'Error al restablecer configuraciones'

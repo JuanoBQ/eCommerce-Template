@@ -1,18 +1,72 @@
 "use client"
 
-import { useState, useEffect, Suspense } from 'react'
+import { useState, useEffect, Suspense, useMemo } from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
-import { Grid, List, SlidersHorizontal, X } from 'lucide-react'
+import { Grid, List, SlidersHorizontal, X, Loader2 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { useProducts } from '@/hooks/useProducts'
 import { useWishlist } from '@/hooks/useWishlist'
+import { useStoreFilters } from '@/hooks/useStoreFilters'
+import { useIsMobile } from '@/hooks/useIsMobile'
 import { Product } from '@/types'
 import { formatPrice } from '@/utils/currency'
 import Dropdown from '@/components/ui/Dropdown'
 import { ProductCard } from '@/components/ui/ProductCard'
 import { Button } from '@/components/ui/button'
+import { Pagination } from '@/components/ui/Pagination'
 import { Heart } from 'lucide-react'
+import StoreFilters from '@/components/filters/StoreFilters'
+
+// Componente de overlay de carga para la página de la tienda
+const StoreLoadingOverlay: React.FC<{ isLoading: boolean }> = ({ isLoading }) => (
+  <AnimatePresence>
+    {isLoading && (
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        transition={{ duration: 0.3 }}
+        className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center"
+      >
+        <motion.div
+          initial={{ scale: 0.8, opacity: 0, y: 20 }}
+          animate={{ scale: 1, opacity: 1, y: 0 }}
+          exit={{ scale: 0.8, opacity: 0, y: 20 }}
+          transition={{ duration: 0.4, ease: "easeOut" }}
+          className="flex flex-col items-center gap-4 p-8 bg-white rounded-2xl shadow-2xl border border-gray-200 max-w-sm mx-4"
+        >
+          <div className="relative">
+            <Loader2 className="w-12 h-12 animate-spin text-primary-500" />
+            <div className="absolute inset-0 rounded-full border-2 border-primary-100"></div>
+          </div>
+          <div className="text-center">
+            <h3 className="text-lg font-semibold text-gray-900 mb-1">Cargando productos</h3>
+            <p className="text-sm text-gray-600">Aplicando filtros y buscando resultados...</p>
+          </div>
+          <div className="flex space-x-1">
+            <motion.div
+              className="w-2 h-2 bg-primary-500 rounded-full"
+              animate={{ scale: [1, 1.2, 1] }}
+              transition={{ duration: 0.6, repeat: Infinity, delay: 0 }}
+            />
+            <motion.div
+              className="w-2 h-2 bg-primary-500 rounded-full"
+              animate={{ scale: [1, 1.2, 1] }}
+              transition={{ duration: 0.6, repeat: Infinity, delay: 0.2 }}
+            />
+            <motion.div
+              className="w-2 h-2 bg-primary-500 rounded-full"
+              animate={{ scale: [1, 1.2, 1] }}
+              transition={{ duration: 0.6, repeat: Infinity, delay: 0.4 }}
+            />
+          </div>
+        </motion.div>
+      </motion.div>
+    )}
+  </AnimatePresence>
+)
 
 
 
@@ -20,7 +74,7 @@ interface Filters {
   search: string
   category: number | null
   brand: number | null
-  gender: 'men' | 'women' | null
+  gender: 'men' | 'women' | 'unisex' | null
   minPrice: number | null
   maxPrice: number | null
   sortBy: 'name' | 'price' | 'created_at' | 'popularity'
@@ -31,185 +85,173 @@ interface Filters {
 
 function TiendaContent() {
   const router = useRouter()
-  const { products, categories, brands, isLoading: productsLoading, loadProducts } = useProducts()
+  const {
+    products,
+    categories,
+    brands,
+    isLoading: productsLoading,
+    loadProducts,
+    pagination,
+    goToPage,
+    goToNextPage,
+    goToPreviousPage
+  } = useProducts()
+
   const { addToWishlist, removeFromWishlist, isInWishlist } = useWishlist()
   const searchParams = useSearchParams()
-  const [filteredProducts, setFilteredProducts] = useState<Product[]>([])
-  const [filters, setFilters] = useState<Filters>({
-    search: searchParams.get('search') || '',
-    category: searchParams.get('category') ? categories.find(c => c.slug === searchParams.get('category'))?.id || null : null,
-    brand: null,
-    gender: (searchParams.get('gender') as 'men' | 'women') || null,
-    minPrice: null,
-    maxPrice: null,
-    sortBy: 'name',
-    sortOrder: 'asc',
-    viewMode: 'grid',
-    sale: searchParams.get('sale') === 'true'
+  const isMobile = useIsMobile()
+  
+  const {
+    search,
+    filters,
+    filterGroups,
+    hasActiveFilters,
+    activeFiltersCount,
+    isLoading: filtersLoading,
+    handleSearchChange,
+    handleFilterChange,
+    handleClearAll,
+    applyFiltersToAPI,
+    setSearch,
+    setFilters
+  } = useStoreFilters({
+    categories: categories || [],
+    brands: brands || [],
+    products: products || [],
+    loadProducts,
+    pagination,
+    onFiltersChange: (newFilters) => {
+      console.log('🔍 useStoreFilters - onFiltersChange called:', newFilters)
+    }
   })
-  const [showFilters, setShowFilters] = useState(false)
+
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
+  const [sortBy, setSortBy] = useState<'name' | 'price' | 'created_at' | 'popularity'>('name')
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc')
+  
   
   // Detectar si viene de navegación para ocultar barra de filtros
   const isFromNavigation = searchParams.get('from_nav') === 'true'
 
   // Cargar productos al montar el componente
   useEffect(() => {
-    loadProducts({}, true) // true indica que es vista pública
+    loadProducts({ page: 1, page_size: 20 }, true) // true indica que es vista pública
   }, [loadProducts])
-
-  // Recargar productos cuando cambie el género (para "Ver Todo")
-  useEffect(() => {
-    const genderParam = searchParams.get('gender') as 'men' | 'women' | null
-    const clearFiltersParam = searchParams.get('clear_filters')
-    
-    // Si es "Ver Todo" (clear_filters=true), recargar productos
-    if (clearFiltersParam === 'true' && genderParam) {
-      loadProducts({}, true)
-    }
-  }, [searchParams.get('gender'), searchParams.get('clear_filters')])
 
   // Manejar parámetros de búsqueda de la URL
   useEffect(() => {
     const searchParam = searchParams.get('search')
-    const genderParam = searchParams.get('gender') as 'men' | 'women' | null
+    const genderParamRaw = searchParams.get('gender')
+    // Mapear géneros de la base de datos a los del frontend
+    const genderParam = genderParamRaw === 'masculino' ? 'men' : 
+                       genderParamRaw === 'femenino' ? 'women' : 
+                       genderParamRaw === 'unisex' ? 'unisex' : 
+                       genderParamRaw as 'men' | 'women' | 'unisex' | null
     const categoryParam = searchParams.get('category')
     const saleParam = searchParams.get('sale') === 'true'
-    const fromNavParam = searchParams.get('from_nav') // Detectar si viene de navegación
-    const clearFiltersParam = searchParams.get('clear_filters') // Detectar si debe limpiar filtros
+    const clearFiltersParam = searchParams.get('clear_filters')
     
-    // Si viene de navegación, resetear todos los filtros primero
-    if (fromNavParam === 'true') {
-      setFilters({
-        search: searchParam || '',
-        category: categoryParam ? categories.find(c => c.slug === categoryParam)?.id || null : null,
-        brand: null,
-        gender: genderParam,
-        minPrice: null,
-        maxPrice: null,
-        sortBy: 'name',
-        sortOrder: 'asc',
-        viewMode: 'grid',
-        sale: saleParam
-      })
-      return
-    }
+    console.log('🔍 Navegación detectada:', { 
+      gender: genderParam, 
+      category: categoryParam, 
+      clearFilters: clearFiltersParam 
+    })
     
-    // Si debe limpiar filtros (Ver Todo), solo mantener género
+    // Si debe limpiar filtros, limpiar búsqueda y resetear filtros existentes
     if (clearFiltersParam === 'true') {
-      setFilters({
-        search: '',
-        category: null,
-        brand: null,
-        gender: genderParam,
-        minPrice: null,
-        maxPrice: null,
-        sortBy: 'name',
-        sortOrder: 'asc',
-        viewMode: 'grid',
-        sale: false
-      })
-      return
+      setSearch('')
+      setFilters({}) // Limpiar filtros existentes
     }
     
-    const updates: Partial<Filters> = {}
+    // Procesar todos los parámetros de filtro de manera unificada
+    let newFilters: any = {}
+    let hasFilters = false
     
-    if (searchParam !== filters.search) {
-      updates.search = searchParam || ''
+    // Aplicar filtro de búsqueda si existe
+    if (searchParam) {
+      setSearch(searchParam)
     }
     
-    if (genderParam !== filters.gender) {
-      updates.gender = genderParam
+    // Aplicar filtro de género si existe
+    if (genderParam) {
+      // Mapear género de la URL al estado interno
+      const mappedGender = genderParam === 'masculino' ? 'men' : 
+                          genderParam === 'femenino' ? 'women' : 
+                          genderParam
+      newFilters.gender = [mappedGender]
+      hasFilters = true
     }
     
+    // Aplicar filtro de categoría si existe
     if (categoryParam) {
-      const categoryId = categories.find(c => c.slug === categoryParam)?.id || null
-      if (categoryId !== filters.category) {
-        updates.category = categoryId
+      let categoryId: number | null = null
+      
+      // Si es un número, usarlo directamente
+      if (!isNaN(Number(categoryParam))) {
+        categoryId = Number(categoryParam)
+      } else {
+        // Si es un string, buscar por slug o nombre
+        const foundCategory = categories.find(c => 
+          c.slug === categoryParam || 
+          c.name.toLowerCase() === categoryParam.toLowerCase()
+        )
+        if (foundCategory) {
+          categoryId = foundCategory.id
+        }
+      }
+      
+      if (categoryId) {
+        newFilters.category = [categoryId]
+        hasFilters = true
       }
     }
     
-    if (saleParam !== filters.sale) {
-      updates.sale = saleParam
+    // Aplicar filtro de ofertas si existe
+    if (saleParam) {
+      newFilters.sale = ['sale']
+      hasFilters = true
     }
     
-    if (Object.keys(updates).length > 0) {
-      setFilters(prev => ({ ...prev, ...updates }))
+    // Procesar otros parámetros de filtros
+    const featuredParam = searchParams.get('featured') === 'true'
+    const newParam = searchParams.get('new') === 'true'
+    const trendingParam = searchParams.get('trending') === 'true'
+    
+    if (featuredParam) {
+      newFilters.featured = ['featured']
+      hasFilters = true
     }
-  }, [searchParams, categories, filters.search, filters.gender, filters.category, filters.sale])
-
-  // Aplicar filtros
-  useEffect(() => {
-    let filtered = [...products]
-
-    // Filtro de búsqueda
-    if (filters.search) {
-      filtered = filtered.filter(product =>
-        product.name.toLowerCase().includes(filters.search.toLowerCase()) ||
-        product.description.toLowerCase().includes(filters.search.toLowerCase())
-      )
+    
+    if (newParam) {
+      newFilters.new = ['new']
+      hasFilters = true
     }
-
-    // Filtro de categoría
-    if (filters.category) {
-      filtered = filtered.filter(product => product.category === filters.category)
+    
+    if (trendingParam) {
+      newFilters.trending = ['trending']
+      hasFilters = true
     }
-
-    // Filtro de marca
-    if (filters.brand) {
-      filtered = filtered.filter(product => product.brand === filters.brand)
+    
+    // Aplicar filtros si hay alguno
+    if (hasFilters) {
+      console.log('🔍 Aplicando filtros:', newFilters)
+      setFilters(newFilters)
+      applyFiltersToAPI(searchParam || '', newFilters, 1)
     }
+  }, [searchParams.get('category'), searchParams.get('gender'), searchParams.get('from_nav'), searchParams.get('clear_filters'), categories])
 
-    // Filtro de género
-    if (filters.gender) {
-      filtered = filtered.filter(product => {
-        // Si el producto tiene campo gender específico, usarlo
-        if (product.gender) {
-          const productGender = product.gender.toLowerCase()
-          
-          // Los productos unisex se muestran en ambas categorías
-          if (productGender === 'unisex') {
-            return true
-          }
-          
-          // Filtrar por género específico
-          if (filters.gender === 'men') {
-            return productGender === 'masculino' || productGender === 'male' || productGender === 'hombre'
-          } else if (filters.gender === 'women') {
-            return productGender === 'femenino' || productGender === 'female' || productGender === 'mujer'
-          }
-        }
-        
-        // Fallback: buscar por keywords en nombre y descripción
-        const genderKeywords = filters.gender === 'men' 
-          ? ['hombre', 'masculino', 'men', 'male'] 
-          : ['mujer', 'femenino', 'women', 'female']
-        
-        const searchText = `${product.name} ${product.description} ${product.category_details?.name || ''}`.toLowerCase()
-        return genderKeywords.some(keyword => searchText.includes(keyword)) || 
-               searchText.includes('unisex') // Incluir productos unisex
-      })
+  // Los productos ya vienen filtrados de la API, solo aplicamos ordenamiento local si es necesario
+  const filteredProducts = useMemo(() => {
+    // Si no hay ordenamiento específico, usar los productos tal como vienen de la API
+    if (sortBy === 'name' && sortOrder === 'asc') {
+      return products
     }
 
-    // Filtro de precio
-    if (filters.minPrice !== null) {
-      filtered = filtered.filter(product => product.price >= filters.minPrice!)
-    }
-    if (filters.maxPrice !== null) {
-      filtered = filtered.filter(product => product.price <= filters.maxPrice!)
-    }
-
-    // Filtro de ofertas
-    if (filters.sale) {
-      filtered = filtered.filter(product => 
-        product.compare_price && product.compare_price > product.price
-      )
-    }
-
-    // Ordenamiento
-    filtered.sort((a, b) => {
+    // Aplicar ordenamiento local solo si es necesario
+    const sorted = [...products].sort((a, b) => {
       let aValue: any, bValue: any
       
-      switch (filters.sortBy) {
+      switch (sortBy) {
         case 'name':
           aValue = a.name
           bValue = b.name
@@ -231,15 +273,15 @@ function TiendaContent() {
           bValue = b.name
       }
 
-      if (filters.sortOrder === 'asc') {
+      if (sortOrder === 'asc') {
         return aValue > bValue ? 1 : -1
       } else {
         return aValue < bValue ? 1 : -1
       }
     })
 
-    setFilteredProducts(filtered)
-  }, [products, filters.search, filters.category, filters.brand, filters.gender, filters.minPrice, filters.maxPrice, filters.sale, filters.sortBy, filters.sortOrder])
+    return sorted
+  }, [products, sortBy, sortOrder])
 
   const handleViewDetails = (product: Product) => {
     router.push(`/producto/${product.slug}`)
@@ -254,45 +296,10 @@ function TiendaContent() {
   }
 
   const clearFilters = () => {
-    setFilters({
-      search: '',
-      category: null,
-      brand: null,
-      minPrice: null,
-      maxPrice: null,
-      sortBy: 'name',
-      sortOrder: 'asc',
-      viewMode: filters.viewMode,
-      gender: null,
-      sale: false
-    })
+    handleClearAll()
   }
 
-  // Opciones para los dropdowns
-  const categoryOptions = [
-    { value: null, label: 'Todas las categorías' },
-    ...categories.map(category => ({
-      value: category.id,
-      label: category.name,
-      count: products.filter(p => p.category === category.id).length
-    }))
-  ]
-
-  const brandOptions = [
-    { value: null, label: 'Todas las marcas' },
-    ...brands.map(brand => ({
-      value: brand.id,
-      label: brand.name,
-      count: products.filter(p => p.brand === brand.id).length
-    }))
-  ]
-
-  const genderOptions = [
-    { value: null, label: 'Todos los géneros' },
-    { value: 'men', label: 'Hombres' },
-    { value: 'women', label: 'Mujeres' }
-  ]
-
+  // Opciones para el dropdown de ordenamiento
   const sortOptions = [
     { value: 'name-asc', label: 'Nombre A-Z' },
     { value: 'name-desc', label: 'Nombre Z-A' },
@@ -308,7 +315,7 @@ function TiendaContent() {
     <div className="min-h-screen bg-white">
       {/* Header de la tienda */}
       <div className="bg-gray-50 border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <div className="max-w-full mx-auto px-4 sm:px-6 lg:px-8 py-12">
           <div className="text-center">
             <h1 className="text-4xl font-bold text-gray-900 mb-4">
               Tienda <span className="text-primary-500">FitStore</span>
@@ -320,127 +327,39 @@ function TiendaContent() {
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="flex flex-col gap-8">
-          {/* Filtros horizontales - Solo mostrar si no viene de navegación */}
-          {!isFromNavigation && (
-            <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-lg font-semibold text-gray-900">Filtros</h3>
-              <button
-                onClick={clearFilters}
-                className="text-gray-500 hover:text-gray-900 transition-colors text-sm"
-              >
-                Limpiar filtros
-              </button>
-            </div>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-              <Dropdown
-                label="Categoría"
-                options={categoryOptions}
-                value={filters.category}
-                onChange={(value) => setFilters({ ...filters, category: value as number | null })}
-                placeholder="Todas las categorías"
-              />
-              
-              <Dropdown
-                label="Marca"
-                options={brandOptions}
-                value={filters.brand}
-                onChange={(value) => setFilters({ ...filters, brand: value as number | null })}
-                placeholder="Todas las marcas"
-              />
-              
-              <Dropdown
-                label="Género"
-                options={genderOptions}
-                value={filters.gender}
-                onChange={(value) => setFilters({ ...filters, gender: value as 'men' | 'women' | null })}
-                placeholder="Todos los géneros"
-              />
-              
-              <Dropdown
-                label="Ordenar por"
-                options={sortOptions}
-                value={`${filters.sortBy}-${filters.sortOrder}`}
-                onChange={(value) => {
-                  const [sortBy, sortOrder] = (value as string).split('-')
-                  setFilters({ 
-                    ...filters, 
-                    sortBy: sortBy as any, 
-                    sortOrder: sortOrder as any 
-                  })
-                }}
-                placeholder="Seleccionar orden"
-              />
-              
-              <div className="flex items-end">
-                <Button
-                  onClick={() => setShowFilters(!showFilters)}
-                  variant="outline"
-                  className="w-full"
-                >
-                  <SlidersHorizontal className="w-4 h-4 mr-2" />
-                  Más filtros
-                </Button>
-              </div>
-            </div>
-
-            {/* Filtros adicionales (colapsables) */}
-            {showFilters && (
-              <div className="mt-6 pt-6 border-t border-gray-200">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-900 mb-2">
-                      Precio mínimo
-                    </label>
-                    <input
-                      type="number"
-                      placeholder="0"
-                      value={filters.minPrice || ''}
-                      onChange={(e) => setFilters({ 
-                        ...filters, 
-                        minPrice: e.target.value ? parseInt(e.target.value) : null 
-                      })}
-                      className="w-full px-3 py-2 bg-white border border-gray-300 rounded-md text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-900 mb-2">
-                      Precio máximo
-                    </label>
-                    <input
-                      type="number"
-                      placeholder="1000000"
-                      value={filters.maxPrice || ''}
-                      onChange={(e) => setFilters({ 
-                        ...filters, 
-                        maxPrice: e.target.value ? parseInt(e.target.value) : null 
-                      })}
-                      className="w-full px-3 py-2 bg-white border border-gray-300 rounded-md text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                    />
-                  </div>
-                </div>
-              </div>
-            )}
+      <div className="max-w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="flex flex-col lg:flex-row gap-8">
+          {/* Filtros - Siempre mostrar */}
+          <div className="lg:w-80 flex-shrink-0">
+            <StoreFilters
+              filterGroups={filterGroups}
+              activeFilters={filters}
+              onFilterChange={handleFilterChange}
+              onClearAll={handleClearAll}
+              searchValue={search}
+              onSearchChange={handleSearchChange}
+              searchPlaceholder="Buscar productos..."
+              isMobile={isMobile}
+              showSearch={true}
+              isLoading={filtersLoading}
+            />
           </div>
-          )}
 
           {/* Contenido principal */}
-          <div>
-            {/* Mensaje informativo cuando se ocultan filtros */}
+          <div className="flex-1 min-w-0">
+            {/* Mensaje informativo cuando se viene de navegación */}
             {isFromNavigation && (
               <div className="mb-6 p-4 bg-primary-500/10 border border-primary-500/30 rounded-lg">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <div className="w-2 h-2 bg-primary-500 rounded-full"></div>
                     <p className="text-gray-900 font-medium">
-                      {filters.sale ? 'Ofertas' : 
-                       filters.gender === 'men' ? 'Productos para Hombres' : 
-                       filters.gender === 'women' ? 'Productos para Mujeres' : 'Productos Filtrados'}
-                      {filters.category && categories.find(c => c.id === filters.category) && 
-                       ` - ${categories.find(c => c.id === filters.category)?.name}`}
+                      {filters.sale?.includes('sale') ? 'Ofertas' : 
+                       filters.gender?.includes('men') ? 'Productos para Hombres' : 
+                       filters.gender?.includes('women') ? 'Productos para Mujeres' : 
+                       filters.gender?.includes('unisex') ? 'Productos Unisex' : 'Productos Filtrados'}
+                      {filters.category && filters.category.length > 0 && categories.find(c => filters.category.includes(c.id)) && 
+                       ` - ${categories.find(c => filters.category.includes(c.id))?.name}`}
                     </p>
                   </div>
                   <Link 
@@ -457,7 +376,7 @@ function TiendaContent() {
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
               <div className="flex items-center gap-4">
                 <p className="text-gray-600">
-                  Mostrando {filteredProducts.length} de {products.length} productos
+                  Mostrando {pagination.count} productos (Página {pagination.current_page} de {pagination.total_pages})
                 </p>
               </div>
 
@@ -465,18 +384,18 @@ function TiendaContent() {
                 {/* Vista */}
                 <div className="flex items-center gap-1 bg-gray-100 border border-gray-200 rounded-md p-1">
                   <button
-                    onClick={() => setFilters({ ...filters, viewMode: 'grid' })}
+                    onClick={() => setViewMode('grid')}
                     title="Vista en cuadrícula"
                     aria-label="Vista en cuadrícula"
-                    className={`p-2 rounded ${filters.viewMode === 'grid' ? 'bg-primary-500 text-white' : 'text-gray-600 hover:text-gray-900'}`}
+                    className={`p-2 rounded ${viewMode === 'grid' ? 'bg-primary-500 text-white' : 'text-gray-600 hover:text-gray-900'}`}
                   >
                     <Grid className="w-4 h-4" />
                   </button>
                   <button
-                    onClick={() => setFilters({ ...filters, viewMode: 'list' })}
+                    onClick={() => setViewMode('list')}
                     title="Vista en lista"
                     aria-label="Vista en lista"
-                    className={`p-2 rounded ${filters.viewMode === 'list' ? 'bg-primary-500 text-white' : 'text-gray-600 hover:text-gray-900'}`}
+                    className={`p-2 rounded ${viewMode === 'list' ? 'bg-primary-500 text-white' : 'text-gray-600 hover:text-gray-900'}`}
                   >
                     <List className="w-4 h-4" />
                   </button>
@@ -501,21 +420,33 @@ function TiendaContent() {
                 </Button>
               </div>
             ) : (
-              <div className={`grid gap-6 ${
-                filters.viewMode === 'grid' 
-                  ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3' 
-                  : 'grid-cols-1'
-              }`}>
-                {filteredProducts.map((product) => (
-                  <ProductCard
-                    key={product.id}
-                    product={product}
-                    onToggleWishlist={() => handleWishlistToggle(product)}
-                    isInWishlist={isInWishlist(product.id)}
-                  />
-                ))}
+              <div className="relative">
+                <div className={`grid gap-6 ${
+                  viewMode === 'grid' 
+                    ? 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4' 
+                    : 'grid-cols-1'
+                }`}>
+                  {filteredProducts.map((product) => (
+                    <ProductCard
+                      key={product.id}
+                      product={product}
+                      onToggleWishlist={() => handleWishlistToggle(product)}
+                      isInWishlist={isInWishlist(product.id)}
+                    />
+                  ))}
+                </div>
+                <StoreLoadingOverlay isLoading={filtersLoading || productsLoading} />
               </div>
             )}
+
+            {/* Paginación */}
+            <Pagination
+              currentPage={pagination.current_page}
+              totalPages={pagination.total_pages}
+              onPageChange={(page) => applyFiltersToAPI(search, filters, page)}
+              isLoading={productsLoading}
+              totalItems={pagination.count}
+            />
           </div>
         </div>
       </div>
@@ -527,9 +458,43 @@ export default function TiendaPage() {
   return (
     <Suspense fallback={
       <div className="min-h-screen bg-white pt-20 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-500 mx-auto mb-4"></div>
-          <p className="text-gray-600">Cargando tienda...</p>
+        <div className="text-center max-w-md mx-auto px-6">
+          {/* Store Icon Skeleton */}
+          <div className="mb-8">
+            <div className="w-20 h-20 bg-gray-200 rounded-full animate-pulse mx-auto mb-4"></div>
+            <div className="h-6 bg-gray-200 rounded animate-pulse w-32 mx-auto mb-2"></div>
+            <div className="h-4 bg-gray-200 rounded animate-pulse w-48 mx-auto"></div>
+          </div>
+
+          {/* Main Loading Spinner */}
+          <div className="relative mb-8">
+            <div className="animate-spin rounded-full h-16 w-16 border-4 border-gray-200 border-t-primary-500 mx-auto"></div>
+            <div className="absolute inset-0 flex items-center justify-center">
+              <div className="w-6 h-6 bg-primary-500 rounded-full animate-pulse"></div>
+            </div>
+          </div>
+
+          {/* Loading Text */}
+          <div className="space-y-3">
+            <h2 className="text-xl font-semibold text-gray-900">Cargando tienda</h2>
+            <p className="text-gray-600">Preparando catálogo de productos...</p>
+            
+            {/* Progress Steps */}
+            <div className="flex justify-center space-x-2 mt-6">
+              <div className="w-2 h-2 bg-primary-500 rounded-full animate-pulse"></div>
+              <div className="w-2 h-2 bg-gray-300 rounded-full animate-pulse" style={{ animationDelay: '0.2s' }}></div>
+              <div className="w-2 h-2 bg-gray-300 rounded-full animate-pulse" style={{ animationDelay: '0.4s' }}></div>
+            </div>
+          </div>
+
+          {/* Loading Animation */}
+          <div className="mt-8">
+            <div className="flex justify-center space-x-1">
+              <div className="w-2 h-2 bg-primary-500 rounded-full animate-bounce"></div>
+              <div className="w-2 h-2 bg-primary-500 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+              <div className="w-2 h-2 bg-primary-500 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+            </div>
+          </div>
         </div>
       </div>
     }>

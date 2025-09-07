@@ -8,6 +8,7 @@ from rest_framework.views import APIView
 from rest_framework.permissions import AllowAny
 from django.contrib.auth import get_user_model
 from django.db import models
+from django.db.models import Count
 from .serializers import (
     CustomRegisterSerializer, 
     UserSerializer, 
@@ -366,3 +367,39 @@ def simple_addresses_endpoint(request):
             }, status=status.HTTP_201_CREATED)
         else:
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+@api_view(['GET'])
+@permission_classes([permissions.IsAuthenticated])
+def user_stats(request):
+    """
+    Vista para obtener estadísticas de usuarios.
+    """
+    try:
+        # Estadísticas generales
+        total_users = User.objects.count()
+        active_users = User.objects.filter(is_active=True).count()
+        inactive_users = User.objects.filter(is_active=False).count()
+        staff_users = User.objects.filter(is_staff=True).count()
+        regular_users = User.objects.filter(is_staff=False).count()
+        
+        # Usuarios por fecha de registro (últimos 30 días)
+        from django.utils import timezone
+        from datetime import timedelta
+        thirty_days_ago = timezone.now() - timedelta(days=30)
+        new_users_30_days = User.objects.filter(date_joined__gte=thirty_days_ago).count()
+        
+        return Response({
+            'total_users': total_users,
+            'active_users': active_users,
+            'inactive_users': inactive_users,
+            'staff_users': staff_users,
+            'regular_users': regular_users,
+            'new_users_30_days': new_users_30_days,
+        })
+        
+    except Exception as e:
+        return Response(
+            {'error': f'Error al obtener estadísticas: {str(e)}'},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )

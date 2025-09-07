@@ -167,6 +167,14 @@ export default function NewProductPage() {
     }
 
     try {
+      // Debug: Log form data before sending
+      console.log('🔍 Form data before sending:', {
+        description: formData.description,
+        short_description: formData.short_description,
+        hasDescription: !!formData.description,
+        descriptionLength: formData.description?.length || 0
+      })
+
       // Prepare product data for API
       const productData = {
         name: formData.name,
@@ -292,19 +300,19 @@ export default function NewProductPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="min-h-screen bg-gray-50 space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-4">
           <Link
             href="/admin/products"
-            className="p-2 text-dark-400 hover:text-white transition-colors"
+            className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-all duration-200"
           >
             <ArrowLeft className="w-5 h-5" />
           </Link>
           <div>
-            <h1 className="text-3xl font-bold text-white">Nuevo Producto</h1>
-            <p className="text-dark-400 mt-2">Crea un nuevo producto para tu catálogo</p>
+            <h1 className="text-3xl font-bold text-gray-900">Nuevo Producto</h1>
+            <p className="text-gray-600 mt-2">Crea un nuevo producto para tu catálogo</p>
           </div>
         </div>
       </div>
@@ -314,12 +322,12 @@ export default function NewProductPage() {
           {/* Main Form */}
           <div className="lg:col-span-2 space-y-6">
             {/* Basic Information */}
-            <div className="bg-dark-800 border border-dark-700 rounded-xl p-6">
-              <h3 className="text-lg font-semibold text-white mb-6">Información Básica</h3>
+            <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
+              <h3 className="text-lg font-semibold text-gray-900 mb-6">Información Básica</h3>
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <label className="block text-sm font-medium text-white mb-2">
+                  <label className="block text-sm font-medium text-gray-900 mb-2">
                     Nombre del Producto *
                   </label>
                   <input
@@ -327,8 +335,8 @@ export default function NewProductPage() {
                     name="name"
                     value={formData.name}
                     onChange={handleInputChange}
-                    className={`w-full px-4 py-3 bg-dark-700 border rounded-lg text-white placeholder-dark-400 focus:outline-none focus:ring-2 focus:ring-neon-green focus:border-transparent ${
-                      errors.name ? 'border-red-500' : 'border-dark-600'
+                    className={`w-full px-4 py-3 bg-white border rounded-lg text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent ${
+                      errors.name ? 'border-red-500' : 'border-gray-300'
                     }`}
                     placeholder="Ej: Camiseta Nike Dri-FIT"
                   />
@@ -336,7 +344,7 @@ export default function NewProductPage() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-white mb-2">
+                  <label className="block text-sm font-medium text-gray-900 mb-2">
                     SKU *
                   </label>
                   <input
@@ -344,8 +352,8 @@ export default function NewProductPage() {
                     name="sku"
                     value={formData.sku}
                     onChange={handleInputChange}
-                    className={`w-full px-4 py-3 bg-dark-700 border rounded-lg text-white placeholder-dark-400 focus:outline-none focus:ring-2 focus:ring-neon-green focus:border-transparent ${
-                      errors.sku ? 'border-red-500' : 'border-dark-600'
+                    className={`w-full px-4 py-3 bg-white border rounded-lg text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent ${
+                      errors.sku ? 'border-red-500' : 'border-gray-300'
                     }`}
                     placeholder="Ej: CAM-NIKE-001"
                   />
@@ -355,15 +363,15 @@ export default function NewProductPage() {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
                 <div>
-                  <label className="block text-sm font-medium text-white mb-2">
-                    Categoría * {categories.length > 0 && <span className="text-green-400 text-xs">({categories.length} disponibles)</span>}
+                  <label className="block text-sm font-medium text-gray-900 mb-2">
+                    Categoría * {categories.length > 0 && <span className="text-gray-500 text-xs">({categories.length} disponibles)</span>}
                   </label>
                   <select
                     name="category"
                     value={formData.category || ''}
                     onChange={handleInputChange}
-                    className={`w-full px-4 py-3 bg-dark-700 border rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-neon-green focus:border-transparent ${
-                      errors.category ? 'border-red-500' : 'border-dark-600'
+                    className={`w-full px-4 py-3 bg-white border rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent ${
+                      errors.category ? 'border-red-500' : 'border-gray-300'
                     }`}
                     title="Seleccionar categoría"
                     aria-label="Seleccionar categoría del producto"
@@ -382,15 +390,15 @@ export default function NewProductPage() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-white mb-2">
-                    Marca * {brands.length > 0 && <span className="text-green-400 text-xs">({brands.length} disponibles)</span>}
+                  <label className="block text-sm font-medium text-gray-900 mb-2">
+                    Marca * {brands.length > 0 && <span className="text-gray-500 text-xs">({brands.length} disponibles)</span>}
                   </label>
                   <select
                     name="brand"
                     value={formData.brand || ''}
                     onChange={handleInputChange}
-                    className={`w-full px-4 py-3 bg-dark-700 border rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-neon-green focus:border-transparent ${
-                      errors.brand ? 'border-red-500' : 'border-dark-600'
+                    className={`w-full px-4 py-3 bg-white border rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent ${
+                      errors.brand ? 'border-red-500' : 'border-gray-300'
                     }`}
                     title="Seleccionar marca"
                     aria-label="Seleccionar marca del producto"
@@ -411,14 +419,14 @@ export default function NewProductPage() {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
                 <div>
-                  <label className="block text-sm font-medium text-white mb-2">
+                  <label className="block text-sm font-medium text-gray-900 mb-2">
                     Género
                   </label>
                   <select
                     name="gender"
                     value={formData.gender}
                     onChange={handleInputChange}
-                    className="w-full px-4 py-3 bg-dark-700 border border-dark-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-neon-green focus:border-transparent"
+                    className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                     title="Seleccionar género"
                     aria-label="Seleccionar género del producto"
                   >
@@ -431,7 +439,7 @@ export default function NewProductPage() {
               </div>
 
               <div className="mt-6">
-                <label className="block text-sm font-medium text-white mb-2">
+                <label className="block text-sm font-medium text-gray-900 mb-2">
                   Descripción Corta *
                 </label>
                 <input
@@ -439,8 +447,8 @@ export default function NewProductPage() {
                   name="short_description"
                   value={formData.short_description}
                   onChange={handleInputChange}
-                  className={`w-full px-4 py-3 bg-dark-700 border rounded-lg text-white placeholder-dark-400 focus:outline-none focus:ring-2 focus:ring-neon-green focus:border-transparent ${
-                    errors.short_description ? 'border-red-500' : 'border-dark-600'
+                  className={`w-full px-4 py-3 bg-white border rounded-lg text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent ${
+                    errors.short_description ? 'border-red-500' : 'border-gray-300'
                   }`}
                   placeholder="Descripción breve del producto..."
                 />
@@ -448,7 +456,7 @@ export default function NewProductPage() {
               </div>
 
               <div className="mt-6">
-                <label className="block text-sm font-medium text-white mb-2">
+                <label className="block text-sm font-medium text-gray-900 mb-2">
                   Descripción Completa *
                 </label>
                 <textarea
@@ -456,8 +464,8 @@ export default function NewProductPage() {
                   value={formData.description}
                   onChange={handleInputChange}
                   rows={4}
-                  className={`w-full px-4 py-3 bg-dark-700 border rounded-lg text-white placeholder-dark-400 focus:outline-none focus:ring-2 focus:ring-neon-green focus:border-transparent ${
-                    errors.description ? 'border-red-500' : 'border-dark-600'
+                  className={`w-full px-4 py-3 bg-white border rounded-lg text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent ${
+                    errors.description ? 'border-red-500' : 'border-gray-300'
                   }`}
                   placeholder="Describe las características y beneficios del producto..."
                 />
@@ -466,16 +474,16 @@ export default function NewProductPage() {
             </div>
 
             {/* Pricing & Inventory */}
-            <div className="bg-dark-800 border border-dark-700 rounded-xl p-6">
-              <h3 className="text-lg font-semibold text-white mb-6">Precio e Inventario</h3>
+            <div className="bg-white border border-gray-200 rounded-xl p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-6">Precio e Inventario</h3>
               
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div>
-                  <label className="block text-sm font-medium text-white mb-2">
+                  <label className="block text-sm font-medium text-gray-900 mb-2">
                     Precio *
                   </label>
                   <div className="relative">
-                    <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-dark-400">$</span>
+                    <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">$</span>
                     <input
                       type="number"
                       name="price"
@@ -483,8 +491,8 @@ export default function NewProductPage() {
                       onChange={handleInputChange}
                       step="0.01"
                       min="0"
-                      className={`w-full pl-8 pr-4 py-3 bg-dark-700 border rounded-lg text-white placeholder-dark-400 focus:outline-none focus:ring-2 focus:ring-neon-green focus:border-transparent ${
-                        errors.price ? 'border-red-500' : 'border-dark-600'
+                      className={`w-full pl-8 pr-4 py-3 bg-white border rounded-lg text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent ${
+                        errors.price ? 'border-red-500' : 'border-gray-300'
                       }`}
                       placeholder="0.00"
                     />
@@ -493,11 +501,11 @@ export default function NewProductPage() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-white mb-2">
+                  <label className="block text-sm font-medium text-gray-900 mb-2">
                     Precio de Comparación
                   </label>
                   <div className="relative">
-                    <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-dark-400">$</span>
+                    <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">$</span>
                     <input
                       type="number"
                       name="compare_price"
@@ -505,18 +513,18 @@ export default function NewProductPage() {
                       onChange={handleInputChange}
                       step="0.01"
                       min="0"
-                      className="w-full pl-8 pr-4 py-3 bg-dark-700 border border-dark-600 rounded-lg text-white placeholder-dark-400 focus:outline-none focus:ring-2 focus:ring-neon-green focus:border-transparent"
+                      className="w-full pl-8 pr-4 py-3 bg-white border border-gray-300 rounded-lg text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                       placeholder="0.00"
                     />
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-white mb-2">
+                  <label className="block text-sm font-medium text-gray-900 mb-2">
                     Precio de Costo
                   </label>
                   <div className="relative">
-                    <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-dark-400">$</span>
+                    <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">$</span>
                     <input
                       type="number"
                       name="cost_price"
@@ -524,7 +532,7 @@ export default function NewProductPage() {
                       onChange={handleInputChange}
                       step="0.01"
                       min="0"
-                      className="w-full pl-8 pr-4 py-3 bg-dark-700 border border-dark-600 rounded-lg text-white placeholder-dark-400 focus:outline-none focus:ring-2 focus:ring-neon-green focus:border-transparent"
+                      className="w-full pl-8 pr-4 py-3 bg-white border border-gray-300 rounded-lg text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                       placeholder="0.00"
                     />
                   </div>
@@ -533,7 +541,7 @@ export default function NewProductPage() {
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
                 <div>
-                  <label className="block text-sm font-medium text-white mb-2">
+                  <label className="block text-sm font-medium text-gray-900 mb-2">
                     Inventario Total
                     <span className="text-xs text-gray-400 ml-2">(Calculado automáticamente)</span>
                   </label>
@@ -542,7 +550,7 @@ export default function NewProductPage() {
                     name="inventory_quantity"
                     value={formData.inventory_quantity}
                     readOnly
-                    className="w-full px-4 py-3 bg-dark-600 border border-dark-500 rounded-lg text-white placeholder-dark-400 cursor-not-allowed"
+                    className="w-full px-4 py-3 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 placeholder-gray-500 cursor-not-allowed"
                     placeholder="0"
                   />
                   <p className="text-gray-400 text-xs mt-1">
@@ -551,7 +559,7 @@ export default function NewProductPage() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-white mb-2">
+                  <label className="block text-sm font-medium text-gray-900 mb-2">
                     Umbral de Stock Bajo
                   </label>
                   <input
@@ -560,20 +568,20 @@ export default function NewProductPage() {
                     value={formData.low_stock_threshold}
                     onChange={handleInputChange}
                     min="0"
-                    className="w-full px-4 py-3 bg-dark-700 border border-dark-600 rounded-lg text-white placeholder-dark-400 focus:outline-none focus:ring-2 focus:ring-neon-green focus:border-transparent"
+                    className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                     placeholder="10"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-white mb-2">
+                  <label className="block text-sm font-medium text-gray-900 mb-2">
                     Estado
                   </label>
                   <select
                     name="status"
                     value={formData.status}
                     onChange={handleInputChange}
-                    className="w-full px-4 py-3 bg-dark-700 border border-dark-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-neon-green focus:border-transparent"
+                    className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                     title="Seleccionar estado"
                     aria-label="Seleccionar estado del producto"
                   >
@@ -591,11 +599,11 @@ export default function NewProductPage() {
                     name="track_inventory"
                     checked={formData.track_inventory}
                     onChange={handleInputChange}
-                    className="w-4 h-4 text-neon-green bg-dark-700 border-dark-600 rounded focus:ring-neon-green focus:ring-2"
+                    className="w-4 h-4 text-primary-600 bg-white border-gray-300 rounded focus:ring-primary-500 focus:ring-2"
                     title="Rastrear inventario"
                     aria-label="Rastrear inventario"
                   />
-                  <label className="text-sm font-medium text-white">
+                  <label className="text-sm font-medium text-gray-900">
                     Rastrear inventario
                   </label>
                 </div>
@@ -606,11 +614,11 @@ export default function NewProductPage() {
                     name="allow_backorder"
                     checked={formData.allow_backorder}
                     onChange={handleInputChange}
-                    className="w-4 h-4 text-neon-green bg-dark-700 border-dark-600 rounded focus:ring-neon-green focus:ring-2"
+                    className="w-4 h-4 text-primary-600 bg-white border-gray-300 rounded focus:ring-primary-500 focus:ring-2"
                     title="Permitir pedidos pendientes"
                     aria-label="Permitir pedidos pendientes"
                   />
-                  <label className="text-sm font-medium text-white">
+                  <label className="text-sm font-medium text-gray-900">
                     Permitir pedidos pendientes
                   </label>
                 </div>
@@ -621,11 +629,11 @@ export default function NewProductPage() {
                     name="is_featured"
                     checked={formData.is_featured}
                     onChange={handleInputChange}
-                    className="w-4 h-4 text-neon-green bg-dark-700 border-dark-600 rounded focus:ring-neon-green focus:ring-2"
+                    className="w-4 h-4 text-primary-600 bg-white border-gray-300 rounded focus:ring-primary-500 focus:ring-2"
                     title="Producto destacado"
                     aria-label="Producto destacado"
                   />
-                  <label className="text-sm font-medium text-white">
+                  <label className="text-sm font-medium text-gray-900">
                     Producto destacado
                   </label>
                 </div>
@@ -636,11 +644,11 @@ export default function NewProductPage() {
                     name="requires_shipping"
                     checked={formData.requires_shipping}
                     onChange={handleInputChange}
-                    className="w-4 h-4 text-neon-green bg-dark-700 border-dark-600 rounded focus:ring-neon-green focus:ring-2"
+                    className="w-4 h-4 text-primary-600 bg-white border-gray-300 rounded focus:ring-primary-500 focus:ring-2"
                     title="Requiere envío"
                     aria-label="Requiere envío"
                   />
-                  <label className="text-sm font-medium text-white">
+                  <label className="text-sm font-medium text-gray-900">
                     Requiere envío
                   </label>
                 </div>
@@ -648,13 +656,13 @@ export default function NewProductPage() {
             </div>
 
             {/* Images */}
-            <div className="bg-dark-800 border border-dark-700 rounded-xl p-6">
-              <h3 className="text-lg font-semibold text-white mb-6">Imágenes del Producto</h3>
+            <div className="bg-white border border-gray-200 rounded-xl p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-6">Imágenes del Producto</h3>
               
               <div className="space-y-4">
-                <div className="border-2 border-dashed border-dark-600 rounded-lg p-6 text-center">
-                  <Upload className="w-8 h-8 text-dark-400 mx-auto mb-2" />
-                  <p className="text-dark-400 mb-2">Arrastra imágenes aquí o haz clic para seleccionar</p>
+                <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
+                  <Upload className="w-8 h-8 text-gray-500 mx-auto mb-2" />
+                  <p className="text-gray-500 mb-2">Arrastra imágenes aquí o haz clic para seleccionar</p>
                   <input
                     type="file"
                     multiple
@@ -665,7 +673,7 @@ export default function NewProductPage() {
                   />
                   <label
                     htmlFor="image-upload"
-                    className="inline-flex items-center px-4 py-2 bg-neon-green text-dark-900 font-medium rounded-lg hover:bg-neon-green/90 transition-colors cursor-pointer"
+                    className="inline-flex items-center px-4 py-2 bg-primary-600 text-white font-medium rounded-lg hover:bg-primary-700 transition-colors cursor-pointer"
                   >
                     <Upload className="w-4 h-4 mr-2" />
                     Seleccionar Imágenes
@@ -683,7 +691,7 @@ export default function NewProductPage() {
                         />
                         {uploadProgress[index] !== undefined && (
                           <div className="absolute inset-0 bg-black bg-opacity-50 rounded-lg flex items-center justify-center">
-                            <div className="text-white text-sm">
+                            <div className="text-gray-900 text-sm">
                               {uploadProgress[index]}%
                             </div>
                           </div>
@@ -691,7 +699,7 @@ export default function NewProductPage() {
                         <button
                           type="button"
                           onClick={() => removeImage(index)}
-                          className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                          className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 text-gray-900 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
                           title="Eliminar imagen"
                           aria-label={`Eliminar imagen ${index + 1}`}
                         >
@@ -708,16 +716,16 @@ export default function NewProductPage() {
           {/* Sidebar */}
           <div className="space-y-6">
             {/* Actions */}
-            <div className="bg-dark-800 border border-dark-700 rounded-xl p-6">
-              <h3 className="text-lg font-semibold text-white mb-4">Acciones</h3>
+            <div className="bg-white border border-gray-200 rounded-xl p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Acciones</h3>
               <div className="space-y-3">
                 <button
                   type="submit"
                   disabled={isLoading}
-                  className="w-full flex items-center justify-center px-4 py-3 bg-neon-green text-dark-900 font-medium rounded-lg hover:bg-neon-green/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-full flex items-center justify-center px-4 py-3 bg-primary-600 text-white font-medium rounded-lg hover:bg-primary-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {isLoading ? (
-                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-dark-900"></div>
+                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-gray-900"></div>
                   ) : (
                     <>
                       <Save className="w-5 h-5 mr-2" />
@@ -728,7 +736,7 @@ export default function NewProductPage() {
                 
                 <Link
                   href="/admin/products"
-                  className="w-full flex items-center justify-center px-4 py-3 bg-dark-700 text-white font-medium rounded-lg hover:bg-dark-600 transition-colors"
+                  className="w-full flex items-center justify-center px-4 py-3 bg-white text-gray-900 font-medium rounded-lg hover:bg-gray-100 transition-colors"
                 >
                   Cancelar
                 </Link>
@@ -736,7 +744,7 @@ export default function NewProductPage() {
             </div>
 
             {/* Product Variants */}
-            <div className="bg-dark-800 border border-dark-700 rounded-xl p-6">
+            <div className="bg-white border border-gray-200 rounded-xl p-6">
               <ProductVariants
                 variants={formData.variants}
                 sizes={sizes}
@@ -747,10 +755,10 @@ export default function NewProductPage() {
             </div>
 
             {/* Product Preview */}
-            <div className="bg-dark-800 border border-dark-700 rounded-xl p-6">
-              <h3 className="text-lg font-semibold text-white mb-4">Vista Previa</h3>
+            <div className="bg-white border border-gray-200 rounded-xl p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Vista Previa</h3>
               <div className="space-y-4">
-                <div className="aspect-square bg-dark-700 rounded-lg flex items-center justify-center">
+                <div className="aspect-square bg-white rounded-lg flex items-center justify-center">
                   {formData.images.length > 0 ? (
                     <img
                       src={URL.createObjectURL(formData.images[0])}
@@ -758,7 +766,7 @@ export default function NewProductPage() {
                       className="w-full h-full object-cover rounded-lg"
                     />
                   ) : (
-                    <div className="text-dark-400 text-center">
+                    <div className="text-gray-500 text-center">
                       <Upload className="w-8 h-8 mx-auto mb-2" />
                       <p className="text-sm">Sin imagen</p>
                     </div>
@@ -766,19 +774,19 @@ export default function NewProductPage() {
                 </div>
                 
                 <div>
-                  <h4 className="font-medium text-white">
+                  <h4 className="font-medium text-gray-900">
                     {formData.name || 'Nombre del producto'}
                   </h4>
-                  <p className="text-neon-green font-semibold">
+                  <p className="text-primary-600 font-semibold">
                     ${formData.price || '0.00'}
                   </p>
-                  <p className="text-dark-400 text-sm">
+                  <p className="text-gray-500 text-sm">
                     Stock: {formData.inventory_quantity || '0'} unidades
                   </p>
-                  <p className="text-dark-400 text-sm">
+                  <p className="text-gray-500 text-sm">
                     SKU: {formData.sku || 'N/A'}
                   </p>
-                  <p className="text-dark-400 text-sm">
+                  <p className="text-gray-500 text-sm">
                     Estado: {formData.status === 'published' ? 'Publicado' : formData.status === 'draft' ? 'No Publicado' : 'Archivado'}
                   </p>
                 </div>

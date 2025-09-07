@@ -1,15 +1,15 @@
 "use client"
 
 import React, { useState, useEffect } from 'react'
-import { 
-  AlertTriangle, 
-  Search, 
-  Filter, 
-  Eye, 
-  Edit, 
-  Trash2, 
-  CheckCircle, 
-  XCircle, 
+import {
+  AlertTriangle,
+  Search,
+  Filter,
+  Eye,
+  Edit,
+  Trash2,
+  CheckCircle,
+  XCircle,
   Clock,
   MessageSquare,
   User,
@@ -22,6 +22,8 @@ import {
 import { useClaims } from '@/hooks/useClaims'
 import { Claim } from '@/hooks/useClaims'
 import toast from 'react-hot-toast'
+import LoadingSpinner from '@/components/ui/LoadingSpinner'
+import TableSkeleton from '@/components/ui/TableSkeleton'
 
 type ClaimStatus = 'pending' | 'in_review' | 'resolved' | 'rejected'
 type ClaimType = 'product_issue' | 'shipping_issue' | 'payment_issue' | 'service_issue' | 'other'
@@ -30,7 +32,7 @@ type Priority = 'low' | 'medium' | 'high' | 'urgent'
 const statusColors = {
   pending: 'bg-yellow-900/50 text-yellow-400',
   in_review: 'bg-blue-900/50 text-blue-400',
-  resolved: 'bg-green-900/50 text-green-400',
+  resolved: 'bg-primary-900/50 text-primary-400',
   rejected: 'bg-red-900/50 text-red-400'
 }
 
@@ -59,7 +61,6 @@ const claimTypeLabels = {
 
 export default function ClaimsManagementPage() {
   const { claims, loading, error, updateClaim, deleteClaim } = useClaims()
-  
 
   const [searchTerm, setSearchTerm] = useState('')
   const [statusFilter, setStatusFilter] = useState<ClaimStatus | 'all'>('all')
@@ -68,8 +69,6 @@ export default function ClaimsManagementPage() {
   const [selectedClaim, setSelectedClaim] = useState<Claim | null>(null)
   const [showModal, setShowModal] = useState(false)
   const [adminResponse, setAdminResponse] = useState('')
-  // const [newMessage, setNewMessage] = useState('')  // Temporalmente comentado
-  // const [isAddingMessage, setIsAddingMessage] = useState(false)  // Temporalmente comentado
   const [newStatus, setNewStatus] = useState<ClaimStatus>('pending')
   const [loadingActions, setLoadingActions] = useState<Set<number>>(new Set())
 
@@ -79,7 +78,7 @@ export default function ClaimsManagementPage() {
                          claim.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          claim.user_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          claim.user_email?.toLowerCase().includes(searchTerm.toLowerCase())
-    
+
     const matchesStatus = statusFilter === 'all' || claim.status === statusFilter
     const matchesType = typeFilter === 'all' || claim.claim_type === typeFilter
     const matchesPriority = priorityFilter === 'all' || claim.priority === priorityFilter
@@ -118,6 +117,35 @@ export default function ClaimsManagementPage() {
         })
       }
     }
+  }
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 space-y-6">
+        {/* Header Skeleton */}
+        <div className="flex items-center justify-between">
+          <div>
+            <div className="h-8 bg-gray-200 rounded animate-pulse w-32 mb-2"></div>
+            <div className="h-4 bg-gray-200 rounded animate-pulse w-48"></div>
+          </div>
+        </div>
+
+        {/* Search and Filters Skeleton */}
+        <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
+          <div className="space-y-4">
+            <div className="h-10 bg-gray-200 rounded-lg animate-pulse"></div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              {Array.from({ length: 4 }).map((_, index) => (
+                <div key={index} className="h-10 bg-gray-200 rounded-lg animate-pulse"></div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Claims Table Skeleton */}
+        <TableSkeleton rows={10} columns={6} showHeader={true} />
+      </div>
+    )
   }
 
   const handleDeleteClaim = async (claimId: number) => {
@@ -162,21 +190,6 @@ export default function ClaimsManagementPage() {
     }
   }
 
-  // const handleAddMessage = async () => {
-  //   if (!selectedClaim || !newMessage.trim()) return
-
-  //   try {
-  //     setIsAddingMessage(true)
-  //     await addMessage(selectedClaim.id, newMessage.trim())
-  //     setNewMessage('')
-  //     toast.success('Mensaje agregado correctamente')
-  //   } catch (error) {
-  //     toast.error('Error al agregar mensaje')
-  //   } finally {
-  //     setIsAddingMessage(false)
-  //   }
-  // }
-
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('es-ES', {
       year: 'numeric',
@@ -190,7 +203,7 @@ export default function ClaimsManagementPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-neon-green"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-500"></div>
       </div>
     )
   }
@@ -204,31 +217,31 @@ export default function ClaimsManagementPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="min-h-screen bg-gray-50 space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-white">Gestión de Tickets</h1>
-          <p className="text-dark-400 mt-2">Administra y resuelve tickets de clientes</p>
+          <h1 className="text-3xl font-bold text-gray-900">Gestión de Tickets</h1>
+          <p className="text-gray-600 mt-2">Administra y resuelve tickets de clientes</p>
         </div>
         <div className="text-right">
-          <div className="text-2xl font-bold text-white">{claims.length}</div>
-          <div className="text-dark-400 text-sm">Total Tickets</div>
+          <div className="text-2xl font-bold text-gray-900">{claims.length}</div>
+          <div className="text-gray-600 text-sm">Total Tickets</div>
         </div>
       </div>
 
       {/* Filtros */}
-      <div className="bg-dark-800 border border-dark-700 rounded-xl p-6">
+      <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           {/* Búsqueda */}
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-dark-400 w-4 h-4" />
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
             <input
               type="text"
               placeholder="Buscar tickets..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 bg-dark-700 border border-dark-600 rounded-lg text-white placeholder-dark-400 focus:outline-none focus:ring-2 focus:ring-neon-green focus:border-transparent"
+              className="w-full pl-10 pr-4 py-2 bg-white border border-gray-300 rounded-lg text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
             />
           </div>
 
@@ -236,7 +249,7 @@ export default function ClaimsManagementPage() {
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value as ClaimStatus | 'all')}
-            className="px-4 py-2 bg-dark-700 border border-dark-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-neon-green focus:border-transparent"
+            className="px-4 py-2 bg-white border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
             aria-label="Filtrar por estado"
           >
             <option value="all">Todos los Estados</option>
@@ -250,7 +263,7 @@ export default function ClaimsManagementPage() {
           <select
             value={typeFilter}
             onChange={(e) => setTypeFilter(e.target.value as ClaimType | 'all')}
-            className="px-4 py-2 bg-dark-700 border border-dark-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-neon-green focus:border-transparent"
+            className="px-4 py-2 bg-white border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
             aria-label="Filtrar por tipo"
           >
             <option value="all">Todos los Tipos</option>
@@ -264,7 +277,7 @@ export default function ClaimsManagementPage() {
           <select
             value={priorityFilter}
             onChange={(e) => setPriorityFilter(e.target.value as Priority | 'all')}
-            className="px-4 py-2 bg-dark-700 border border-dark-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-neon-green focus:border-transparent"
+            className="px-4 py-2 bg-white border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
             aria-label="Filtrar por prioridad"
           >
             <option value="all">Todas las Prioridades</option>
@@ -277,67 +290,67 @@ export default function ClaimsManagementPage() {
       </div>
 
       {/* Lista de Reclamos */}
-      <div className="bg-dark-800 border border-dark-700 rounded-xl overflow-hidden">
+      <div className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm">
         <div className="overflow-x-auto">
           <table className="w-full">
-            <thead className="bg-dark-700">
+            <thead className="bg-gray-50">
               <tr>
-                <th className="px-6 py-4 text-left text-white font-medium">ID</th>
-                <th className="px-6 py-4 text-left text-white font-medium">Usuario</th>
-                <th className="px-6 py-4 text-left text-white font-medium">Título</th>
-                <th className="px-6 py-4 text-left text-white font-medium">Pedido</th>
-                <th className="px-6 py-4 text-left text-white font-medium">Producto</th>
-                <th className="px-6 py-4 text-left text-white font-medium">Tipo</th>
-                <th className="px-6 py-4 text-left text-white font-medium">Prioridad</th>
-                <th className="px-6 py-4 text-left text-white font-medium">Estado</th>
-                <th className="px-6 py-4 text-left text-white font-medium">Fecha</th>
-                <th className="px-6 py-4 text-left text-white font-medium">Acciones</th>
+                <th className="px-6 py-4 text-left text-gray-900 font-medium">ID</th>
+                <th className="px-6 py-4 text-left text-gray-900 font-medium">Usuario</th>
+                <th className="px-6 py-4 text-left text-gray-900 font-medium">Título</th>
+                <th className="px-6 py-4 text-left text-gray-900 font-medium">Pedido</th>
+                <th className="px-6 py-4 text-left text-gray-900 font-medium">Producto</th>
+                <th className="px-6 py-4 text-left text-gray-900 font-medium">Tipo</th>
+                <th className="px-6 py-4 text-left text-gray-900 font-medium">Prioridad</th>
+                <th className="px-6 py-4 text-left text-gray-900 font-medium">Estado</th>
+                <th className="px-6 py-4 text-left text-gray-900 font-medium">Fecha</th>
+                <th className="px-6 py-4 text-left text-gray-900 font-medium">Acciones</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-dark-700">
+            <tbody className="divide-y divide-gray-200">
               {filteredClaims.map((claim) => {
                 const TypeIcon = claimTypeIcons[claim.claim_type]
                 return (
-                  <tr key={claim.id} className="hover:bg-dark-700/50 transition-colors">
-                    <td className="px-6 py-4 text-white font-mono">#{claim.id}</td>
+                  <tr key={claim.id} className="hover:bg-gray-50 transition-colors">
+                    <td className="px-6 py-4 text-gray-900 font-mono">#{claim.id}</td>
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-2">
-                        <User className="w-4 h-4 text-dark-400" />
-                        <span className="text-white">{claim.user_name || claim.user_email || 'Usuario'}</span>
+                        <User className="w-4 h-4 text-gray-500" />
+                        <span className="text-gray-900">{claim.user_name || claim.user_email || 'Usuario'}</span>
                       </div>
                     </td>
                     <td className="px-6 py-4">
                       <div className="max-w-xs">
-                        <p className="text-white font-medium truncate">{claim.title}</p>
-                        <p className="text-dark-400 text-sm truncate">{claim.description}</p>
+                        <p className="text-gray-900 font-medium truncate">{claim.title}</p>
+                        <p className="text-gray-500 text-sm truncate">{claim.description}</p>
                       </div>
                     </td>
                     <td className="px-6 py-4">
                       {claim.order_number ? (
                         <div className="flex items-center gap-2">
-                          <Package className="w-4 h-4 text-dark-400" />
-                          <span className="text-white font-mono text-sm">#{claim.order_number}</span>
+                          <Package className="w-4 h-4 text-gray-500" />
+                          <span className="text-gray-900 font-mono text-sm">#{claim.order_number}</span>
                         </div>
                       ) : (
-                        <span className="text-dark-400 text-sm">Sin pedido</span>
+                        <span className="text-gray-500 text-sm">Sin pedido</span>
                       )}
                     </td>
                     <td className="px-6 py-4">
                       {claim.product_name ? (
                         <div className="max-w-xs">
-                          <p className="text-white text-sm font-medium truncate">{claim.product_name}</p>
+                          <p className="text-gray-900 text-sm font-medium truncate">{claim.product_name}</p>
                           {claim.product_sku && (
-                            <p className="text-dark-400 text-xs truncate">SKU: {claim.product_sku}</p>
+                            <p className="text-gray-500 text-xs truncate">SKU: {claim.product_sku}</p>
                           )}
                         </div>
                       ) : (
-                        <span className="text-dark-400 text-sm">Sin producto</span>
+                        <span className="text-gray-500 text-sm">Sin producto</span>
                       )}
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-2">
-                        <TypeIcon className="w-4 h-4 text-dark-400" />
-                        <span className="text-white">{claimTypeLabels[claim.claim_type]}</span>
+                        <TypeIcon className="w-4 h-4 text-gray-500" />
+                        <span className="text-gray-900">{claimTypeLabels[claim.claim_type]}</span>
                       </div>
                     </td>
                     <td className="px-6 py-4">
@@ -358,69 +371,69 @@ export default function ClaimsManagementPage() {
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-2">
-                        <Calendar className="w-4 h-4 text-dark-400" />
-                        <span className="text-white text-sm">{formatDate(claim.created_at)}</span>
+                        <Calendar className="w-4 h-4 text-gray-500" />
+                        <span className="text-gray-900 text-sm">{formatDate(claim.created_at)}</span>
                       </div>
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-1">
                         <button
                           onClick={() => handleViewClaim(claim)}
-                          className="p-2 text-dark-400 hover:text-blue-400 transition-colors rounded-lg hover:bg-blue-900/20"
+                          className="p-2 text-gray-500 hover:text-blue-500 transition-colors rounded-lg hover:bg-blue-50"
                           title="Ver detalles del ticket"
                         >
                           <Eye className="w-4 h-4" />
                         </button>
-                        
+
                         {claim.status !== 'resolved' && (
                           <button
                             onClick={() => handleStatusUpdate(claim.id, 'resolved')}
                             disabled={loadingActions.has(claim.id)}
-                            className="p-2 text-dark-400 hover:text-green-400 transition-colors rounded-lg hover:bg-green-900/20 disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="p-2 text-gray-500 hover:text-primary-600 transition-colors rounded-lg hover:bg-primary-50 disabled:opacity-50 disabled:cursor-not-allowed"
                             title="Marcar como resuelto"
                           >
                             {loadingActions.has(claim.id) ? (
-                              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-green-400"></div>
+                              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary-500"></div>
                             ) : (
                               <CheckCircle className="w-4 h-4" />
                             )}
                           </button>
                         )}
-                        
+
                         {claim.status !== 'rejected' && (
                           <button
                             onClick={() => handleStatusUpdate(claim.id, 'rejected')}
                             disabled={loadingActions.has(claim.id)}
-                            className="p-2 text-dark-400 hover:text-red-400 transition-colors rounded-lg hover:bg-red-900/20 disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="p-2 text-gray-500 hover:text-red-500 transition-colors rounded-lg hover:bg-red-50 disabled:opacity-50 disabled:cursor-not-allowed"
                             title="Rechazar ticket"
                           >
                             {loadingActions.has(claim.id) ? (
-                              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-red-400"></div>
+                              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-red-500"></div>
                             ) : (
                               <XCircle className="w-4 h-4" />
                             )}
                           </button>
                         )}
-                        
+
                         {claim.status === 'pending' && (
                           <button
                             onClick={() => handleStatusUpdate(claim.id, 'in_review')}
                             disabled={loadingActions.has(claim.id)}
-                            className="p-2 text-dark-400 hover:text-yellow-400 transition-colors rounded-lg hover:bg-yellow-900/20 disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="p-2 text-gray-500 hover:text-yellow-500 transition-colors rounded-lg hover:bg-yellow-50 disabled:opacity-50 disabled:cursor-not-allowed"
                             title="Marcar como en revisión"
                           >
                             {loadingActions.has(claim.id) ? (
-                              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-yellow-400"></div>
+                              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-yellow-500"></div>
                             ) : (
                               <Clock className="w-4 h-4" />
                             )}
                           </button>
                         )}
-                        
+
                         <button
                           onClick={() => handleDeleteClaim(claim.id)}
                           disabled={loadingActions.has(claim.id)}
-                          className="p-2 text-dark-400 hover:text-red-500 transition-colors rounded-lg hover:bg-red-900/20 disabled:opacity-50 disabled:cursor-not-allowed"
+                          className="p-2 text-gray-500 hover:text-red-500 transition-colors rounded-lg hover:bg-red-50 disabled:opacity-50 disabled:cursor-not-allowed"
                           title="Eliminar ticket permanentemente"
                         >
                           {loadingActions.has(claim.id) ? (
@@ -440,9 +453,9 @@ export default function ClaimsManagementPage() {
 
         {filteredClaims.length === 0 && (
           <div className="text-center py-12">
-            <AlertTriangle className="w-12 h-12 text-dark-400 mx-auto mb-4" />
-            <p className="text-dark-400">No se encontraron tickets</p>
-            <div className="mt-4 text-sm text-dark-500">
+            <AlertTriangle className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+            <p className="text-gray-500">No se encontraron tickets</p>
+            <div className="mt-4 text-sm text-gray-400">
               <p>Debug info:</p>
               <p>Total claims: {claims?.length || 0}</p>
               <p>Filtered claims: {filteredClaims.length}</p>
@@ -465,200 +478,190 @@ export default function ClaimsManagementPage() {
         )}
       </div>
 
-      {/* Modal de Detalles */}
+      {/* Modal de Detalles del Ticket */}
       {showModal && selectedClaim && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-          <div className="bg-dark-800 border border-dark-700 rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="p-6">
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-xl font-semibold text-white">Detalles del Ticket #{selectedClaim.id}</h2>
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+            <div className="p-6 border-b border-gray-200">
+              <div className="flex items-center justify-between">
+                <h2 className="text-xl font-semibold text-gray-900">
+                  Detalles del Ticket #{selectedClaim.id}
+                </h2>
                 <button
                   onClick={() => setShowModal(false)}
-                  className="text-dark-400 hover:text-white transition-colors"
+                  className="p-2 text-gray-400 hover:text-gray-600 transition-colors"
                   title="Cerrar modal"
-                  aria-label="Cerrar modal de detalles del reclamo"
                 >
                   <XCircle className="w-6 h-6" />
                 </button>
               </div>
+            </div>
 
-              <div className="space-y-6">
-                {/* Información del Usuario */}
-                <div className="bg-dark-700/50 rounded-lg p-4">
-                  <h3 className="text-white font-medium mb-3">Información del Usuario</h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                    <div className="flex items-center gap-2">
-                      <User className="w-4 h-4 text-dark-400" />
-                      <span className="text-dark-300">Usuario:</span>
-                      <span className="text-white">{selectedClaim.user_name || selectedClaim.user_email || 'Usuario'}</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Calendar className="w-4 h-4 text-dark-400" />
-                      <span className="text-dark-300">Fecha:</span>
-                      <span className="text-white">{formatDate(selectedClaim.created_at)}</span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Detalles del Ticket */}
-                <div>
-                  <h3 className="text-white font-medium mb-3">Detalles del Ticket</h3>
-                  <div className="space-y-4">
-                    <div>
-                      <label className="block text-dark-300 text-sm mb-1">Título</label>
-                      <p className="text-white">{selectedClaim.title}</p>
-                    </div>
-                    <div>
-                      <label className="block text-dark-300 text-sm mb-1">Descripción</label>
-                      <p className="text-white leading-relaxed">{selectedClaim.description}</p>
-                    </div>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      <div>
-                        <label className="block text-dark-300 text-sm mb-1">Tipo</label>
-                        <div className="flex items-center gap-2">
-                          {(() => {
-                            const IconComponent = claimTypeIcons[selectedClaim.claim_type]
-                            return IconComponent ? <IconComponent className="w-4 h-4 text-dark-400" /> : null
-                          })()}
-                          <span className="text-white">{claimTypeLabels[selectedClaim.claim_type]}</span>
-                        </div>
+            <div className="p-6 space-y-6">
+              {/* Información del Ticket */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-4">
+                  <div>
+                    <h3 className="text-lg font-medium text-gray-900 mb-2">Información del Ticket</h3>
+                    <div className="space-y-2">
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">ID:</span>
+                        <span className="text-gray-900 font-mono">#{selectedClaim.id}</span>
                       </div>
-                      <div>
-                        <label className="block text-dark-300 text-sm mb-1">Prioridad</label>
-                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${priorityColors[selectedClaim.priority]}`}>
-                          {selectedClaim.priority}
-                        </span>
-                      </div>
-                      <div>
-                        <label className="block text-dark-300 text-sm mb-1">Estado</label>
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Estado:</span>
                         <span className={`px-2 py-1 rounded-full text-xs font-medium ${statusColors[selectedClaim.status]}`}>
-                          {selectedClaim.status}
+                          {selectedClaim.status === 'pending' && '⏳ Pendiente'}
+                          {selectedClaim.status === 'in_review' && '🔍 En Revisión'}
+                          {selectedClaim.status === 'resolved' && '✅ Resuelto'}
+                          {selectedClaim.status === 'rejected' && '❌ Rechazado'}
                         </span>
                       </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Prioridad:</span>
+                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${priorityColors[selectedClaim.priority]}`}>
+                          {selectedClaim.priority === 'low' && '🟢 Baja'}
+                          {selectedClaim.priority === 'medium' && '🟡 Media'}
+                          {selectedClaim.priority === 'high' && '🟠 Alta'}
+                          {selectedClaim.priority === 'urgent' && '🔴 Urgente'}
+                        </span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Tipo:</span>
+                        <div className="flex items-center gap-2">
+                          {React.createElement(claimTypeIcons[selectedClaim.claim_type], { className: "w-4 h-4 text-gray-500" })}
+                          <span className="text-gray-900">{claimTypeLabels[selectedClaim.claim_type]}</span>
+                        </div>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Fecha de creación:</span>
+                        <span className="text-gray-900">{formatDate(selectedClaim.created_at)}</span>
+                      </div>
                     </div>
-                    
-                    {/* Información del Pedido */}
-                    {selectedClaim.order_number && (
-                      <div>
-                        <label className="block text-dark-300 text-sm mb-1">Pedido Relacionado</label>
-                        <div className="bg-dark-700/30 rounded-lg p-3">
-                          <div className="flex items-center gap-2">
-                            <Package className="w-4 h-4 text-dark-400" />
-                            <span className="text-white font-medium">Pedido #{selectedClaim.order_number}</span>
-                          </div>
-                        </div>
+                  </div>
+
+                  {/* Información del Usuario */}
+                  <div>
+                    <h3 className="text-lg font-medium text-gray-900 mb-2">Información del Usuario</h3>
+                    <div className="space-y-2">
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Nombre:</span>
+                        <span className="text-gray-900">{selectedClaim.user_name || 'No especificado'}</span>
                       </div>
-                    )}
-                    
-                    {/* Información del Producto */}
-                    {selectedClaim.product_name && (
-                      <div>
-                        <label className="block text-dark-300 text-sm mb-1">Producto Relacionado</label>
-                        <div className="bg-dark-700/30 rounded-lg p-3">
-                          <p className="text-white font-medium">{selectedClaim.product_name}</p>
-                          {selectedClaim.product_sku && (
-                            <p className="text-white/70 text-sm">SKU: {selectedClaim.product_sku}</p>
-                          )}
-                        </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Email:</span>
+                        <span className="text-gray-900">{selectedClaim.user_email || 'No especificado'}</span>
                       </div>
-                    )}
+                      {selectedClaim.user_phone && (
+                        <div className="flex justify-between">
+                          <span className="text-gray-600">Teléfono:</span>
+                          <span className="text-gray-900">{selectedClaim.user_phone}</span>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
 
-                {/* Mensajes del Reclamo - Temporalmente comentado */}
-                {/* <div>
-                  <h3 className="text-white font-medium mb-3">Mensajes del Reclamo</h3>
-                  <div className="space-y-3 max-h-60 overflow-y-auto">
-                    {selectedClaim.messages && selectedClaim.messages.length > 0 ? (
-                      selectedClaim.messages.map((message) => (
-                        <div
-                          key={message.id}
-                          className={`p-3 rounded-lg ${
-                            message.message_type === 'admin_response'
-                              ? 'bg-neon-green/10 border border-neon-green/20'
-                              : 'bg-dark-700/50 border border-dark-600'
-                          }`}
+                <div className="space-y-4">
+                  {/* Información del Pedido y Producto */}
+                  {(selectedClaim.order_number || selectedClaim.product_name) && (
+                    <div>
+                      <h3 className="text-lg font-medium text-gray-900 mb-2">Información Relacionada</h3>
+                      <div className="space-y-2">
+                        {selectedClaim.order_number && (
+                          <div className="flex justify-between">
+                            <span className="text-gray-600">Pedido:</span>
+                            <span className="text-gray-900 font-mono">#{selectedClaim.order_number}</span>
+                          </div>
+                        )}
+                        {selectedClaim.product_name && (
+                          <div className="flex justify-between">
+                            <span className="text-gray-600">Producto:</span>
+                            <span className="text-gray-900">{selectedClaim.product_name}</span>
+                          </div>
+                        )}
+                        {selectedClaim.product_sku && (
+                          <div className="flex justify-between">
+                            <span className="text-gray-600">SKU:</span>
+                            <span className="text-gray-900 font-mono">{selectedClaim.product_sku}</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Formulario de Respuesta del Admin */}
+                  <div>
+                    <h3 className="text-lg font-medium text-gray-900 mb-2">Respuesta del Administrador</h3>
+                    <div className="space-y-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Estado del Ticket
+                        </label>
+                        <select
+                          value={newStatus}
+                          onChange={(e) => setNewStatus(e.target.value as ClaimStatus)}
+                          className="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                          aria-label="Seleccionar estado del ticket"
                         >
-                          <div className="flex items-center justify-between mb-2">
-                            <span className="text-sm font-medium text-white">
-                              {message.author_name}
-                            </span>
-                            <span className="text-xs text-dark-400">
-                              {formatDate(message.created_at)}
-                            </span>
-                          </div>
-                          <p className="text-dark-300 text-sm">{message.content}</p>
-                        </div>
-                      ))
-                    ) : (
-                      <p className="text-dark-400 text-sm">No hay mensajes aún</p>
-                    )}
-                  </div>
-                  
-                  <div className="mt-4">
-                    <label className="block text-white font-medium mb-2">Agregar Mensaje</label>
-                    <div className="flex gap-2">
-                      <textarea
-                        value={newMessage}
-                        onChange={(e) => setNewMessage(e.target.value)}
-                        rows={3}
-                        className="flex-1 px-4 py-3 bg-dark-700 border border-dark-600 rounded-lg text-white placeholder-dark-400 focus:outline-none focus:ring-2 focus:ring-neon-green focus:border-transparent resize-none"
-                        placeholder="Escribe tu mensaje aquí..."
-                      />
-                      <button
-                        onClick={handleAddMessage}
-                        disabled={!newMessage.trim() || isAddingMessage}
-                        className="px-4 py-3 bg-neon-green text-dark-900 rounded-lg font-semibold hover:bg-neon-green/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        {isAddingMessage ? 'Enviando...' : 'Enviar'}
-                      </button>
+                          <option value="pending">⏳ Pendiente</option>
+                          <option value="in_review">🔍 En Revisión</option>
+                          <option value="resolved">✅ Resuelto</option>
+                          <option value="rejected">❌ Rechazado</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Respuesta del Administrador
+                        </label>
+                        <textarea
+                          value={adminResponse}
+                          onChange={(e) => setAdminResponse(e.target.value)}
+                          placeholder="Escribe tu respuesta al cliente..."
+                          rows={4}
+                          className="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent resize-none"
+                        />
+                      </div>
                     </div>
                   </div>
-                </div> */}
+                </div>
+              </div>
 
-                {/* Respuesta del Admin */}
+              {/* Descripción del Ticket */}
+              <div>
+                <h3 className="text-lg font-medium text-gray-900 mb-2">Descripción del Ticket</h3>
+                <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                  <h4 className="font-medium text-gray-900 mb-2">{selectedClaim.title}</h4>
+                  <p className="text-gray-700 whitespace-pre-wrap">{selectedClaim.description}</p>
+                </div>
+              </div>
+
+              {/* Respuesta Anterior del Admin (si existe) */}
+              {selectedClaim.admin_response && (
                 <div>
-                  <label className="block text-white font-medium mb-2">Respuesta del Administrador</label>
-                  <textarea
-                    value={adminResponse}
-                    onChange={(e) => setAdminResponse(e.target.value)}
-                    rows={4}
-                    className="w-full px-4 py-3 bg-dark-700 border border-dark-600 rounded-lg text-white placeholder-dark-400 focus:outline-none focus:ring-2 focus:ring-neon-green focus:border-transparent resize-none"
-                    placeholder="Escribe tu respuesta aquí..."
-                  />
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">Respuesta Anterior del Administrador</h3>
+                  <div className="bg-primary-50 border border-primary-200 rounded-lg p-4">
+                    <p className="text-gray-700 whitespace-pre-wrap">{selectedClaim.admin_response}</p>
+                  </div>
                 </div>
+              )}
+            </div>
 
-                {/* Cambiar Estado */}
-                <div>
-                  <label className="block text-white font-medium mb-2">Cambiar Estado</label>
-                  <select
-                    value={newStatus}
-                    onChange={(e) => setNewStatus(e.target.value as ClaimStatus)}
-                    className="w-full px-4 py-3 bg-dark-700 border border-dark-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-neon-green focus:border-transparent"
-                    aria-label="Cambiar estado del reclamo"
-                  >
-                    <option value="pending">Pendiente</option>
-                    <option value="in_review">En Revisión</option>
-                    <option value="resolved">Resuelto</option>
-                    <option value="rejected">Rechazado</option>
-                  </select>
-                </div>
-
-                {/* Botones */}
-                <div className="flex gap-3 pt-4">
-                  <button
-                    onClick={handleUpdateClaim}
-                    className="flex-1 bg-neon-green text-dark-900 py-3 rounded-lg font-semibold hover:bg-neon-green/90 transition-colors"
-                  >
-                    Actualizar Ticket
-                  </button>
-                  <button
-                    onClick={() => setShowModal(false)}
-                    className="flex-1 border border-dark-600 text-white py-3 rounded-lg font-semibold hover:bg-dark-700 transition-colors"
-                  >
-                    Cerrar
-                  </button>
-                </div>
+            {/* Botones de Acción */}
+            <div className="p-6 border-t border-gray-200 bg-gray-50">
+              <div className="flex justify-end gap-3">
+                <button
+                  onClick={() => setShowModal(false)}
+                  className="px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={handleUpdateClaim}
+                  className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
+                >
+                  Actualizar Ticket
+                </button>
               </div>
             </div>
           </div>

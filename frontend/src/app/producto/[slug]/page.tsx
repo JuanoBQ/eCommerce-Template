@@ -109,7 +109,10 @@ export default function ProductDetailPage() {
         
         if (foundProduct) {
           console.log('🔍 Product found:', foundProduct)
+          console.log('🔍 Product description:', foundProduct.description)
+          console.log('🔍 Product short_description:', foundProduct.short_description)
           console.log('🔍 Product variants:', foundProduct.variants)
+
           
           // Log detallado de cada variante
           if (foundProduct.variants && foundProduct.variants.length > 0) {
@@ -389,10 +392,44 @@ export default function ProductDetailPage() {
   // Estados de carga y error
   if (productsLoading) {
     return (
-      <div className="min-h-screen bg-dark-900 pt-20 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-neon-green mx-auto mb-4"></div>
-          <p className="text-white">Cargando producto...</p>
+      <div className="min-h-screen bg-gray-50 pt-20 flex items-center justify-center">
+        <div className="text-center max-w-md mx-auto px-6">
+          {/* Product Image Skeleton */}
+          <div className="mb-8">
+            <div className="w-32 h-32 bg-gray-200 rounded-xl animate-pulse mx-auto mb-4"></div>
+            <div className="h-6 bg-gray-200 rounded animate-pulse w-48 mx-auto mb-2"></div>
+            <div className="h-4 bg-gray-200 rounded animate-pulse w-32 mx-auto"></div>
+          </div>
+
+          {/* Main Loading Spinner */}
+          <div className="relative mb-8">
+            <div className="animate-spin rounded-full h-16 w-16 border-4 border-gray-200 border-t-primary-500 mx-auto"></div>
+            <div className="absolute inset-0 flex items-center justify-center">
+              <div className="w-6 h-6 bg-primary-500 rounded-full animate-pulse"></div>
+            </div>
+          </div>
+
+          {/* Loading Text */}
+          <div className="space-y-3">
+            <h2 className="text-xl font-semibold text-gray-900">Cargando producto</h2>
+            <p className="text-gray-600">Obteniendo información del producto...</p>
+            
+            {/* Progress Steps */}
+            <div className="flex justify-center space-x-2 mt-6">
+              <div className="w-2 h-2 bg-primary-500 rounded-full animate-pulse"></div>
+              <div className="w-2 h-2 bg-gray-300 rounded-full animate-pulse" style={{ animationDelay: '0.2s' }}></div>
+              <div className="w-2 h-2 bg-gray-300 rounded-full animate-pulse" style={{ animationDelay: '0.4s' }}></div>
+            </div>
+          </div>
+
+          {/* Loading Animation */}
+          <div className="mt-8">
+            <div className="flex justify-center space-x-1">
+              <div className="w-2 h-2 bg-primary-500 rounded-full animate-bounce"></div>
+              <div className="w-2 h-2 bg-primary-500 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+              <div className="w-2 h-2 bg-primary-500 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+            </div>
+          </div>
         </div>
       </div>
     )
@@ -453,14 +490,42 @@ export default function ProductDetailPage() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
           {/* Galería de imágenes */}
           <div className="space-y-4">
+            {/* Información de imágenes */}
+            {product.images && product.images.length > 0 && (
+              <div className="flex items-center justify-between text-sm text-gray-600 bg-gray-50 px-3 py-2 rounded-lg">
+                <span>
+                  {product.images.length} imagen{product.images.length !== 1 ? 'es' : ''} disponible{product.images.length !== 1 ? 's' : ''}
+                </span>
+                <span>
+                  {selectedImage + 1} de {product.images.length}
+                </span>
+              </div>
+            )}
+
             {/* Imagen principal */}
-            <div className="aspect-square bg-gray-100 border border-gray-200 rounded-xl overflow-hidden">
+            <div className="aspect-square bg-gray-100 border border-gray-200 rounded-xl overflow-hidden relative group">
               {product.images && product.images.length > 0 ? (
-                <img
-                  src={product.images[selectedImage]?.image || '/images/placeholder-product.jpg'}
-                  alt={product.images[selectedImage]?.alt_text || product.name}
-                  className="w-full h-full object-cover"
-                />
+                <>
+                  <img
+                    src={product.images[selectedImage]?.image || '/images/placeholder-product.jpg'}
+                    alt={product.images[selectedImage]?.alt_text || product.name}
+                    className="w-full h-full object-cover"
+                  />
+                  {/* Overlay con información */}
+                  <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all duration-300 flex items-center justify-center">
+                    <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                      <div className="bg-white bg-opacity-90 rounded-lg px-3 py-2 text-sm text-gray-900">
+                        {product.images[selectedImage]?.alt_text || product.name}
+                      </div>
+                    </div>
+                  </div>
+                  {/* Indicador de zoom */}
+                  <div className="absolute top-2 right-2 bg-white bg-opacity-80 rounded-full p-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                    <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7" />
+                    </svg>
+                  </div>
+                </>
               ) : (
                 <div className="w-full h-full flex items-center justify-center">
                   <div className="text-center">
@@ -473,26 +538,74 @@ export default function ProductDetailPage() {
               )}
             </div>
 
+            {/* Descripción completa debajo de la imagen */}
+            <div className="mt-6">
+              {product.description && product.description.trim() !== '' && (
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-3">Descripción</h3>
+                  <div className="prose prose-gray max-w-none">
+                    <p className="text-gray-700 leading-relaxed whitespace-pre-line">
+                      {product.description}
+                    </p>
+                  </div>
+                </div>
+              )}
+            </div>
+
             {/* Miniaturas */}
             {product.images && product.images.length > 1 && (
-              <div className="grid grid-cols-4 gap-2">
-                {product.images.map((image, index) => (
-                  <button
-                    key={image.id}
-                    onClick={() => setSelectedImage(index)}
-                    className={`aspect-square bg-gray-100 border rounded-lg overflow-hidden transition-all ${
-                      selectedImage === index 
-                        ? 'border-primary-500' 
-                        : 'border-gray-200 hover:border-gray-300'
-                    }`}
-                  >
-                    <img
-                      src={image.image}
-                      alt={image.alt_text}
-                      className="w-full h-full object-cover"
-                    />
-                  </button>
-                ))}
+              <div className="space-y-2">
+                <h4 className="text-sm font-medium text-gray-900">Galería de Imágenes</h4>
+                <div className="grid grid-cols-4 gap-2">
+                  {product.images.map((image, index) => (
+                    <button
+                      key={image.id}
+                      onClick={() => setSelectedImage(index)}
+                      className={`aspect-square bg-gray-100 border-2 rounded-lg overflow-hidden transition-all relative ${
+                        selectedImage === index
+                          ? 'border-primary-500 ring-2 ring-primary-500 ring-opacity-50'
+                          : 'border-gray-200 hover:border-gray-300'
+                      }`}
+                    >
+                      <img
+                        src={image.image}
+                        alt={image.alt_text}
+                        className="w-full h-full object-cover"
+                      />
+                      {selectedImage === index && (
+                        <div className="absolute inset-0 bg-primary-500 bg-opacity-20 flex items-center justify-center">
+                          <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                          </svg>
+                        </div>
+                      )}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Navegación de imágenes */}
+            {product.images && product.images.length > 1 && (
+              <div className="flex items-center justify-between">
+                <button
+                  onClick={() => setSelectedImage(prev => prev > 0 ? prev - 1 : product.images.length - 1)}
+                  className="flex items-center gap-2 px-3 py-2 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                  </svg>
+                  Anterior
+                </button>
+                <button
+                  onClick={() => setSelectedImage(prev => prev < product.images.length - 1 ? prev + 1 : 0)}
+                  className="flex items-center gap-2 px-3 py-2 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
+                >
+                  Siguiente
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
+                </button>
               </div>
             )}
           </div>
@@ -501,17 +614,6 @@ export default function ProductDetailPage() {
           <div className="space-y-6">
             {/* Header */}
             <div>
-              <div className="flex items-center gap-2 mb-2">
-                <span className="text-primary-500 text-sm font-medium">
-                  {product.brand_details?.name}
-                </span>
-                {product.is_featured && (
-                  <span className="bg-primary-500 text-white px-2 py-1 rounded-full text-xs font-semibold">
-                    Destacado
-                  </span>
-                )}
-              </div>
-              
               <h1 className="text-3xl font-bold text-gray-900 mb-4">
                 {product.name}
               </h1>
@@ -527,7 +629,7 @@ export default function ProductDetailPage() {
               )}
 
               {/* Precio */}
-              <div className="flex items-center gap-3 mb-6">
+              <div className="flex items-center gap-3 mb-4">
                 {product.compare_price && product.compare_price > getCurrentPrice() ? (
                   <>
                     <span className="text-3xl font-bold text-gray-900">
@@ -546,65 +648,73 @@ export default function ProductDetailPage() {
                   </span>
                 )}
               </div>
+
+              {/* Descripción corta */}
+              {product.short_description && product.short_description.trim() !== '' && (
+                <div className="mb-6">
+                  <p className="text-gray-600 leading-relaxed">
+                    {product.short_description}
+                  </p>
+                </div>
+              )}
             </div>
 
-            {/* Descripción */}
-            <div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">Descripción</h3>
-              <p className="text-gray-600 leading-relaxed">
-                {product.description}
-              </p>
-            </div>
+
 
             {/* Variantes */}
             {product.variants && product.variants.length > 0 ? (
-              <div className="space-y-4">
-                {/* Tallas */}
-                <div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-3">Talla</h3>
-                  <div className="flex flex-wrap gap-2">
-                    {getAvailableSizes().map((size) => (
-                      <button
-                        key={size.id}
-                        onClick={() => handleSizeSelection(size.id)}
-                        className={`px-4 py-2 border rounded-md font-medium transition-all ${
-                          selectedSize === size.id
-                            ? 'border-primary-500 bg-primary-500 text-white'
-                            : 'border-gray-300 text-gray-900 hover:border-gray-400'
-                        }`}
-                      >
-                        {size.name}
-                      </button>
-                    ))}
-                    {getAvailableSizes().length === 0 && (
-                      <p className="text-gray-500 text-sm">No hay tallas disponibles</p>
-                    )}
+              <div className="space-y-6">
+                {/* Selector de Variantes */}
+                <div className="space-y-4">
+                  {/* Tallas */}
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-900 mb-3">Talla</h3>
+                    <div className="flex flex-wrap gap-2">
+                      {getAvailableSizes().map((size) => (
+                        <button
+                          key={size.id}
+                          onClick={() => handleSizeSelection(size.id)}
+                          className={`px-4 py-2 border rounded-md font-medium transition-all ${
+                            selectedSize === size.id
+                              ? 'border-primary-500 bg-primary-500 text-white'
+                              : 'border-gray-300 text-gray-900 hover:border-gray-400'
+                          }`}
+                        >
+                          {size.name}
+                        </button>
+                      ))}
+                      {getAvailableSizes().length === 0 && (
+                        <p className="text-gray-500 text-sm">No hay tallas disponibles</p>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Colores */}
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-900 mb-3">Color</h3>
+                    <div className="flex flex-wrap gap-2">
+                      {getAvailableColors().map((color) => (
+                        <button
+                          key={color.id}
+                          onClick={() => handleColorSelection(color.id)}
+                          className={`w-10 h-10 rounded-full border-2 transition-all ${
+                            selectedColor === color.id
+                              ? 'border-primary-500 scale-110'
+                              : 'border-gray-300 hover:border-gray-400'
+                          }`}
+                          style={{ backgroundColor: color.hex_code || '#666' }}
+                          title={color.name}
+                          aria-label={`Seleccionar color ${color.name}`}
+                        />
+                      ))}
+                      {getAvailableColors().length === 0 && (
+                        <p className="text-gray-500 text-sm">No hay colores disponibles</p>
+                      )}
+                    </div>
                   </div>
                 </div>
 
-                {/* Colores */}
-                <div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-3">Color</h3>
-                  <div className="flex flex-wrap gap-2">
-                    {getAvailableColors().map((color) => (
-                      <button
-                        key={color.id}
-                        onClick={() => handleColorSelection(color.id)}
-                        className={`w-10 h-10 rounded-full border-2 transition-all ${
-                          selectedColor === color.id 
-                            ? 'border-primary-500 scale-110' 
-                            : 'border-gray-300 hover:border-gray-400'
-                        }`}
-                        style={{ backgroundColor: color.hex_code || '#666' }}
-                        title={color.name}
-                        aria-label={`Seleccionar color ${color.name}`}
-                      />
-                    ))}
-                    {getAvailableColors().length === 0 && (
-                      <p className="text-gray-500 text-sm">No hay colores disponibles</p>
-                    )}
-                  </div>
-                </div>
+
               </div>
             ) : (
               <div className="space-y-4">

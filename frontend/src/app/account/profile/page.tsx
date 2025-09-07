@@ -551,8 +551,15 @@ export default function ProfilePage() {
 
             {addressesLoading ? (
               <div className="text-center py-8">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto"></div>
-                <p className="text-gray-600 mt-2">Cargando direcciones...</p>
+                <div className="mb-4">
+                  <div className="w-12 h-12 bg-gray-200 rounded-full animate-pulse mx-auto mb-3"></div>
+                  <div className="h-4 bg-gray-200 rounded animate-pulse w-24 mx-auto mb-2"></div>
+                  <div className="h-3 bg-gray-200 rounded animate-pulse w-32 mx-auto"></div>
+                </div>
+                <div className="relative mb-4">
+                  <div className="animate-spin rounded-full h-8 w-8 border-2 border-gray-200 border-t-primary-500 mx-auto"></div>
+                </div>
+                <p className="text-gray-600 text-sm">Cargando direcciones...</p>
               </div>
             ) : addresses.length === 0 ? (
               <div className="text-center py-12">

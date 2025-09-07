@@ -52,10 +52,44 @@ export default function ProtectedRoute({
 
   if (isLoading || isChecking) {
     return (
-      <div className="min-h-screen bg-dark-900 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-neon-green mx-auto mb-4"></div>
-          <p className="text-white">Verificando permisos...</p>
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center max-w-md mx-auto px-6">
+          {/* Logo/Icon Skeleton */}
+          <div className="mb-8">
+            <div className="w-20 h-20 bg-gray-200 rounded-full animate-pulse mx-auto mb-4"></div>
+            <div className="h-6 bg-gray-200 rounded animate-pulse w-32 mx-auto mb-2"></div>
+            <div className="h-4 bg-gray-200 rounded animate-pulse w-48 mx-auto"></div>
+          </div>
+
+          {/* Main Loading Spinner */}
+          <div className="relative mb-8">
+            <div className="animate-spin rounded-full h-16 w-16 border-4 border-gray-200 border-t-primary-500 mx-auto"></div>
+            <div className="absolute inset-0 flex items-center justify-center">
+              <div className="w-6 h-6 bg-primary-500 rounded-full animate-pulse"></div>
+            </div>
+          </div>
+
+          {/* Loading Text */}
+          <div className="space-y-3">
+            <h2 className="text-xl font-semibold text-gray-900">Verificando permisos</h2>
+            <p className="text-gray-600">Validando acceso al panel administrativo...</p>
+            
+            {/* Progress Steps */}
+            <div className="flex justify-center space-x-2 mt-6">
+              <div className="w-2 h-2 bg-primary-500 rounded-full animate-pulse"></div>
+              <div className="w-2 h-2 bg-gray-300 rounded-full animate-pulse" style={{ animationDelay: '0.2s' }}></div>
+              <div className="w-2 h-2 bg-gray-300 rounded-full animate-pulse" style={{ animationDelay: '0.4s' }}></div>
+            </div>
+          </div>
+
+          {/* Loading Animation */}
+          <div className="mt-8">
+            <div className="flex justify-center space-x-1">
+              <div className="w-2 h-2 bg-primary-500 rounded-full animate-bounce"></div>
+              <div className="w-2 h-2 bg-primary-500 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+              <div className="w-2 h-2 bg-primary-500 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+            </div>
+          </div>
         </div>
       </div>
     )

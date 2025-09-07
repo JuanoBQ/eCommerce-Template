@@ -113,7 +113,7 @@ class ProductListSerializer(serializers.ModelSerializer):
     class Meta:
         model = Product
         fields = [
-            'id', 'name', 'slug', 'short_description', 'sku', 'category',
+            'id', 'name', 'slug', 'description', 'short_description', 'sku', 'category',
             'brand', 'gender', 'price', 'compare_price', 'status', 'is_featured',
             'is_digital', 'requires_shipping', 'inventory_quantity', 'track_inventory',
             'low_stock_threshold', 'allow_backorder', 'created_at', 'updated_at',
@@ -167,8 +167,8 @@ class ProductDetailSerializer(serializers.ModelSerializer):
     images = ProductImageSerializer(many=True, read_only=True)
     variants = ProductVariantSerializer(many=True, read_only=True)
     reviews = ProductReviewSerializer(many=True, read_only=True)
-    category_details = serializers.StringRelatedField(source='category', read_only=True)
-    brand_details = serializers.StringRelatedField(source='brand', read_only=True)
+    category_details = serializers.SerializerMethodField()
+    brand_details = serializers.SerializerMethodField()
     discount_percentage = serializers.ReadOnlyField()
     margin_percentage = serializers.ReadOnlyField()
     is_in_stock = serializers.ReadOnlyField()
@@ -191,12 +191,39 @@ class ProductDetailSerializer(serializers.ModelSerializer):
         ]
         read_only_fields = ['id', 'created_at', 'updated_at', 'published_at']
     
+    def get_category_details(self, obj):
+        if obj.category:
+            return {
+                'id': obj.category.id,
+                'name': obj.category.name,
+                'slug': obj.category.slug,
+                'description': obj.category.description,
+                'is_active': obj.category.is_active
+            }
+        return None
+
+    def get_brand_details(self, obj):
+        if obj.brand:
+            logo_url = None
+            if obj.brand.logo and obj.brand.logo.name:
+                logo_url = obj.brand.logo.url
+            return {
+                'id': obj.brand.id,
+                'name': obj.brand.name,
+                'slug': obj.brand.slug,
+                'description': obj.brand.description,
+                'website': obj.brand.website,
+                'logo': logo_url,
+                'is_active': obj.brand.is_active
+            }
+        return None
+
     def get_average_rating(self, obj):
         reviews = obj.reviews.filter(is_approved=True)
         if reviews.exists():
             return round(reviews.aggregate(avg_rating=Avg('rating'))['avg_rating'], 1)
         return 0
-    
+
     def get_total_reviews(self, obj):
         return obj.reviews.filter(is_approved=True).count()
 

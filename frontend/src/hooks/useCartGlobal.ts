@@ -134,8 +134,6 @@ export const useCartGlobal = () => {
 
     console.log('New cart state:', newState)
     updateGlobalState(newState)
-    
-    toast.success('Producto agregado al carrito')
   }, [])
 
   const updateCartItem = useCallback((itemId: number, quantity: number) => {

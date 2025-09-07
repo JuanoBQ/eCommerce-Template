@@ -13,6 +13,8 @@ urlpatterns = [
     path('change-password/', views.ChangePasswordView.as_view(), name='change-password'),
     # Endpoint de direcciones
     path('simple-addresses/', views.simple_addresses_endpoint, name='simple-addresses'),
+    # Estadísticas de usuarios
+    path('stats/', views.user_stats, name='user-stats'),
     # API de usuarios (admin)
     path('', include(router.urls)),
 ]

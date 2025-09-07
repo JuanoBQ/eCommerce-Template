@@ -40,11 +40,11 @@ const Footer = () => {
 
   const footerLinks = {
     shop: [
-      { name: 'Hombres', href: '/tienda?gender=men&from_nav=true' },
-      { name: 'Mujeres', href: '/tienda?gender=women&from_nav=true' },
-      { name: 'Accesorios', href: '/tienda?category=accesorios&from_nav=true' },
-      { name: 'Nuevos', href: '/tienda?featured=true&from_nav=true' },
-      { name: 'Ofertas', href: '/tienda?sale=true&from_nav=true' },
+      { name: 'Hombres', href: '/tienda?gender=unisex&from_nav=true&clear_filters=true' },
+      { name: 'Mujeres', href: '/tienda?gender=unisex&from_nav=true&clear_filters=true' },
+      { name: 'Accesorios', href: '/tienda?category=12&from_nav=true&clear_filters=true' },
+      { name: 'Nuevos', href: '/tienda?featured=true&from_nav=true&clear_filters=true' },
+      { name: 'Ofertas', href: '/tienda?sale=true&from_nav=true&clear_filters=true' },
     ],
     support: [
       { name: 'Centro de Ayuda', href: '/ayuda' },

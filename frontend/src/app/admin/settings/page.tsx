@@ -2,8 +2,8 @@
 
 import React, { useState } from 'react'
 import ProtectedRoute from '@/components/auth/ProtectedRoute'
-import { Button } from '@/components/ui/Button'
-import { Input } from '@/components/ui/Input'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 import { useAdminSettings, AdminSettings } from '@/hooks/useAdminSettings'
 import { 
   Settings, 
@@ -82,11 +82,43 @@ export default function AdminSettingsPage() {
   if (isLoading || !localSettings) {
     return (
       <ProtectedRoute>
-        <div className="min-h-screen bg-dark-900 py-20">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="text-center">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-neon-green mx-auto"></div>
-              <p className="text-white mt-4">Cargando configuraciones...</p>
+        <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+          <div className="text-center max-w-md mx-auto px-6">
+            {/* Settings Icon Skeleton */}
+            <div className="mb-8">
+              <div className="w-20 h-20 bg-gray-200 rounded-full animate-pulse mx-auto mb-4"></div>
+              <div className="h-6 bg-gray-200 rounded animate-pulse w-32 mx-auto mb-2"></div>
+              <div className="h-4 bg-gray-200 rounded animate-pulse w-48 mx-auto"></div>
+            </div>
+
+            {/* Main Loading Spinner */}
+            <div className="relative mb-8">
+              <div className="animate-spin rounded-full h-16 w-16 border-4 border-gray-200 border-t-primary-500 mx-auto"></div>
+              <div className="absolute inset-0 flex items-center justify-center">
+                <div className="w-6 h-6 bg-primary-500 rounded-full animate-pulse"></div>
+              </div>
+            </div>
+
+            {/* Loading Text */}
+            <div className="space-y-3">
+              <h2 className="text-xl font-semibold text-gray-900">Cargando configuraciones</h2>
+              <p className="text-gray-600">Obteniendo configuraciones del sistema...</p>
+              
+              {/* Progress Steps */}
+              <div className="flex justify-center space-x-2 mt-6">
+                <div className="w-2 h-2 bg-primary-500 rounded-full animate-pulse"></div>
+                <div className="w-2 h-2 bg-gray-300 rounded-full animate-pulse" style={{ animationDelay: '0.2s' }}></div>
+                <div className="w-2 h-2 bg-gray-300 rounded-full animate-pulse" style={{ animationDelay: '0.4s' }}></div>
+              </div>
+            </div>
+
+            {/* Loading Animation */}
+            <div className="mt-8">
+              <div className="flex justify-center space-x-1">
+                <div className="w-2 h-2 bg-primary-500 rounded-full animate-bounce"></div>
+                <div className="w-2 h-2 bg-primary-500 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+                <div className="w-2 h-2 bg-primary-500 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+              </div>
             </div>
           </div>
         </div>
@@ -96,15 +128,14 @@ export default function AdminSettingsPage() {
 
   return (
     <ProtectedRoute>
-      <div className="min-h-screen bg-dark-900 py-20">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="min-h-screen bg-gray-50 space-y-6">
           {/* Header */}
           <div className="mb-8">
             <div className="flex items-center gap-4 mb-6">
-              <Settings className="w-8 h-8 text-neon-green" />
+              <Settings className="w-8 h-8 text-primary-500" />
               <div>
-                <h1 className="text-3xl font-bold text-white">Configuración del Sistema</h1>
-                <p className="text-white/70">Gestiona la configuración general del eCommerce</p>
+                <h1 className="text-3xl font-bold text-gray-900">Configuración del Sistema</h1>
+                <p className="text-gray-600">Gestiona la configuración general del eCommerce</p>
               </div>
             </div>
 
@@ -134,8 +165,8 @@ export default function AdminSettingsPage() {
           <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
             {/* Sidebar */}
             <div className="lg:col-span-1">
-              <div className="bg-dark-800/50 backdrop-blur-md rounded-2xl p-6 border border-dark-700/50">
-                <h3 className="text-lg font-semibold text-white mb-4">Categorías</h3>
+              <div className="bg-white rounded-2xl p-6 border border-gray-200 shadow-sm">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">Categorías</h3>
                 <nav className="space-y-2">
                   {tabs.map((tab) => {
                     const Icon = tab.icon
@@ -145,8 +176,8 @@ export default function AdminSettingsPage() {
                         onClick={() => setActiveTab(tab.id)}
                         className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left transition-colors ${
                           activeTab === tab.id
-                            ? 'bg-neon-green text-dark-900'
-                            : 'text-white/70 hover:text-white hover:bg-dark-700/50'
+                            ? 'bg-primary-500 text-gray-900'
+                            : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
                         }`}
                       >
                         <Icon className="w-4 h-4" />
@@ -163,39 +194,39 @@ export default function AdminSettingsPage() {
               {/* Stats Overview */}
               {stats && (
                 <div className="mb-6">
-                  <div className="bg-dark-800/50 backdrop-blur-md rounded-2xl p-6 border border-dark-700/50">
-                    <h2 className="text-xl font-semibold text-white mb-4">Estadísticas del Sistema</h2>
+                  <div className="bg-white rounded-2xl p-6 border border-gray-200 shadow-sm">
+                    <h2 className="text-xl font-semibold text-gray-900 mb-4">Estadísticas del Sistema</h2>
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                       <div className="text-center">
-                        <div className="text-2xl font-bold text-neon-green">{stats.users.total}</div>
-                        <div className="text-white/70 text-sm">Usuarios</div>
+                        <div className="text-2xl font-bold text-primary-500">{stats.users.total}</div>
+                        <div className="text-gray-600 text-sm">Usuarios</div>
                       </div>
                       <div className="text-center">
-                        <div className="text-2xl font-bold text-blue-400">{stats.products.total}</div>
-                        <div className="text-white/70 text-sm">Productos</div>
+                        <div className="text-2xl font-bold text-blue-500">{stats.products.total}</div>
+                        <div className="text-gray-600 text-sm">Productos</div>
                       </div>
                       <div className="text-center">
-                        <div className="text-2xl font-bold text-purple-400">{stats.orders.total}</div>
-                        <div className="text-white/70 text-sm">Órdenes</div>
+                        <div className="text-2xl font-bold text-purple-500">{stats.orders.total}</div>
+                        <div className="text-gray-600 text-sm">Órdenes</div>
                       </div>
                       <div className="text-center">
-                        <div className="text-2xl font-bold text-orange-400">{stats.addresses.total}</div>
-                        <div className="text-white/70 text-sm">Direcciones</div>
+                        <div className="text-2xl font-bold text-orange-500">{stats.addresses.total}</div>
+                        <div className="text-gray-600 text-sm">Direcciones</div>
                       </div>
                     </div>
                   </div>
                 </div>
               )}
 
-              <div className="bg-dark-800/50 backdrop-blur-md rounded-2xl p-6 border border-dark-700/50">
+              <div className="bg-white rounded-2xl p-6 border border-gray-200 shadow-sm">
                 {/* General Settings */}
                 {activeTab === 'general' && (
                   <div className="space-y-6">
-                    <h2 className="text-xl font-semibold text-white mb-6">Configuración General</h2>
+                    <h2 className="text-xl font-semibold text-gray-900 mb-6">Configuración General</h2>
                     
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       <div>
-                        <label className="block text-white/70 text-sm font-medium mb-2">
+                        <label className="block text-gray-700 text-sm font-medium mb-2">
                           Nombre del Sitio
                         </label>
                         <Input
@@ -206,7 +237,7 @@ export default function AdminSettingsPage() {
                       </div>
                       
                       <div>
-                        <label className="block text-white/70 text-sm font-medium mb-2">
+                        <label className="block text-gray-700 text-sm font-medium mb-2">
                           URL del Sitio
                         </label>
                         <Input
@@ -218,20 +249,20 @@ export default function AdminSettingsPage() {
                     </div>
                     
                     <div>
-                      <label className="block text-white/70 text-sm font-medium mb-2">
+                      <label className="block text-gray-700 text-sm font-medium mb-2">
                         Descripción del Sitio
                       </label>
                       <textarea
                         value={localSettings.site_description}
                         onChange={(e) => handleInputChange('site_description', e.target.value)}
-                        className="w-full px-3 py-2 bg-dark-700 border border-dark-600 rounded-lg text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-neon-green focus:border-transparent"
+                        className="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                         rows={3}
                         placeholder="Descripción del sitio web"
                       />
                     </div>
                     
                     <div>
-                      <label className="block text-white/70 text-sm font-medium mb-2">
+                      <label className="block text-gray-700 text-sm font-medium mb-2">
                         Email del Administrador
                       </label>
                       <Input
@@ -247,11 +278,11 @@ export default function AdminSettingsPage() {
                 {/* Email Settings */}
                 {activeTab === 'email' && (
                   <div className="space-y-6">
-                    <h2 className="text-xl font-semibold text-white mb-6">Configuración de Email</h2>
+                    <h2 className="text-xl font-semibold text-gray-900 mb-6">Configuración de Email</h2>
                     
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       <div>
-                        <label className="block text-white/70 text-sm font-medium mb-2">
+                        <label className="block text-gray-700 text-sm font-medium mb-2">
                           Servidor SMTP
                         </label>
                         <Input
@@ -262,7 +293,7 @@ export default function AdminSettingsPage() {
                       </div>
                       
                       <div>
-                        <label className="block text-white/70 text-sm font-medium mb-2">
+                        <label className="block text-gray-700 text-sm font-medium mb-2">
                           Puerto
                         </label>
                         <Input
@@ -276,7 +307,7 @@ export default function AdminSettingsPage() {
                     
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       <div>
-                        <label className="block text-white/70 text-sm font-medium mb-2">
+                        <label className="block text-gray-700 text-sm font-medium mb-2">
                           Usuario
                         </label>
                         <Input
@@ -287,7 +318,7 @@ export default function AdminSettingsPage() {
                       </div>
                       
                       <div>
-                        <label className="block text-white/70 text-sm font-medium mb-2">
+                        <label className="block text-gray-700 text-sm font-medium mb-2">
                           Contraseña
                         </label>
                         <Input
@@ -305,9 +336,9 @@ export default function AdminSettingsPage() {
                         id="email_use_tls"
                         checked={localSettings.email_use_tls}
                         onChange={(e) => handleInputChange('email_use_tls', e.target.checked)}
-                        className="w-4 h-4 text-neon-green bg-dark-700 border-dark-600 rounded focus:ring-neon-green focus:ring-2"
+                        className="w-4 h-4 text-primary-500 bg-white border-gray-300 rounded focus:ring-primary-500 focus:ring-2"
                       />
-                      <label htmlFor="email_use_tls" className="text-white/70 text-sm">
+                      <label htmlFor="email_use_tls" className="text-gray-700 text-sm">
                         Usar TLS/SSL
                       </label>
                     </div>
@@ -317,11 +348,11 @@ export default function AdminSettingsPage() {
                 {/* Security Settings */}
                 {activeTab === 'security' && (
                   <div className="space-y-6">
-                    <h2 className="text-xl font-semibold text-white mb-6">Configuración de Seguridad</h2>
+                    <h2 className="text-xl font-semibold text-gray-900 mb-6">Configuración de Seguridad</h2>
                     
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       <div>
-                        <label className="block text-white/70 text-sm font-medium mb-2">
+                        <label className="block text-gray-700 text-sm font-medium mb-2">
                           Tiempo de Sesión (minutos)
                         </label>
                         <Input
@@ -333,7 +364,7 @@ export default function AdminSettingsPage() {
                       </div>
                       
                       <div>
-                        <label className="block text-white/70 text-sm font-medium mb-2">
+                        <label className="block text-gray-700 text-sm font-medium mb-2">
                           Intentos Máximos de Login
                         </label>
                         <Input
@@ -346,7 +377,7 @@ export default function AdminSettingsPage() {
                     </div>
                     
                     <div>
-                      <label className="block text-white/70 text-sm font-medium mb-2">
+                      <label className="block text-gray-900/70 text-sm font-medium mb-2">
                         Longitud Mínima de Contraseña
                       </label>
                       <Input
@@ -363,9 +394,9 @@ export default function AdminSettingsPage() {
                         id="require_2fa"
                         checked={localSettings.require_2fa}
                         onChange={(e) => handleInputChange('require_2fa', e.target.checked)}
-                        className="w-4 h-4 text-neon-green bg-dark-700 border-dark-600 rounded focus:ring-neon-green focus:ring-2"
+                        className="w-4 h-4 text-primary-500 bg-white border-gray-300 rounded focus:ring-primary-500 focus:ring-2"
                       />
-                      <label htmlFor="require_2fa" className="text-white/70 text-sm">
+                                              <label htmlFor="require_2fa" className="text-gray-700 text-sm">
                         Requerir Autenticación de Dos Factores
                       </label>
                     </div>
@@ -375,10 +406,10 @@ export default function AdminSettingsPage() {
                 {/* Products Settings */}
                 {activeTab === 'products' && (
                   <div className="space-y-6">
-                    <h2 className="text-xl font-semibold text-white mb-6">Configuración de Productos</h2>
+                    <h2 className="text-xl font-semibold text-gray-900 mb-6">Configuración de Productos</h2>
                     
                     <div>
-                      <label className="block text-white/70 text-sm font-medium mb-2">
+                      <label className="block text-gray-900/70 text-sm font-medium mb-2">
                         Productos por Página
                       </label>
                       <Input
@@ -396,9 +427,9 @@ export default function AdminSettingsPage() {
                           id="enable_reviews"
                           checked={localSettings.enable_reviews}
                           onChange={(e) => handleInputChange('enable_reviews', e.target.checked)}
-                          className="w-4 h-4 text-neon-green bg-dark-700 border-dark-600 rounded focus:ring-neon-green focus:ring-2"
+                          className="w-4 h-4 text-primary-500 bg-white border-gray-300 rounded focus:ring-primary-500 focus:ring-2"
                         />
-                        <label htmlFor="enable_reviews" className="text-white/70 text-sm">
+                        <label htmlFor="enable_reviews" className="text-gray-700 text-sm">
                           Habilitar Reseñas de Productos
                         </label>
                       </div>
@@ -409,9 +440,9 @@ export default function AdminSettingsPage() {
                           id="enable_wishlist"
                           checked={localSettings.enable_wishlist}
                           onChange={(e) => handleInputChange('enable_wishlist', e.target.checked)}
-                          className="w-4 h-4 text-neon-green bg-dark-700 border-dark-600 rounded focus:ring-neon-green focus:ring-2"
+                          className="w-4 h-4 text-primary-500 bg-white border-gray-300 rounded focus:ring-primary-500 focus:ring-2"
                         />
-                        <label htmlFor="enable_wishlist" className="text-white/70 text-sm">
+                        <label htmlFor="enable_wishlist" className="text-gray-700 text-sm">
                           Habilitar Lista de Deseos
                         </label>
                       </div>
@@ -422,9 +453,9 @@ export default function AdminSettingsPage() {
                           id="enable_notifications"
                           checked={localSettings.enable_notifications}
                           onChange={(e) => handleInputChange('enable_notifications', e.target.checked)}
-                          className="w-4 h-4 text-neon-green bg-dark-700 border-dark-600 rounded focus:ring-neon-green focus:ring-2"
+                          className="w-4 h-4 text-primary-500 bg-white border-gray-300 rounded focus:ring-primary-500 focus:ring-2"
                         />
-                        <label htmlFor="enable_notifications" className="text-white/70 text-sm">
+                        <label htmlFor="enable_notifications" className="text-gray-700 text-sm">
                           Habilitar Notificaciones
                         </label>
                       </div>
@@ -435,7 +466,7 @@ export default function AdminSettingsPage() {
                 {/* Orders Settings */}
                 {activeTab === 'orders' && (
                   <div className="space-y-6">
-                    <h2 className="text-xl font-semibold text-white mb-6">Configuración de Órdenes</h2>
+                    <h2 className="text-xl font-semibold text-gray-900 mb-6">Configuración de Órdenes</h2>
                     
                     <div className="flex items-center gap-3">
                       <input
@@ -443,15 +474,15 @@ export default function AdminSettingsPage() {
                         id="order_auto_confirm"
                         checked={localSettings.order_auto_confirm}
                         onChange={(e) => handleInputChange('order_auto_confirm', e.target.checked)}
-                        className="w-4 h-4 text-neon-green bg-dark-700 border-dark-600 rounded focus:ring-neon-green focus:ring-2"
+                        className="w-4 h-4 text-primary-500 bg-white border-gray-300 rounded focus:ring-primary-500 focus:ring-2"
                       />
-                      <label htmlFor="order_auto_confirm" className="text-white/70 text-sm">
+                                              <label htmlFor="order_auto_confirm" className="text-gray-700 text-sm">
                         Confirmar Órdenes Automáticamente
                       </label>
                     </div>
                     
                     <div>
-                      <label className="block text-white/70 text-sm font-medium mb-2">
+                      <label className="block text-gray-900/70 text-sm font-medium mb-2">
                         Cancelar Órdenes Después de (horas)
                       </label>
                       <Input
@@ -468,9 +499,9 @@ export default function AdminSettingsPage() {
                         id="enable_tracking"
                         checked={localSettings.enable_tracking}
                         onChange={(e) => handleInputChange('enable_tracking', e.target.checked)}
-                        className="w-4 h-4 text-neon-green bg-dark-700 border-dark-600 rounded focus:ring-neon-green focus:ring-2"
+                        className="w-4 h-4 text-primary-500 bg-white border-gray-300 rounded focus:ring-primary-500 focus:ring-2"
                       />
-                      <label htmlFor="enable_tracking" className="text-white/70 text-sm">
+                                              <label htmlFor="enable_tracking" className="text-gray-700 text-sm">
                         Habilitar Seguimiento de Órdenes
                       </label>
                     </div>
@@ -480,16 +511,16 @@ export default function AdminSettingsPage() {
                 {/* Payments Settings */}
                 {activeTab === 'payments' && (
                   <div className="space-y-6">
-                    <h2 className="text-xl font-semibold text-white mb-6">Configuración de Pagos</h2>
+                    <h2 className="text-xl font-semibold text-gray-900 mb-6">Configuración de Pagos</h2>
                     
                     <div>
-                      <label className="block text-white/70 text-sm font-medium mb-2">
+                      <label className="block text-gray-900/70 text-sm font-medium mb-2">
                         Pasarela de Pago
                       </label>
                       <select
                         value={localSettings.payment_gateway}
                         onChange={(e) => handleInputChange('payment_gateway', e.target.value)}
-                        className="w-full px-3 py-2 bg-dark-700 border border-dark-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-neon-green focus:border-transparent"
+                        className="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                         title="Seleccionar pasarela de pago"
                       >
                         <option value="wompi">Wompi</option>
@@ -500,13 +531,13 @@ export default function AdminSettingsPage() {
                     </div>
                     
                     <div>
-                      <label className="block text-white/70 text-sm font-medium mb-2">
+                      <label className="block text-gray-900/70 text-sm font-medium mb-2">
                         Moneda
                       </label>
                       <select
                         value={localSettings.currency}
                         onChange={(e) => handleInputChange('currency', e.target.value)}
-                        className="w-full px-3 py-2 bg-dark-700 border border-dark-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-neon-green focus:border-transparent"
+                        className="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                         title="Seleccionar moneda"
                       >
                         <option value="COP">Peso Colombiano (COP)</option>
@@ -521,9 +552,9 @@ export default function AdminSettingsPage() {
                         id="payment_test_mode"
                         checked={localSettings.payment_test_mode}
                         onChange={(e) => handleInputChange('payment_test_mode', e.target.checked)}
-                        className="w-4 h-4 text-neon-green bg-dark-700 border-dark-600 rounded focus:ring-neon-green focus:ring-2"
+                        className="w-4 h-4 text-primary-500 bg-white border-gray-300 rounded focus:ring-primary-500 focus:ring-2"
                       />
-                      <label htmlFor="payment_test_mode" className="text-white/70 text-sm">
+                                              <label htmlFor="payment_test_mode" className="text-gray-700 text-sm">
                         Modo de Prueba
                       </label>
                     </div>
@@ -533,7 +564,7 @@ export default function AdminSettingsPage() {
                 {/* Notifications Settings */}
                 {activeTab === 'notifications' && (
                   <div className="space-y-6">
-                    <h2 className="text-xl font-semibold text-white mb-6">Configuración de Notificaciones</h2>
+                    <h2 className="text-xl font-semibold text-gray-900 mb-6">Configuración de Notificaciones</h2>
                     
                     <div className="space-y-4">
                       <div className="flex items-center gap-3">
@@ -542,9 +573,9 @@ export default function AdminSettingsPage() {
                           id="email_notifications"
                           checked={localSettings.email_notifications}
                           onChange={(e) => handleInputChange('email_notifications', e.target.checked)}
-                          className="w-4 h-4 text-neon-green bg-dark-700 border-dark-600 rounded focus:ring-neon-green focus:ring-2"
+                          className="w-4 h-4 text-primary-500 bg-white border-gray-300 rounded focus:ring-primary-500 focus:ring-2"
                         />
-                        <label htmlFor="email_notifications" className="text-white/70 text-sm">
+                        <label htmlFor="email_notifications" className="text-gray-700 text-sm">
                           Notificaciones por Email
                         </label>
                       </div>
@@ -555,9 +586,9 @@ export default function AdminSettingsPage() {
                           id="sms_notifications"
                           checked={localSettings.sms_notifications}
                           onChange={(e) => handleInputChange('sms_notifications', e.target.checked)}
-                          className="w-4 h-4 text-neon-green bg-dark-700 border-dark-600 rounded focus:ring-neon-green focus:ring-2"
+                          className="w-4 h-4 text-primary-500 bg-white border-gray-300 rounded focus:ring-primary-500 focus:ring-2"
                         />
-                        <label htmlFor="sms_notifications" className="text-white/70 text-sm">
+                        <label htmlFor="sms_notifications" className="text-gray-700 text-sm">
                           Notificaciones por SMS
                         </label>
                       </div>
@@ -568,9 +599,9 @@ export default function AdminSettingsPage() {
                           id="push_notifications"
                           checked={localSettings.push_notifications}
                           onChange={(e) => handleInputChange('push_notifications', e.target.checked)}
-                          className="w-4 h-4 text-neon-green bg-dark-700 border-dark-600 rounded focus:ring-neon-green focus:ring-2"
+                          className="w-4 h-4 text-primary-500 bg-white border-gray-300 rounded focus:ring-primary-500 focus:ring-2"
                         />
-                        <label htmlFor="push_notifications" className="text-white/70 text-sm">
+                        <label htmlFor="push_notifications" className="text-gray-700 text-sm">
                           Notificaciones Push
                         </label>
                       </div>
@@ -581,7 +612,6 @@ export default function AdminSettingsPage() {
             </div>
           </div>
         </div>
-      </div>
     </ProtectedRoute>
   )
 }

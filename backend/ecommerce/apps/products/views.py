@@ -2,8 +2,9 @@ from rest_framework import generics, status, permissions, filters
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from rest_framework.pagination import PageNumberPagination
 from django_filters.rest_framework import DjangoFilterBackend
-from django.db.models import Q, Avg, Count
+from django.db.models import Q, Avg, Count, Sum, F
 from django.db import transaction
 from .models import Product, ProductImage, ProductVariant, ProductReview
 from .serializers import (
@@ -14,6 +15,15 @@ from .serializers import (
 from .filters import ProductFilter
 from .permissions import IsVendorOrReadOnly, IsProductOwnerOrReadOnly
 from ecommerce.apps.categories.models import Category, Brand, Size, Color
+
+
+class LargePagePagination(PageNumberPagination):
+    """
+    Paginación que permite tamaños de página grandes para el admin.
+    """
+    page_size = 20
+    page_size_query_param = 'page_size'
+    max_page_size = 1000  # Máximo 1000 elementos por página
 
 
 class ProductListView(generics.ListCreateAPIView):
@@ -27,6 +37,7 @@ class ProductListView(generics.ListCreateAPIView):
     ordering_fields = ['name', 'price', 'created_at', 'is_featured']
     ordering = ['-is_featured', '-created_at']
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+    pagination_class = LargePagePagination
     
     def get_queryset(self):
         """
@@ -51,6 +62,35 @@ class ProductListView(generics.ListCreateAPIView):
         if self.request.method == 'POST':
             return [permissions.IsAuthenticated()]
         return [permissions.AllowAny()]
+    
+    def list(self, request, *args, **kwargs):
+        """
+        Sobrescribir el método list para incluir estadísticas adicionales.
+        """
+        response = super().list(request, *args, **kwargs)
+        
+        # Solo agregar estadísticas si es una petición de admin (usuario autenticado)
+        if request.user.is_authenticated:
+            # Obtener estadísticas de todos los productos (sin filtros de paginación)
+            base_queryset = Product.objects.all()
+            
+            stats = {
+                'total_products': base_queryset.count(),
+                'published_products': base_queryset.filter(status='published').count(),
+                'draft_products': base_queryset.filter(status='draft').count(),
+                'archived_products': base_queryset.filter(status='archived').count(),
+                'out_of_stock': base_queryset.filter(inventory_quantity=0).count(),
+                'low_stock': base_queryset.filter(inventory_quantity__lt=10, inventory_quantity__gt=0).count(),
+                'inventory_value': float(base_queryset.aggregate(
+                    total_value=Sum(F('price') * F('inventory_quantity'))
+                )['total_value'] or 0)
+            }
+            
+            # Agregar estadísticas a la respuesta
+            if isinstance(response.data, dict):
+                response.data['stats'] = stats
+        
+        return response
 
 
 class ProductDetailView(generics.RetrieveUpdateDestroyAPIView):
@@ -317,6 +357,72 @@ def upload_variant_image(request, variant_id):
     
     serializer = ProductVariantSerializer(variant)
     return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+@api_view(['GET'])
+@permission_classes([permissions.AllowAny])
+def products_stats(request):
+    """
+    Vista para obtener estadísticas generales de productos.
+    """
+    try:
+        # Obtener estadísticas de todos los productos
+        base_queryset = Product.objects.all()
+        
+        stats = {
+            'total_products': base_queryset.count(),
+            'published_products': base_queryset.filter(status='published').count(),
+            'draft_products': base_queryset.filter(status='draft').count(),
+            'archived_products': base_queryset.filter(status='archived').count(),
+            'out_of_stock': base_queryset.filter(inventory_quantity=0).count(),
+            'low_stock': base_queryset.filter(inventory_quantity__lt=10, inventory_quantity__gt=0).count(),
+            'inventory_value': float(base_queryset.aggregate(
+                total_value=Sum(F('price') * F('inventory_quantity'))
+            )['total_value'] or 0)
+        }
+        
+        return Response(stats, status=status.HTTP_200_OK)
+        
+    except Exception as e:
+        return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(['GET'])
+@permission_classes([permissions.AllowAny])
+def category_distribution(request):
+    """
+    Vista para obtener distribución de productos por categorías.
+    """
+    try:
+        from django.db.models import Count
+        
+        # Obtener distribución real de productos por categorías
+        category_stats = Product.objects.filter(
+            status='published'
+        ).values(
+            'category__name'
+        ).annotate(
+            product_count=Count('id')
+        ).order_by('-product_count')
+        
+        # Calcular total de productos publicados
+        total_products = Product.objects.filter(status='published').count()
+        
+        # Crear datos de distribución
+        distribution = []
+        for stat in category_stats:
+            if stat['category__name']:  # Solo incluir categorías con nombre
+                percentage = (stat['product_count'] / total_products * 100) if total_products > 0 else 0
+                distribution.append({
+                    'name': stat['category__name'],
+                    'value': round(percentage, 1),
+                    'count': stat['product_count']
+                })
+        
+        return Response(distribution, status=status.HTTP_200_OK)
+        
+    except Exception as e:
+        return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 @api_view(['GET'])

@@ -10,6 +10,7 @@ class CategorySerializer(serializers.ModelSerializer):
     parent_name = serializers.StringRelatedField(source='parent', read_only=True)
     full_path = serializers.ReadOnlyField()
     level = serializers.ReadOnlyField()
+    product_count = serializers.SerializerMethodField()
     
     class Meta:
         model = Category
@@ -17,7 +18,7 @@ class CategorySerializer(serializers.ModelSerializer):
             'id', 'name', 'slug', 'description', 'image', 'icon',
             'parent', 'parent_name', 'is_active', 'sort_order',
             'meta_title', 'meta_description', 'created_at', 'updated_at',
-            'children', 'full_path', 'level'
+            'children', 'full_path', 'level', 'product_count'
         ]
         read_only_fields = ['id', 'slug', 'created_at', 'updated_at']
     
@@ -27,20 +28,34 @@ class CategorySerializer(serializers.ModelSerializer):
         """
         children = obj.get_children()
         return CategorySerializer(children, many=True, context=self.context).data
+    
+    def get_product_count(self, obj):
+        """
+        Retorna el número de productos en esta categoría.
+        """
+        return obj.products.filter(status='published').count()
 
 
 class BrandSerializer(serializers.ModelSerializer):
     """
     Serializer para marcas.
     """
+    product_count = serializers.SerializerMethodField()
+    
     class Meta:
         model = Brand
         fields = [
             'id', 'name', 'slug', 'description', 'logo', 'website',
             'is_active', 'sort_order', 'meta_title', 'meta_description',
-            'created_at', 'updated_at'
+            'created_at', 'updated_at', 'product_count'
         ]
         read_only_fields = ['id', 'slug', 'created_at', 'updated_at']
+    
+    def get_product_count(self, obj):
+        """
+        Retorna el número de productos de esta marca.
+        """
+        return obj.products.filter(status='published').count()
 
 
 class SizeSerializer(serializers.ModelSerializer):

@@ -1,7 +1,8 @@
 from rest_framework import viewsets, status, permissions, generics
-from rest_framework.decorators import action
+from rest_framework.decorators import action, api_view, permission_classes
 from rest_framework.response import Response
-from django.db.models import Q
+from django.db.models import Q, Count, Sum
+from decimal import Decimal
 from .models import Order, OrderItem
 from .serializers import (
     OrderListSerializer, OrderDetailSerializer, OrderCreateSerializer, 
@@ -135,3 +136,204 @@ class OrderItemViewSet(viewsets.ModelViewSet):
         return OrderItem.objects.filter(
             order__user=self.request.user
         ).select_related('order', 'product')
+
+
+@api_view(['GET'])
+@permission_classes([permissions.IsAuthenticated])
+def order_stats(request):
+    """
+    Vista para obtener estadísticas de órdenes.
+    """
+    try:
+        # Estadísticas generales
+        total_orders = Order.objects.count()
+        pending_orders = Order.objects.filter(status='pending').count()
+        confirmed_orders = Order.objects.filter(status='confirmed').count()
+        processing_orders = Order.objects.filter(status='processing').count()
+        shipped_orders = Order.objects.filter(status='shipped').count()
+        delivered_orders = Order.objects.filter(status='delivered').count()
+        cancelled_orders = Order.objects.filter(status='cancelled').count()
+        
+        # Estadísticas de pago
+        paid_orders = Order.objects.filter(payment_status='paid').count()
+        pending_payment = Order.objects.filter(payment_status='pending').count()
+        failed_payment = Order.objects.filter(payment_status='failed').count()
+        refunded_orders = Order.objects.filter(payment_status='refunded').count()
+        
+        # Ingresos (solo órdenes con pago completado)
+        total_revenue = Order.objects.filter(payment_status='completed').aggregate(
+            total=Sum('total_amount')
+        )['total'] or Decimal('0.00')
+        
+        # Ingresos por estado (solo órdenes con pago completado)
+        delivered_revenue = Order.objects.filter(
+            status='delivered', 
+            payment_status='completed'
+        ).aggregate(
+            total=Sum('total_amount')
+        )['total'] or Decimal('0.00')
+        
+        # Órdenes con pago completado (solo payment_status='completed')
+        paid_orders_completed = Order.objects.filter(
+            payment_status='completed'
+        ).count()
+        
+        # Órdenes completadas (delivered + payment completed)
+        completed_orders = Order.objects.filter(
+            status='delivered',
+            payment_status='completed'
+        ).count()
+        
+        # Órdenes por mes (últimos 6 meses)
+        from django.utils import timezone
+        from datetime import timedelta
+        six_months_ago = timezone.now() - timedelta(days=180)
+        orders_last_6_months = Order.objects.filter(
+            created_at__gte=six_months_ago
+        ).count()
+        
+        return Response({
+            'total_orders': total_orders,
+            'pending_orders': pending_orders,
+            'confirmed_orders': confirmed_orders,
+            'processing_orders': processing_orders,
+            'shipped_orders': shipped_orders,
+            'delivered_orders': delivered_orders,
+            'paid_orders_completed': paid_orders_completed,  # solo payment_status='completed'
+            'completed_orders': completed_orders,  # delivered + payment completed
+            'cancelled_orders': cancelled_orders,
+            'paid_orders': paid_orders,
+            'pending_payment': pending_payment,
+            'failed_payment': failed_payment,
+            'refunded_orders': refunded_orders,
+            'total_revenue': float(total_revenue),
+            'delivered_revenue': float(delivered_revenue),
+            'orders_last_6_months': orders_last_6_months,
+        })
+        
+    except Exception as e:
+        return Response(
+            {'error': f'Error al obtener estadísticas: {str(e)}'},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
+
+
+@api_view(['GET'])
+@permission_classes([permissions.IsAuthenticated])
+def monthly_stats(request):
+    """
+    Vista para obtener estadísticas mensuales de órdenes e ingresos.
+    """
+    try:
+        from django.utils import timezone
+        from datetime import timedelta
+        from django.db.models.functions import TruncMonth
+        from django.db.models import Sum, Count
+        
+        # Obtener datos de los últimos 7 meses
+        seven_months_ago = timezone.now() - timedelta(days=210)
+        
+        # Agrupar órdenes por mes
+        monthly_data = Order.objects.filter(
+            created_at__gte=seven_months_ago
+        ).annotate(
+            month=TruncMonth('created_at')
+        ).values('month').annotate(
+            revenue=Sum('total_amount'),
+            orders=Count('id')
+        ).order_by('month')
+        
+        # Crear datos mensuales con nombres de meses en español
+        months_es = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic']
+        result = []
+        
+        for data in monthly_data:
+            month_date = data['month']
+            month_name = months_es[month_date.month - 1]
+            result.append({
+                'month': month_name,
+                'revenue': float(data['revenue'] or 0),
+                'orders': data['orders']
+            })
+        
+        return Response(result, status=status.HTTP_200_OK)
+        
+    except Exception as e:
+        return Response(
+            {'error': f'Error al obtener estadísticas mensuales: {str(e)}'},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
+
+
+@api_view(['GET'])
+@permission_classes([permissions.IsAuthenticated])
+def recent_activity(request):
+    """
+    Vista para obtener actividad reciente del sistema.
+    """
+    try:
+        from django.utils import timezone
+        from datetime import timedelta
+        from ecommerce.apps.products.models import Product
+        from ecommerce.apps.users.models import User
+        
+        # Obtener actividad de los últimos 7 días
+        seven_days_ago = timezone.now() - timedelta(days=7)
+        
+        activities = []
+        
+        # Actividad de órdenes recientes
+        recent_orders = Order.objects.filter(
+            created_at__gte=seven_days_ago
+        ).order_by('-created_at')[:5]
+        
+        for order in recent_orders:
+            activities.append({
+                'id': f'order-{order.id}',
+                'action': 'Nuevo pedido',
+                'user': f"{order.first_name} {order.last_name}",
+                'time': order.created_at.isoformat(),
+                'amount': f"${order.total_amount:,.2f}",
+                'type': 'order'
+            })
+        
+        # Actividad de productos recientes
+        recent_products = Product.objects.filter(
+            updated_at__gte=seven_days_ago
+        ).order_by('-updated_at')[:3]
+        
+        for product in recent_products:
+            activities.append({
+                'id': f'product-{product.id}',
+                'action': 'Producto actualizado',
+                'user': 'Admin',
+                'time': product.updated_at.isoformat(),
+                'amount': product.name,
+                'type': 'product'
+            })
+        
+        # Actividad de usuarios recientes
+        recent_users = User.objects.filter(
+            date_joined__gte=seven_days_ago
+        ).order_by('-date_joined')[:2]
+        
+        for user in recent_users:
+            activities.append({
+                'id': f'user-{user.id}',
+                'action': 'Usuario registrado',
+                'user': f"{user.first_name} {user.last_name}",
+                'time': user.date_joined.isoformat(),
+                'amount': user.email,
+                'type': 'user'
+            })
+        
+        # Ordenar por fecha (más reciente primero)
+        activities.sort(key=lambda x: x['time'], reverse=True)
+        
+        return Response(activities[:10], status=status.HTTP_200_OK)
+        
+    except Exception as e:
+        return Response(
+            {'error': f'Error al obtener actividad reciente: {str(e)}'},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )

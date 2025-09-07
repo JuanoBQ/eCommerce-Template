@@ -16,7 +16,7 @@ const Hero = () => {
       description: "Descubre la última tecnología en ropa deportiva diseñada para maximizar tu rendimiento",
       image: "/images/hero-1.jpg",
       cta: "Ver Colección",
-      link: "/tienda",
+      link: "/tienda?from_nav=true&clear_filters=true",
       gradient: "from-primary-500/10 to-primary-600/10"
     },
     {
@@ -26,7 +26,7 @@ const Hero = () => {
       description: "Ropa que se adapta a tu movimiento, tecnología que potencia tu entrenamiento",
       image: "/images/hero-2.jpg",
       cta: "Comprar Ahora",
-      link: "/tienda?gender=men",
+      link: "/tienda?gender=unisex&from_nav=true&clear_filters=true",
       gradient: "from-gray-500/10 to-gray-600/10"
     },
     {
@@ -36,7 +36,7 @@ const Hero = () => {
       description: "Diseñado para mujeres que no se conforman con menos que la excelencia",
       image: "/images/hero-3.jpg",
       cta: "Explorar",
-      link: "/tienda?gender=women",
+      link: "/tienda?gender=unisex&from_nav=true&clear_filters=true",
       gradient: "from-primary-500/10 to-primary-600/10"
     }
   ]

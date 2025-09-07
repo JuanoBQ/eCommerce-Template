@@ -8,6 +8,8 @@ urlpatterns = [
     path('featured/', views.featured_products, name='featured-products'),
     path('<int:pk>/', views.ProductDetailView.as_view(), name='product-detail'),
     path('<int:product_id>/related/', views.related_products, name='related-products'),
+    path('stats/', views.products_stats, name='products-stats'),
+    path('category-distribution/', views.category_distribution, name='category-distribution'),
     path('<int:product_id>/stats/', views.product_stats, name='product-stats'),
     path('<int:product_id>/upload-image/', views.upload_product_image, name='upload-product-image'),
     

@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button'
 // Mock data - En producción esto vendría de la API
 const categories = [
   {
-    id: 1,
+    id: 10,
     name: 'HOMBRES',
     slug: 'men',
     description: 'Ropa deportiva para hombres que buscan el máximo rendimiento',
@@ -19,7 +19,7 @@ const categories = [
     textColor: 'text-primary-500'
   },
   {
-    id: 2,
+    id: 11,
     name: 'MUJERES',
     slug: 'women',
     description: 'Colección diseñada para mujeres atletas y fitness enthusiasts',
@@ -30,7 +30,7 @@ const categories = [
     textColor: 'text-gray-600'
   },
   {
-    id: 3,
+    id: 12,
     name: 'ACCESORIOS',
     slug: 'accessories',
     description: 'Complementa tu entrenamiento con nuestros accesorios premium',
@@ -41,7 +41,7 @@ const categories = [
     textColor: 'text-primary-500'
   },
   {
-    id: 4,
+    id: 13,
     name: 'NUEVOS',
     slug: 'new',
     description: 'Descubre las últimas tendencias en ropa deportiva',
@@ -52,7 +52,7 @@ const categories = [
     textColor: 'text-gray-600'
   },
   {
-    id: 5,
+    id: 14,
     name: 'OFERTAS',
     slug: 'sale',
     description: 'No te pierdas nuestras ofertas especiales y descuentos',
@@ -63,7 +63,7 @@ const categories = [
     textColor: 'text-red-500'
   },
   {
-    id: 6,
+    id: 15,
     name: 'COLLECTIONS',
     slug: 'collections',
     description: 'Colecciones especiales y ediciones limitadas',
@@ -97,7 +97,7 @@ export default function Categories() {
             return (
               <Link
                 key={category.id}
-                href={`/tienda?category=${category.slug}`}
+                href={`/tienda?category=${category.id}&from_nav=true&clear_filters=true`}
                 className="group relative block"
               >
                 <div className="relative h-80 rounded-2xl overflow-hidden bg-white shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1">

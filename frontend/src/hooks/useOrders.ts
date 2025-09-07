@@ -116,26 +116,134 @@ export const useOrders = () => {
   const [currentOrder, setCurrentOrder] = useState<Order | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [pagination, setPagination] = useState<{
+    count: number
+    next: string | null
+    previous: string | null
+    current_page: number
+    total_pages: number
+  }>({
+    count: 0,
+    next: null,
+    previous: null,
+    current_page: 1,
+    total_pages: 1
+  })
+  const [apiStats, setApiStats] = useState<{
+    total_orders: number
+    pending_orders: number
+    confirmed_orders: number
+    processing_orders: number
+    shipped_orders: number
+    delivered_orders: number
+    paid_orders_completed: number
+    completed_orders: number
+    cancelled_orders: number
+    paid_orders: number
+    pending_payment: number
+    failed_payment: number
+    refunded_orders: number
+    total_revenue: number
+    delivered_revenue: number
+    orders_last_6_months: number
+  } | null>(null)
+
+  // Cargar estadísticas de órdenes desde la API
+  const loadOrderStats = useCallback(async () => {
+    try {
+      const response = await apiClient.get('/orders/stats/')
+      if (response && typeof response === 'object' && response !== null) {
+        setApiStats(response as {
+          total_orders: number
+          pending_orders: number
+          confirmed_orders: number
+          processing_orders: number
+          shipped_orders: number
+          delivered_orders: number
+          paid_orders_completed: number
+          completed_orders: number
+          cancelled_orders: number
+          paid_orders: number
+          pending_payment: number
+          failed_payment: number
+          refunded_orders: number
+          total_revenue: number
+          delivered_revenue: number
+          orders_last_6_months: number
+        })
+      }
+    } catch (err: any) {
+      console.error('❌ Error al cargar estadísticas de órdenes:', err)
+    }
+  }, [])
 
   // Cargar órdenes del usuario
-  const loadOrders = useCallback(async () => {
+  const loadOrders = useCallback(async (params?: any) => {
     try {
       setIsLoading(true)
       setError(null)
-      const response = await apiClient.get('/orders/')
+      const response = await apiClient.get('/orders/', { params })
       console.log('Orders API response:', response)
-      
+
       if (!response) {
         throw new Error('No se recibieron datos del servidor')
       }
-      
-      // Manejar diferentes formatos de respuesta
-      const ordersData = (response as any).results || response
-      if (Array.isArray(ordersData)) {
+
+      // Manejar respuesta paginada
+      if ((response as any).results) {
+        // Respuesta paginada
+        const ordersData = (response as any).results
         setOrders(ordersData)
+
+        // Calcular página actual desde la URL de next/previous
+        let currentPage = 1
+        if ((response as any).previous) {
+          // Si hay previous, estamos en página > 1
+          const url = new URL((response as any).previous)
+          const prevPage = parseInt(url.searchParams.get('page') || '1')
+          currentPage = prevPage + 1
+        } else if ((response as any).next && !(response as any).previous) {
+          // Primera página
+          currentPage = 1
+        } else if (!(response as any).next && (response as any).previous) {
+          // Última página
+          const url = new URL((response as any).previous)
+          currentPage = parseInt(url.searchParams.get('page') || '1') + 1
+        }
+
+        setPagination({
+          count: (response as any).count,
+          next: (response as any).next,
+          previous: (response as any).previous,
+          current_page: currentPage,
+          total_pages: Math.ceil((response as any).count / (params?.page_size || 20))
+        })
+
+        // Cargar estadísticas de la API si no están disponibles
+        if (!apiStats) {
+          await loadOrderStats()
+        }
       } else {
-        console.warn('Unexpected orders data format:', ordersData)
-        setOrders([])
+        // Manejar diferentes formatos de respuesta (sin paginación)
+        const ordersData = (response as any).results || response
+        if (Array.isArray(ordersData)) {
+          setOrders(ordersData)
+          setPagination({
+            count: ordersData.length,
+            next: null,
+            previous: null,
+            current_page: 1,
+            total_pages: 1
+          })
+
+          // Cargar estadísticas de la API si no están disponibles
+          if (!apiStats) {
+            await loadOrderStats()
+          }
+        } else {
+          console.warn('Unexpected orders data format:', ordersData)
+          setOrders([])
+        }
       }
     } catch (err: any) {
       console.error('Error loading orders:', err)
@@ -298,12 +406,39 @@ export const useOrders = () => {
     }
   }, [loadOrders])
 
+  // Navegar a página
+  const goToPage = useCallback(async (page: number) => {
+    const params = { page, page_size: 20 }
+    await loadOrders(params)
+    // No hacer scroll top para mantener la posición del usuario
+  }, [loadOrders])
+
+  // Ir a página siguiente
+  const goToNextPage = useCallback(async () => {
+    if (pagination.next) {
+      await goToPage(pagination.current_page + 1)
+    }
+  }, [pagination, goToPage])
+
+  // Ir a página anterior
+  const goToPreviousPage = useCallback(async () => {
+    if (pagination.previous) {
+      await goToPage(pagination.current_page - 1)
+    }
+  }, [pagination, goToPage])
+
   return {
     orders,
     currentOrder,
     isLoading,
     error,
+    pagination,
+    apiStats,
     loadOrders,
+    loadOrderStats,
+    goToPage,
+    goToNextPage,
+    goToPreviousPage,
     loadOrderDetails,
     createOrder,
     cancelOrder,

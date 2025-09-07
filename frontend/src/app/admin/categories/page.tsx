@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Plus, Edit, Trash2, Eye, Search, Filter, Ruler, Palette, Package, Tag } from 'lucide-react'
 import { useProducts } from '@/hooks/useProducts'
 import { useCategories } from '@/hooks/useCategories'
@@ -8,6 +8,9 @@ import { useSizesAndColors, Size, Color } from '@/hooks/useSizesAndColors'
 import { useBrands, Brand } from '@/hooks/useBrands'
 import toast from 'react-hot-toast'
 import Link from 'next/link'
+import LoadingSpinner from '@/components/ui/LoadingSpinner'
+import TableSkeleton from '@/components/ui/TableSkeleton'
+import CardSkeleton from '@/components/ui/CardSkeleton'
 
 interface Category {
   id: number
@@ -23,22 +26,60 @@ interface Category {
 export default function CategoriesPage() {
   const { categories, loadCategories, createCategory, updateCategory, deleteCategory } = useCategories()
   const { brands, loadBrands, createBrand, updateBrand, deleteBrand } = useBrands()
-  const { products } = useProducts()
-  const { 
-    sizes, 
-    colors, 
-    createSize, 
-    updateSize, 
-    deleteSize, 
-    createColor, 
-    updateColor, 
-    deleteColor 
+  const { products, getProductCountByCategory } = useProducts()
+  const {
+    sizes,
+    colors,
+    createSize,
+    updateSize,
+    deleteSize,
+    createColor,
+    updateColor,
+    deleteColor
   } = useSizesAndColors()
-  
+
   const [isLoading, setIsLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
   const [activeTab, setActiveTab] = useState<'categories' | 'brands' | 'sizes' | 'colors'>('categories')
-  
+  const [productCounts, setProductCounts] = useState<Record<number, number>>({})
+  const [loadingCounts, setLoadingCounts] = useState(false)
+
+  // Función para cargar datos iniciales (sin memoización para evitar recreación)
+  const loadInitialData = useCallback(async () => {
+    try {
+      await Promise.all([
+        loadCategories(),
+        loadBrands()
+      ])
+    } catch (error) {
+      console.error('Error loading data:', error)
+      toast.error('Error al cargar datos')
+    } finally {
+      setIsLoading(false)
+    }
+  }, []) // Dependencias vacías para evitar recreación constante
+
+  // Función memoizada para cargar conteos de productos
+  const loadProductCountsData = useCallback(async () => {
+    if (!categories || categories.length === 0) return
+
+    setLoadingCounts(true)
+    try {
+      const counts: Record<number, number> = {}
+      await Promise.all(
+        categories.map(async (category) => {
+          const count = await getProductCountByCategory(category.id)
+          counts[category.id] = count
+        })
+      )
+      setProductCounts(counts)
+    } catch (error) {
+      console.error('Error loading product counts:', error)
+    } finally {
+      setLoadingCounts(false)
+    }
+  }, [categories.length, getProductCountByCategory])
+
   // Estados para categorías
   const [showCreateForm, setShowCreateForm] = useState(false)
   const [editingCategory, setEditingCategory] = useState<Category | null>(null)
@@ -57,7 +98,8 @@ export default function CategoriesPage() {
     description: '',
     website: '',
     is_active: true,
-    sort_order: 0
+    sort_order: 0,
+    slug: ''
   })
 
   // Estados para tallas
@@ -79,22 +121,15 @@ export default function CategoriesPage() {
     is_active: true
   })
 
+  // Cargar datos iniciales
   useEffect(() => {
-    const loadData = async () => {
-      try {
-        await Promise.all([
-          loadCategories(),
-          loadBrands()
-        ])
-      } catch (error) {
-        console.error('Error loading data:', error)
-        toast.error('Error al cargar datos')
-      } finally {
-        setIsLoading(false)
-      }
-    }
-    loadData()
-  }, [loadCategories, loadBrands])
+    loadInitialData()
+  }, [loadInitialData])
+
+  // Cargar conteos de productos por categoría
+  useEffect(() => {
+    loadProductCountsData()
+  }, [loadProductCountsData])
 
   const filteredCategories = categories.filter(category =>
     category.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -147,7 +182,7 @@ export default function CategoriesPage() {
   }
 
   const getProductCount = (categoryId: number) => {
-    return products.filter(product => product.category === categoryId).length
+    return productCounts[categoryId] || 0
   }
 
   const startEdit = (category: Category) => {
@@ -165,7 +200,7 @@ export default function CategoriesPage() {
     e.preventDefault()
     try {
       await createBrand(brandFormData)
-      setBrandFormData({ name: '', description: '', website: '', is_active: true, sort_order: 0 })
+      setBrandFormData({ name: '', description: '', website: '', is_active: true, sort_order: 0, slug: '' })
       setShowBrandForm(false)
       toast.success('Marca creada exitosamente')
     } catch (error) {
@@ -181,7 +216,7 @@ export default function CategoriesPage() {
     try {
       await updateBrand(editingBrand.id, brandFormData)
       setEditingBrand(null)
-      setBrandFormData({ name: '', description: '', website: '', is_active: true, sort_order: 0 })
+      setBrandFormData({ name: '', description: '', website: '', is_active: true, sort_order: 0, slug: '' })
       toast.success('Marca actualizada exitosamente')
     } catch (error) {
       console.error('Error updating brand:', error)
@@ -208,7 +243,8 @@ export default function CategoriesPage() {
       description: brand.description || '',
       website: brand.website || '',
       is_active: brand.is_active,
-      sort_order: brand.sort_order
+      sort_order: brand.sort_order,
+      slug: brand.slug
     })
   }
 
@@ -297,7 +333,7 @@ export default function CategoriesPage() {
 
     try {
       await deleteColor(id)
-      toast.success('Color eliminado exitosamente')
+      // El alert de éxito se muestra desde el hook useSizesAndColors
     } catch (error) {
       console.error('Error deleting color:', error)
       toast.error('Error al eliminar color')
@@ -308,32 +344,103 @@ export default function CategoriesPage() {
     setEditingColor(color)
     setColorFormData({
       name: color.name,
-      hex_code: color.hex_code,
+      hex_code: color.hex_code || '#000000',
       is_active: color.is_active
     })
   }
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-neon-green"></div>
+      <div className="min-h-screen bg-gray-50 space-y-6">
+        {/* Header Skeleton */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div>
+            <div className="h-8 bg-gray-200 rounded animate-pulse w-64 mb-2"></div>
+            <div className="h-4 bg-gray-200 rounded animate-pulse w-80"></div>
+          </div>
+          <div className="h-10 bg-gray-200 rounded-lg animate-pulse w-32"></div>
+        </div>
+
+        {/* Tabs Skeleton */}
+        <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
+          <div className="flex space-x-4 mb-6">
+            {Array.from({ length: 4 }).map((_, index) => (
+              <div key={index} className="h-10 bg-gray-200 rounded-lg animate-pulse w-24"></div>
+            ))}
+          </div>
+        </div>
+
+        {/* Content Skeleton */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Left Column - Categories/Brands */}
+          <div className="space-y-6">
+            <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
+              <div className="space-y-4">
+                <div className="h-6 bg-gray-200 rounded animate-pulse w-32"></div>
+                <div className="space-y-3">
+                  {Array.from({ length: 6 }).map((_, index) => (
+                    <div key={index} className="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
+                      <div className="flex items-center space-x-3">
+                        <div className="h-8 w-8 bg-gray-200 rounded animate-pulse"></div>
+                        <div className="space-y-2">
+                          <div className="h-4 bg-gray-200 rounded animate-pulse w-24"></div>
+                          <div className="h-3 bg-gray-200 rounded animate-pulse w-16"></div>
+                        </div>
+                      </div>
+                      <div className="flex space-x-2">
+                        <div className="h-8 w-8 bg-gray-200 rounded animate-pulse"></div>
+                        <div className="h-8 w-8 bg-gray-200 rounded animate-pulse"></div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Right Column - Sizes/Colors */}
+          <div className="space-y-6">
+            <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
+              <div className="space-y-4">
+                <div className="h-6 bg-gray-200 rounded animate-pulse w-32"></div>
+                <div className="space-y-3">
+                  {Array.from({ length: 6 }).map((_, index) => (
+                    <div key={index} className="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
+                      <div className="flex items-center space-x-3">
+                        <div className="h-8 w-8 bg-gray-200 rounded animate-pulse"></div>
+                        <div className="space-y-2">
+                          <div className="h-4 bg-gray-200 rounded animate-pulse w-24"></div>
+                          <div className="h-3 bg-gray-200 rounded animate-pulse w-16"></div>
+                        </div>
+                      </div>
+                      <div className="flex space-x-2">
+                        <div className="h-8 w-8 bg-gray-200 rounded animate-pulse"></div>
+                        <div className="h-8 w-8 bg-gray-200 rounded animate-pulse"></div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     )
   }
 
   return (
-    <div className="space-y-8">
+    <div className="min-h-screen bg-gray-50 space-y-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-white">Categorías y Variantes</h1>
-          <p className="text-dark-400 mt-2">Gestiona categorías, marcas, tallas y colores de productos</p>
+          <h1 className="text-3xl font-bold text-gray-900">Categorías y Variantes</h1>
+          <p className="text-gray-600 mt-2">Gestiona categorías, marcas, tallas y colores de productos</p>
         </div>
         <div className="flex gap-2">
           {activeTab === 'categories' && (
             <button
               onClick={() => setShowCreateForm(true)}
-              className="flex items-center gap-2 px-4 py-2 bg-neon-green text-dark-900 rounded-lg hover:bg-neon-green/90 transition-colors"
+              className="flex items-center gap-2 px-4 py-2 bg-primary-500 text-white rounded-lg hover:bg-primary-600 transition-colors"
             >
               <Plus className="w-4 h-4" />
               Nueva Categoría
@@ -342,7 +449,7 @@ export default function CategoriesPage() {
           {activeTab === 'brands' && (
             <button
               onClick={() => setShowBrandForm(true)}
-              className="flex items-center gap-2 px-4 py-2 bg-neon-green text-dark-900 rounded-lg hover:bg-neon-green/90 transition-colors"
+              className="flex items-center gap-2 px-4 py-2 bg-primary-500 text-white rounded-lg hover:bg-primary-600 transition-colors"
             >
               <Plus className="w-4 h-4" />
               Nueva Marca
@@ -351,7 +458,7 @@ export default function CategoriesPage() {
           {activeTab === 'sizes' && (
             <button
               onClick={() => setShowSizeForm(true)}
-              className="flex items-center gap-2 px-4 py-2 bg-neon-green text-dark-900 rounded-lg hover:bg-neon-green/90 transition-colors"
+              className="flex items-center gap-2 px-4 py-2 bg-primary-500 text-white rounded-lg hover:bg-primary-600 transition-colors"
             >
               <Plus className="w-4 h-4" />
               Nueva Talla
@@ -360,7 +467,7 @@ export default function CategoriesPage() {
           {activeTab === 'colors' && (
             <button
               onClick={() => setShowColorForm(true)}
-              className="flex items-center gap-2 px-4 py-2 bg-neon-green text-dark-900 rounded-lg hover:bg-neon-green/90 transition-colors"
+              className="flex items-center gap-2 px-4 py-2 bg-primary-500 text-white rounded-lg hover:bg-primary-600 transition-colors"
             >
               <Plus className="w-4 h-4" />
               Nuevo Color
@@ -370,13 +477,13 @@ export default function CategoriesPage() {
       </div>
 
       {/* Tabs */}
-      <div className="flex space-x-1 bg-dark-800 p-1 rounded-lg">
+      <div className="flex space-x-1 bg-gray-100 p-1 rounded-lg">
         <button
           onClick={() => setActiveTab('categories')}
           className={`flex items-center gap-2 px-4 py-2 rounded-md transition-colors ${
             activeTab === 'categories'
-              ? 'bg-neon-green text-dark-900'
-              : 'text-dark-400 hover:text-white hover:bg-dark-700'
+              ? 'bg-primary-500 text-white'
+              : 'text-gray-600 hover:text-gray-900 hover:bg-gray-200'
           }`}
         >
           <Package className="w-4 h-4" />
@@ -386,8 +493,8 @@ export default function CategoriesPage() {
           onClick={() => setActiveTab('brands')}
           className={`flex items-center gap-2 px-4 py-2 rounded-md transition-colors ${
             activeTab === 'brands'
-              ? 'bg-neon-green text-dark-900'
-              : 'text-dark-400 hover:text-white hover:bg-dark-700'
+              ? 'bg-primary-500 text-white'
+              : 'text-gray-600 hover:text-gray-900 hover:bg-gray-200'
           }`}
         >
           <Tag className="w-4 h-4" />
@@ -397,8 +504,8 @@ export default function CategoriesPage() {
           onClick={() => setActiveTab('sizes')}
           className={`flex items-center gap-2 px-4 py-2 rounded-md transition-colors ${
             activeTab === 'sizes'
-              ? 'bg-neon-green text-dark-900'
-              : 'text-dark-400 hover:text-white hover:bg-dark-700'
+              ? 'bg-primary-500 text-white'
+              : 'text-gray-600 hover:text-gray-900 hover:bg-gray-200'
           }`}
         >
           <Ruler className="w-4 h-4" />
@@ -408,8 +515,8 @@ export default function CategoriesPage() {
           onClick={() => setActiveTab('colors')}
           className={`flex items-center gap-2 px-4 py-2 rounded-md transition-colors ${
             activeTab === 'colors'
-              ? 'bg-neon-green text-dark-900'
-              : 'text-dark-400 hover:text-white hover:bg-dark-700'
+              ? 'bg-primary-500 text-white'
+              : 'text-gray-600 hover:text-gray-900 hover:bg-gray-200'
           }`}
         >
           <Palette className="w-4 h-4" />
@@ -420,7 +527,7 @@ export default function CategoriesPage() {
       {/* Search and Filters */}
       <div className="flex flex-col sm:flex-row gap-4">
         <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-dark-400" />
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
           <input
             type="text"
             placeholder={
@@ -431,7 +538,7 @@ export default function CategoriesPage() {
             }
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 bg-dark-800 border border-dark-700 rounded-lg text-white placeholder-dark-400 focus:outline-none focus:ring-2 focus:ring-neon-green focus:border-transparent"
+            className="w-full pl-10 pr-4 py-2 bg-white border border-gray-300 rounded-lg text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
           />
         </div>
       </div>
@@ -442,18 +549,18 @@ export default function CategoriesPage() {
           {/* Categories Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredCategories.map((category) => (
-              <div key={category.id} className="bg-dark-800 border border-dark-700 rounded-xl p-6 hover:border-neon-green/30 transition-colors">
+              <div key={category.id} className="bg-white border border-gray-200 rounded-xl p-6 hover:border-primary-500/30 transition-colors shadow-sm">
                 <div className="flex items-start justify-between mb-4">
                   <div className="flex-1">
-                    <h3 className="text-lg font-semibold text-white mb-2">{category.name}</h3>
-                    <p className="text-dark-400 text-sm mb-3 line-clamp-2">{category.description}</p>
+                    <h3 className="text-lg font-semibold text-gray-900 mb-2">{category.name}</h3>
+                    <p className="text-gray-600 text-sm mb-3 line-clamp-2">{category.description}</p>
                     <div className="flex items-center gap-4 text-sm">
-                      <span className="text-dark-400">
+                      <span className="text-gray-600">
                         {getProductCount(category.id)} productos
                       </span>
                       <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                        category.is_active 
-                          ? 'bg-green-500/20 text-green-400' 
+                        category.is_active
+                          ? 'bg-primary-500/20 text-primary-600'
                           : 'bg-red-500/20 text-red-400'
                       }`}>
                         {category.is_active ? 'Activa' : 'Inactiva'}
@@ -465,7 +572,7 @@ export default function CategoriesPage() {
                 <div className="flex items-center gap-2">
                   <button
                     onClick={() => startEdit(category)}
-                    className="flex items-center gap-1 px-3 py-1.5 text-sm bg-dark-700 hover:bg-dark-600 text-white rounded-lg transition-colors"
+                    className="flex items-center gap-1 px-3 py-1.5 text-sm bg-gray-200 hover:bg-gray-300 text-gray-800 rounded-lg transition-colors"
                   >
                     <Edit className="w-3 h-3" />
                     Editar
@@ -484,8 +591,8 @@ export default function CategoriesPage() {
 
           {filteredCategories.length === 0 && (
             <div className="text-center py-12">
-              <p className="text-dark-400 text-lg">No se encontraron categorías</p>
-              <p className="text-dark-500 text-sm mt-2">
+              <p className="text-gray-500 text-lg">No se encontraron categorías</p>
+              <p className="text-gray-400 text-sm mt-2">
                 {searchTerm ? 'Intenta con otros términos de búsqueda' : 'Crea tu primera categoría'}
               </p>
             </div>
@@ -498,25 +605,25 @@ export default function CategoriesPage() {
           {/* Brands Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredBrands.map((brand) => (
-              <div key={brand.id} className="bg-dark-800 border border-dark-700 rounded-xl p-6 hover:border-neon-green/30 transition-colors">
+              <div key={brand.id} className="bg-white border border-gray-200 rounded-xl p-6 hover:border-primary-500/30 transition-colors shadow-sm">
                 <div className="flex items-start justify-between mb-4">
                   <div className="flex-1">
-                    <h3 className="text-lg font-semibold text-white mb-2">{brand.name}</h3>
-                    <p className="text-dark-400 text-sm mb-3 line-clamp-2">{brand.description}</p>
+                    <h3 className="text-lg font-semibold text-gray-900 mb-2">{brand.name}</h3>
+                    <p className="text-gray-600 text-sm mb-3 line-clamp-2">{brand.description}</p>
                     {brand.website && (
-                      <a 
-                        href={brand.website} 
-                        target="_blank" 
+                      <a
+                        href={brand.website}
+                        target="_blank"
                         rel="noopener noreferrer"
-                        className="text-neon-green text-sm hover:underline"
+                        className="text-primary-500 text-sm hover:underline"
                       >
                         {brand.website}
                       </a>
                     )}
                     <div className="flex items-center gap-4 text-sm mt-3">
                       <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                        brand.is_active 
-                          ? 'bg-green-500/20 text-green-400' 
+                        brand.is_active
+                          ? 'bg-primary-500/20 text-primary-600'
                           : 'bg-red-500/20 text-red-400'
                       }`}>
                         {brand.is_active ? 'Activa' : 'Inactiva'}
@@ -528,7 +635,7 @@ export default function CategoriesPage() {
                 <div className="flex items-center gap-2">
                   <button
                     onClick={() => startEditBrand(brand)}
-                    className="flex items-center gap-1 px-3 py-1.5 text-sm bg-dark-700 hover:bg-dark-600 text-white rounded-lg transition-colors"
+                    className="flex items-center gap-1 px-3 py-1.5 text-sm bg-gray-200 hover:bg-gray-300 text-gray-800 rounded-lg transition-colors"
                   >
                     <Edit className="w-3 h-3" />
                     Editar
@@ -547,8 +654,8 @@ export default function CategoriesPage() {
 
           {filteredBrands.length === 0 && (
             <div className="text-center py-12">
-              <p className="text-dark-400 text-lg">No se encontraron marcas</p>
-              <p className="text-dark-500 text-sm mt-2">
+              <p className="text-gray-500 text-lg">No se encontraron marcas</p>
+              <p className="text-gray-400 text-sm mt-2">
                 {searchTerm ? 'Intenta con otros términos de búsqueda' : 'Crea tu primera marca'}
               </p>
             </div>
@@ -560,19 +667,19 @@ export default function CategoriesPage() {
         <>
           {/* Sizes Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            {sizes.filter(size => 
+            {sizes.filter(size =>
               size.name.toLowerCase().includes(searchTerm.toLowerCase())
             ).map((size) => (
-              <div key={size.id} className="bg-dark-800 border border-dark-700 rounded-xl p-4 hover:border-neon-green/30 transition-colors">
+              <div key={size.id} className="bg-white border border-gray-200 rounded-xl p-4 hover:border-primary-500/30 transition-colors shadow-sm">
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex-1">
-                    <h3 className="text-lg font-semibold text-white">{size.name}</h3>
-                    <p className="text-dark-400 text-sm">
+                    <h3 className="text-lg font-semibold text-gray-900">{size.name}</h3>
+                    <p className="text-gray-600 text-sm">
                       {size.type === 'clothing' ? 'Ropa' : size.type === 'shoes' ? 'Calzado' : 'Accesorios'}
                     </p>
                     <span className={`px-2 py-1 rounded-full text-xs font-medium mt-2 inline-block ${
-                      size.is_active 
-                        ? 'bg-green-500/20 text-green-400' 
+                      size.is_active
+                        ? 'bg-primary-500/20 text-primary-600'
                         : 'bg-red-500/20 text-red-400'
                     }`}>
                       {size.is_active ? 'Activa' : 'Inactiva'}
@@ -583,7 +690,7 @@ export default function CategoriesPage() {
                 <div className="flex items-center gap-2">
                   <button
                     onClick={() => startEditSize(size)}
-                    className="flex items-center gap-1 px-2 py-1 text-xs bg-dark-700 hover:bg-dark-600 text-white rounded transition-colors"
+                    className="flex items-center gap-1 px-2 py-1 text-xs bg-gray-200 hover:bg-gray-300 text-gray-800 rounded transition-colors"
                   >
                     <Edit className="w-3 h-3" />
                     Editar
@@ -600,12 +707,12 @@ export default function CategoriesPage() {
             ))}
           </div>
 
-          {sizes.filter(size => 
+          {sizes.filter(size =>
             size.name.toLowerCase().includes(searchTerm.toLowerCase())
           ).length === 0 && (
             <div className="text-center py-12">
-              <p className="text-dark-400 text-lg">No se encontraron tallas</p>
-              <p className="text-dark-500 text-sm mt-2">
+              <p className="text-gray-500 text-lg">No se encontraron tallas</p>
+              <p className="text-gray-400 text-sm mt-2">
                 {searchTerm ? 'Intenta con otros términos de búsqueda' : 'Crea tu primera talla'}
               </p>
             </div>
@@ -617,24 +724,24 @@ export default function CategoriesPage() {
         <>
           {/* Colors Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            {colors.filter(color => 
+            {colors.filter(color =>
               color.name.toLowerCase().includes(searchTerm.toLowerCase())
             ).map((color) => (
-              <div key={color.id} className="bg-dark-800 border border-dark-700 rounded-xl p-4 hover:border-neon-green/30 transition-colors">
+              <div key={color.id} className="bg-white border border-gray-200 rounded-xl p-4 hover:border-primary-500/30 transition-colors shadow-sm">
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex-1">
                     <div className="flex items-center gap-3 mb-2">
-                      <div 
-                        className="w-8 h-8 rounded-full border-2 border-dark-600"
+                      <div
+                        className="w-8 h-8 rounded-full border-2 border-gray-300"
                         style={{ backgroundColor: color.hex_code }}
                         title={`Color: ${color.hex_code}`}
                       />
-                      <h3 className="text-lg font-semibold text-white">{color.name}</h3>
+                      <h3 className="text-lg font-semibold text-gray-900">{color.name}</h3>
                     </div>
-                    <p className="text-dark-400 text-sm font-mono">{color.hex_code}</p>
+                    <p className="text-gray-600 text-sm font-mono">{color.hex_code}</p>
                     <span className={`px-2 py-1 rounded-full text-xs font-medium mt-2 inline-block ${
-                      color.is_active 
-                        ? 'bg-green-500/20 text-green-400' 
+                      color.is_active
+                        ? 'bg-primary-500/20 text-primary-600'
                         : 'bg-red-500/20 text-red-400'
                     }`}>
                       {color.is_active ? 'Activo' : 'Inactivo'}
@@ -645,7 +752,7 @@ export default function CategoriesPage() {
                 <div className="flex items-center gap-2">
                   <button
                     onClick={() => startEditColor(color)}
-                    className="flex items-center gap-1 px-2 py-1 text-xs bg-dark-700 hover:bg-dark-600 text-white rounded transition-colors"
+                    className="flex items-center gap-1 px-2 py-1 text-xs bg-gray-200 hover:bg-gray-300 text-gray-800 rounded transition-colors"
                   >
                     <Edit className="w-3 h-3" />
                     Editar
@@ -662,12 +769,12 @@ export default function CategoriesPage() {
             ))}
           </div>
 
-          {colors.filter(color => 
+          {colors.filter(color =>
             color.name.toLowerCase().includes(searchTerm.toLowerCase())
           ).length === 0 && (
             <div className="text-center py-12">
-              <p className="text-dark-400 text-lg">No se encontraron colores</p>
-              <p className="text-dark-500 text-sm mt-2">
+              <p className="text-gray-500 text-lg">No se encontraron colores</p>
+              <p className="text-gray-400 text-sm mt-2">
                 {searchTerm ? 'Intenta con otros términos de búsqueda' : 'Crea tu primer color'}
               </p>
             </div>
@@ -677,15 +784,15 @@ export default function CategoriesPage() {
 
       {/* Create/Edit Modal */}
       {(showCreateForm || editingCategory) && (
-        <div className="fixed inset-0 bg-dark-900/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-dark-800 border border-dark-700 rounded-xl p-6 w-full max-w-md">
-            <h2 className="text-xl font-bold text-white mb-6">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white border border-gray-200 rounded-xl p-6 w-full max-w-md shadow-lg">
+            <h2 className="text-xl font-bold text-gray-900 mb-6">
               {editingCategory ? 'Editar Categoría' : 'Nueva Categoría'}
             </h2>
-            
+
             <form onSubmit={editingCategory ? handleUpdateCategory : handleCreateCategory} className="space-y-4">
               <div>
-                <label htmlFor="category-name" className="block text-sm font-medium text-white mb-2">
+                <label htmlFor="category-name" className="block text-sm font-medium text-gray-700 mb-2">
                   Nombre
                 </label>
                 <input
@@ -693,14 +800,14 @@ export default function CategoriesPage() {
                   type="text"
                   value={categoryFormData.name}
                   onChange={(e) => setCategoryFormData({ ...categoryFormData, name: e.target.value })}
-                  className="w-full px-3 py-2 bg-dark-700 border border-dark-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-neon-green focus:border-transparent"
+                  className="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                   placeholder="Nombre de la categoría"
                   required
                 />
               </div>
 
               <div>
-                <label htmlFor="category-description" className="block text-sm font-medium text-white mb-2">
+                <label htmlFor="category-description" className="block text-sm font-medium text-gray-700 mb-2">
                   Descripción
                 </label>
                 <textarea
@@ -708,13 +815,13 @@ export default function CategoriesPage() {
                   value={categoryFormData.description}
                   onChange={(e) => setCategoryFormData({ ...categoryFormData, description: e.target.value })}
                   rows={3}
-                  className="w-full px-3 py-2 bg-dark-700 border border-dark-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-neon-green focus:border-transparent"
+                  className="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                   placeholder="Descripción de la categoría"
                 />
               </div>
 
               <div>
-                <label htmlFor="category-order" className="block text-sm font-medium text-white mb-2">
+                <label htmlFor="category-order" className="block text-sm font-medium text-gray-700 mb-2">
                   Orden
                 </label>
                 <input
@@ -722,7 +829,7 @@ export default function CategoriesPage() {
                   type="number"
                   value={categoryFormData.sort_order}
                   onChange={(e) => setCategoryFormData({ ...categoryFormData, sort_order: parseInt(e.target.value) || 0 })}
-                  className="w-full px-3 py-2 bg-dark-700 border border-dark-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-neon-green focus:border-transparent"
+                  className="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                   placeholder="0"
                 />
               </div>
@@ -733,9 +840,9 @@ export default function CategoriesPage() {
                   id="is_active"
                   checked={categoryFormData.is_active}
                   onChange={(e) => setCategoryFormData({ ...categoryFormData, is_active: e.target.checked })}
-                  className="w-4 h-4 text-neon-green bg-dark-700 border-dark-600 rounded focus:ring-neon-green focus:ring-2"
+                  className="w-4 h-4 text-primary-500 bg-white border-gray-300 rounded focus:ring-primary-500 focus:ring-2"
                 />
-                <label htmlFor="is_active" className="ml-2 text-sm text-white">
+                <label htmlFor="is_active" className="ml-2 text-sm text-gray-700">
                   Categoría activa
                 </label>
               </div>
@@ -743,7 +850,7 @@ export default function CategoriesPage() {
               <div className="flex gap-3 pt-4">
                 <button
                   type="submit"
-                  className="flex-1 px-4 py-2 bg-neon-green text-dark-900 rounded-lg hover:bg-neon-green/90 transition-colors"
+                  className="flex-1 px-4 py-2 bg-primary-500 text-white rounded-lg hover:bg-primary-600 transition-colors"
                 >
                   {editingCategory ? 'Actualizar' : 'Crear'}
                 </button>
@@ -754,7 +861,7 @@ export default function CategoriesPage() {
                     setEditingCategory(null)
                     setCategoryFormData({ name: '', description: '', is_active: true, sort_order: 0 })
                   }}
-                  className="flex-1 px-4 py-2 bg-dark-700 text-white rounded-lg hover:bg-dark-600 transition-colors"
+                  className="flex-1 px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition-colors"
                 >
                   Cancelar
                 </button>
@@ -766,15 +873,15 @@ export default function CategoriesPage() {
 
       {/* Size Modal */}
       {(showSizeForm || editingSize) && (
-        <div className="fixed inset-0 bg-dark-900/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-dark-800 border border-dark-700 rounded-xl p-6 w-full max-w-md">
-            <h2 className="text-xl font-bold text-white mb-6">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white border border-gray-200 rounded-xl p-6 w-full max-w-md shadow-lg">
+            <h2 className="text-xl font-bold text-gray-900 mb-6">
               {editingSize ? 'Editar Talla' : 'Nueva Talla'}
             </h2>
-            
+
             <form onSubmit={editingSize ? handleUpdateSize : handleCreateSize} className="space-y-4">
               <div>
-                <label htmlFor="size-name" className="block text-sm font-medium text-white mb-2">
+                <label htmlFor="size-name" className="block text-sm font-medium text-gray-700 mb-2">
                   Nombre de la talla
                 </label>
                 <input
@@ -782,21 +889,21 @@ export default function CategoriesPage() {
                   type="text"
                   value={sizeFormData.name}
                   onChange={(e) => setSizeFormData({ ...sizeFormData, name: e.target.value })}
-                  className="w-full px-3 py-2 bg-dark-700 border border-dark-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-neon-green focus:border-transparent"
+                  className="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                   placeholder="Ej: S, M, L, XL o 35, 36, 37..."
                   required
                 />
               </div>
 
               <div>
-                <label htmlFor="size-type" className="block text-sm font-medium text-white mb-2">
+                <label htmlFor="size-type" className="block text-sm font-medium text-gray-700 mb-2">
                   Tipo de talla
                 </label>
                 <select
                   id="size-type"
                   value={sizeFormData.type}
                   onChange={(e) => setSizeFormData({ ...sizeFormData, type: e.target.value as 'clothing' | 'shoes' | 'accessories' })}
-                  className="w-full px-3 py-2 bg-dark-700 border border-dark-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-neon-green focus:border-transparent"
+                  className="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                 >
                   <option value="clothing">Ropa (S, M, L, XL)</option>
                   <option value="shoes">Calzado (35, 36, 37...)</option>
@@ -805,7 +912,7 @@ export default function CategoriesPage() {
               </div>
 
               <div>
-                <label htmlFor="size-order" className="block text-sm font-medium text-white mb-2">
+                <label htmlFor="size-order" className="block text-sm font-medium text-gray-700 mb-2">
                   Orden
                 </label>
                 <input
@@ -813,7 +920,7 @@ export default function CategoriesPage() {
                   type="number"
                   value={sizeFormData.sort_order}
                   onChange={(e) => setSizeFormData({ ...sizeFormData, sort_order: parseInt(e.target.value) || 0 })}
-                  className="w-full px-3 py-2 bg-dark-700 border border-dark-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-neon-green focus:border-transparent"
+                  className="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                   placeholder="0"
                 />
               </div>
@@ -824,9 +931,9 @@ export default function CategoriesPage() {
                   id="size-active"
                   checked={sizeFormData.is_active}
                   onChange={(e) => setSizeFormData({ ...sizeFormData, is_active: e.target.checked })}
-                  className="w-4 h-4 text-neon-green bg-dark-700 border-dark-600 rounded focus:ring-neon-green focus:ring-2"
+                  className="w-4 h-4 text-primary-500 bg-white border-gray-300 rounded focus:ring-primary-500 focus:ring-2"
                 />
-                <label htmlFor="size-active" className="ml-2 text-sm text-white">
+                <label htmlFor="size-active" className="ml-2 text-sm text-gray-700">
                   Talla activa
                 </label>
               </div>
@@ -834,7 +941,7 @@ export default function CategoriesPage() {
               <div className="flex gap-3 pt-4">
                 <button
                   type="submit"
-                  className="flex-1 px-4 py-2 bg-neon-green text-dark-900 rounded-lg hover:bg-neon-green/90 transition-colors"
+                  className="flex-1 px-4 py-2 bg-primary-500 text-white rounded-lg hover:bg-primary-600 transition-colors"
                 >
                   {editingSize ? 'Actualizar' : 'Crear'}
                 </button>
@@ -845,7 +952,7 @@ export default function CategoriesPage() {
                     setEditingSize(null)
                     setSizeFormData({ name: '', type: 'clothing', sort_order: 0, is_active: true })
                   }}
-                  className="flex-1 px-4 py-2 bg-dark-700 text-white rounded-lg hover:bg-dark-600 transition-colors"
+                  className="flex-1 px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition-colors"
                 >
                   Cancelar
                 </button>
@@ -857,15 +964,15 @@ export default function CategoriesPage() {
 
       {/* Color Modal */}
       {(showColorForm || editingColor) && (
-        <div className="fixed inset-0 bg-dark-900/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-dark-800 border border-dark-700 rounded-xl p-6 w-full max-w-md">
-            <h2 className="text-xl font-bold text-white mb-6">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white border border-gray-200 rounded-xl p-6 w-full max-w-md shadow-lg">
+            <h2 className="text-xl font-bold text-gray-900 mb-6">
               {editingColor ? 'Editar Color' : 'Nuevo Color'}
             </h2>
-            
+
             <form onSubmit={editingColor ? handleUpdateColor : handleCreateColor} className="space-y-4">
               <div>
-                <label htmlFor="color-name" className="block text-sm font-medium text-white mb-2">
+                <label htmlFor="color-name" className="block text-sm font-medium text-gray-700 mb-2">
                   Nombre del color
                 </label>
                 <input
@@ -873,14 +980,14 @@ export default function CategoriesPage() {
                   type="text"
                   value={colorFormData.name}
                   onChange={(e) => setColorFormData({ ...colorFormData, name: e.target.value })}
-                  className="w-full px-3 py-2 bg-dark-700 border border-dark-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-neon-green focus:border-transparent"
+                  className="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                   placeholder="Ej: Negro, Blanco, Rojo..."
                   required
                 />
               </div>
 
               <div>
-                <label htmlFor="color-hex" className="block text-sm font-medium text-white mb-2">
+                <label htmlFor="color-hex" className="block text-sm font-medium text-gray-700 mb-2">
                   Código de color (HEX)
                 </label>
                 <div className="flex gap-3">
@@ -889,13 +996,13 @@ export default function CategoriesPage() {
                     type="color"
                     value={colorFormData.hex_code}
                     onChange={(e) => setColorFormData({ ...colorFormData, hex_code: e.target.value })}
-                    className="w-16 h-10 bg-dark-700 border border-dark-600 rounded-lg cursor-pointer"
+                    className="w-16 h-10 bg-white border border-gray-300 rounded-lg cursor-pointer"
                   />
                   <input
                     type="text"
                     value={colorFormData.hex_code}
                     onChange={(e) => setColorFormData({ ...colorFormData, hex_code: e.target.value })}
-                    className="flex-1 px-3 py-2 bg-dark-700 border border-dark-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-neon-green focus:border-transparent font-mono"
+                    className="flex-1 px-3 py-2 bg-white border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent font-mono"
                     placeholder="#000000"
                     required
                   />
@@ -908,9 +1015,9 @@ export default function CategoriesPage() {
                   id="color-active"
                   checked={colorFormData.is_active}
                   onChange={(e) => setColorFormData({ ...colorFormData, is_active: e.target.checked })}
-                  className="w-4 h-4 text-neon-green bg-dark-700 border-dark-600 rounded focus:ring-neon-green focus:ring-2"
+                  className="w-4 h-4 text-primary-500 bg-white border-gray-300 rounded focus:ring-primary-500 focus:ring-2"
                 />
-                <label htmlFor="color-active" className="ml-2 text-sm text-white">
+                <label htmlFor="color-active" className="ml-2 text-sm text-gray-700">
                   Color activo
                 </label>
               </div>
@@ -918,7 +1025,7 @@ export default function CategoriesPage() {
               <div className="flex gap-3 pt-4">
                 <button
                   type="submit"
-                  className="flex-1 px-4 py-2 bg-neon-green text-dark-900 rounded-lg hover:bg-neon-green/90 transition-colors"
+                  className="flex-1 px-4 py-2 bg-primary-500 text-white rounded-lg hover:bg-primary-600 transition-colors"
                 >
                   {editingColor ? 'Actualizar' : 'Crear'}
                 </button>
@@ -929,7 +1036,7 @@ export default function CategoriesPage() {
                     setEditingColor(null)
                     setColorFormData({ name: '', hex_code: '#000000', is_active: true })
                   }}
-                  className="flex-1 px-4 py-2 bg-dark-700 text-white rounded-lg hover:bg-dark-600 transition-colors"
+                  className="flex-1 px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition-colors"
                 >
                   Cancelar
                 </button>
@@ -941,15 +1048,15 @@ export default function CategoriesPage() {
 
       {/* Brand Modal */}
       {(showBrandForm || editingBrand) && (
-        <div className="fixed inset-0 bg-dark-900/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-dark-800 border border-dark-700 rounded-xl p-6 w-full max-w-md">
-            <h2 className="text-xl font-bold text-white mb-6">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white border border-gray-200 rounded-xl p-6 w-full max-w-md shadow-lg">
+            <h2 className="text-xl font-bold text-gray-900 mb-6">
               {editingBrand ? 'Editar Marca' : 'Nueva Marca'}
             </h2>
-            
+
             <form onSubmit={editingBrand ? handleUpdateBrand : handleCreateBrand} className="space-y-4">
               <div>
-                <label htmlFor="brand-name" className="block text-sm font-medium text-white mb-2">
+                <label htmlFor="brand-name" className="block text-sm font-medium text-gray-700 mb-2">
                   Nombre
                 </label>
                 <input
@@ -957,14 +1064,14 @@ export default function CategoriesPage() {
                   type="text"
                   value={brandFormData.name}
                   onChange={(e) => setBrandFormData({ ...brandFormData, name: e.target.value })}
-                  className="w-full px-3 py-2 bg-dark-700 border border-dark-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-neon-green focus:border-transparent"
+                  className="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                   placeholder="Nombre de la marca"
                   required
                 />
               </div>
 
               <div>
-                <label htmlFor="brand-description" className="block text-sm font-medium text-white mb-2">
+                <label htmlFor="brand-description" className="block text-sm font-medium text-gray-700 mb-2">
                   Descripción
                 </label>
                 <textarea
@@ -972,13 +1079,13 @@ export default function CategoriesPage() {
                   value={brandFormData.description}
                   onChange={(e) => setBrandFormData({ ...brandFormData, description: e.target.value })}
                   rows={3}
-                  className="w-full px-3 py-2 bg-dark-700 border border-dark-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-neon-green focus:border-transparent"
+                  className="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                   placeholder="Descripción de la marca"
                 />
               </div>
 
               <div>
-                <label htmlFor="brand-website" className="block text-sm font-medium text-white mb-2">
+                <label htmlFor="brand-website" className="block text-sm font-medium text-gray-700 mb-2">
                   Sitio Web
                 </label>
                 <input
@@ -986,13 +1093,13 @@ export default function CategoriesPage() {
                   type="url"
                   value={brandFormData.website}
                   onChange={(e) => setBrandFormData({ ...brandFormData, website: e.target.value })}
-                  className="w-full px-3 py-2 bg-dark-700 border border-dark-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-neon-green focus:border-transparent"
+                  className="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                   placeholder="https://ejemplo.com"
                 />
               </div>
 
               <div>
-                <label htmlFor="brand-order" className="block text-sm font-medium text-white mb-2">
+                <label htmlFor="brand-order" className="block text-sm font-medium text-gray-700 mb-2">
                   Orden
                 </label>
                 <input
@@ -1000,7 +1107,7 @@ export default function CategoriesPage() {
                   type="number"
                   value={brandFormData.sort_order}
                   onChange={(e) => setBrandFormData({ ...brandFormData, sort_order: parseInt(e.target.value) || 0 })}
-                  className="w-full px-3 py-2 bg-dark-700 border border-dark-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-neon-green focus:border-transparent"
+                  className="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                   placeholder="0"
                 />
               </div>
@@ -1011,9 +1118,9 @@ export default function CategoriesPage() {
                   id="brand-active"
                   checked={brandFormData.is_active}
                   onChange={(e) => setBrandFormData({ ...brandFormData, is_active: e.target.checked })}
-                  className="w-4 h-4 text-neon-green bg-dark-700 border-dark-600 rounded focus:ring-neon-green focus:ring-2"
+                  className="w-4 h-4 text-primary-500 bg-white border-gray-300 rounded focus:ring-primary-500 focus:ring-2"
                 />
-                <label htmlFor="brand-active" className="ml-2 text-sm text-white">
+                <label htmlFor="brand-active" className="ml-2 text-sm text-gray-700">
                   Marca activa
                 </label>
               </div>
@@ -1021,7 +1128,7 @@ export default function CategoriesPage() {
               <div className="flex gap-3 pt-4">
                 <button
                   type="submit"
-                  className="flex-1 px-4 py-2 bg-neon-green text-dark-900 rounded-lg hover:bg-neon-green/90 transition-colors"
+                  className="flex-1 px-4 py-2 bg-primary-500 text-white rounded-lg hover:bg-primary-600 transition-colors"
                 >
                   {editingBrand ? 'Actualizar' : 'Crear'}
                 </button>
@@ -1030,9 +1137,9 @@ export default function CategoriesPage() {
                   onClick={() => {
                     setShowBrandForm(false)
                     setEditingBrand(null)
-                    setBrandFormData({ name: '', description: '', website: '', is_active: true, sort_order: 0 })
+                    setBrandFormData({ name: '', description: '', website: '', is_active: true, sort_order: 0, slug: '' })
                   }}
-                  className="flex-1 px-4 py-2 bg-dark-700 text-white rounded-lg hover:bg-dark-600 transition-colors"
+                  className="flex-1 px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition-colors"
                 >
                   Cancelar
                 </button>

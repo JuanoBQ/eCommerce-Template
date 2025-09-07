@@ -260,6 +260,14 @@ export default function EditProductPage() {
     try {
       setIsSaving(true)
 
+      // Debug: Log form data before sending
+      console.log('🔍 Edit form data before sending:', {
+        description: formData.description,
+        short_description: formData.short_description,
+        hasDescription: !!formData.description,
+        descriptionLength: formData.description?.length || 0
+      })
+
       // Prepare product data for API
       const productData = {
         name: formData.name,
@@ -330,7 +338,7 @@ export default function EditProductPage() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-neon-green"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-500"></div>
       </div>
     )
   }
@@ -338,12 +346,12 @@ export default function EditProductPage() {
   if (!product) {
     return (
       <div className="text-center py-12">
-        <Package className="w-12 h-12 text-dark-400 mx-auto mb-4" />
-        <h3 className="text-lg font-medium text-white mb-2">Producto no encontrado</h3>
-        <p className="text-dark-400 mb-4">El producto que buscas no existe o ha sido eliminado</p>
+        <Package className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+        <h3 className="text-lg font-medium text-gray-900 mb-2">Producto no encontrado</h3>
+        <p className="text-gray-600 mb-4">El producto que buscas no existe o ha sido eliminado</p>
         <Link
           href="/admin/products"
-          className="inline-flex items-center px-4 py-2 bg-neon-green text-dark-900 font-medium rounded-lg hover:bg-neon-green/90 transition-colors"
+          className="inline-flex items-center px-4 py-2 bg-primary-600 text-white font-medium rounded-lg hover:bg-primary-700 transition-colors"
         >
           <ArrowLeft className="w-4 h-4 mr-2" />
           Volver a Productos
@@ -353,27 +361,27 @@ export default function EditProductPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="min-h-screen bg-gray-50 space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-4">
           <Link
             href="/admin/products"
-            className="p-2 text-dark-400 hover:text-white transition-colors"
+            className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-all duration-200"
             title="Volver a productos"
           >
             <ArrowLeft className="w-5 h-5" />
           </Link>
           <div>
-            <h1 className="text-3xl font-bold text-white">Editar Producto</h1>
-            <p className="text-dark-400 mt-1">{product.name}</p>
+            <h1 className="text-3xl font-bold text-gray-900">Editar Producto</h1>
+            <p className="text-gray-600 mt-1">{product.name}</p>
           </div>
         </div>
         
         <div className="flex items-center space-x-3">
           <Link
             href="/admin/products"
-            className="flex items-center px-4 py-2 bg-dark-700 text-white font-medium rounded-lg hover:bg-dark-600 transition-colors"
+            className="flex items-center px-4 py-2 bg-white text-gray-900 font-medium rounded-lg hover:bg-gray-100 transition-colors"
           >
             <X className="w-4 h-4 mr-2" />
             Cancelar
@@ -381,7 +389,7 @@ export default function EditProductPage() {
           <button
             onClick={handleSubmit}
             disabled={isSaving}
-            className="flex items-center px-4 py-2 bg-neon-green text-dark-900 font-medium rounded-lg hover:bg-neon-green/90 transition-colors disabled:opacity-50"
+            className="flex items-center px-4 py-2 bg-primary-600 text-white font-medium rounded-lg hover:bg-primary-700 transition-colors disabled:opacity-50"
           >
             <Save className="w-4 h-4 mr-2" />
             {isSaving ? 'Guardando...' : 'Guardar Cambios'}
@@ -394,12 +402,12 @@ export default function EditProductPage() {
           {/* Main Form */}
           <div className="lg:col-span-2 space-y-6">
             {/* Basic Information */}
-            <div className="bg-dark-800 border border-dark-700 rounded-xl p-6">
-              <h2 className="text-xl font-semibold text-white mb-6">Información Básica</h2>
+            <div className="bg-white border border-gray-200 rounded-xl p-6">
+              <h2 className="text-xl font-semibold text-gray-900 mb-6">Información Básica</h2>
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <label className="block text-sm font-medium text-white mb-2">
+                  <label className="block text-sm font-medium text-gray-900 mb-2">
                     Nombre del Producto *
                   </label>
                   <input
@@ -407,8 +415,8 @@ export default function EditProductPage() {
                     name="name"
                     value={formData.name}
                     onChange={handleInputChange}
-                    className={`w-full px-4 py-3 bg-dark-700 border rounded-lg text-white placeholder-dark-400 focus:outline-none focus:ring-2 focus:ring-neon-green focus:border-transparent ${
-                      errors.name ? 'border-red-500' : 'border-dark-600'
+                    className={`w-full px-4 py-3 bg-white border rounded-lg text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent ${
+                      errors.name ? 'border-red-500' : 'border-gray-300'
                     }`}
                     placeholder="Ej: Camiseta Nike Dri-FIT"
                   />
@@ -416,7 +424,7 @@ export default function EditProductPage() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-white mb-2">
+                  <label className="block text-sm font-medium text-gray-900 mb-2">
                     SKU *
                   </label>
                   <input
@@ -424,8 +432,8 @@ export default function EditProductPage() {
                     name="sku"
                     value={formData.sku}
                     onChange={handleInputChange}
-                    className={`w-full px-4 py-3 bg-dark-700 border rounded-lg text-white placeholder-dark-400 focus:outline-none focus:ring-2 focus:ring-neon-green focus:border-transparent ${
-                      errors.sku ? 'border-red-500' : 'border-dark-600'
+                    className={`w-full px-4 py-3 bg-white border rounded-lg text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent ${
+                      errors.sku ? 'border-red-500' : 'border-gray-300'
                     }`}
                     placeholder="Ej: CAM-NIKE-001"
                   />
@@ -434,7 +442,7 @@ export default function EditProductPage() {
               </div>
 
               <div className="mt-6">
-                <label className="block text-sm font-medium text-white mb-2">
+                <label className="block text-sm font-medium text-gray-900 mb-2">
                   Descripción Corta
                 </label>
                 <textarea
@@ -442,13 +450,13 @@ export default function EditProductPage() {
                   value={formData.short_description}
                   onChange={handleInputChange}
                   rows={3}
-                  className="w-full px-4 py-3 bg-dark-700 border border-dark-600 rounded-lg text-white placeholder-dark-400 focus:outline-none focus:ring-2 focus:ring-neon-green focus:border-transparent"
+                  className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                   placeholder="Descripción breve del producto..."
                 />
               </div>
 
               <div className="mt-6">
-                <label className="block text-sm font-medium text-white mb-2">
+                <label className="block text-sm font-medium text-gray-900 mb-2">
                   Descripción Completa *
                 </label>
                 <textarea
@@ -456,8 +464,8 @@ export default function EditProductPage() {
                   value={formData.description}
                   onChange={handleInputChange}
                   rows={6}
-                  className={`w-full px-4 py-3 bg-dark-700 border rounded-lg text-white placeholder-dark-400 focus:outline-none focus:ring-2 focus:ring-neon-green focus:border-transparent ${
-                    errors.description ? 'border-red-500' : 'border-dark-600'
+                  className={`w-full px-4 py-3 bg-white border rounded-lg text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent ${
+                    errors.description ? 'border-red-500' : 'border-gray-300'
                   }`}
                   placeholder="Descripción detallada del producto..."
                 />
@@ -466,12 +474,12 @@ export default function EditProductPage() {
             </div>
 
             {/* Pricing */}
-            <div className="bg-dark-800 border border-dark-700 rounded-xl p-6">
-              <h2 className="text-xl font-semibold text-white mb-6">Precios</h2>
+            <div className="bg-white border border-gray-200 rounded-xl p-6">
+              <h2 className="text-xl font-semibold text-gray-900 mb-6">Precios</h2>
               
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div>
-                  <label className="block text-sm font-medium text-white mb-2">
+                  <label className="block text-sm font-medium text-gray-900 mb-2">
                     Precio de Venta *
                   </label>
                   <input
@@ -481,8 +489,8 @@ export default function EditProductPage() {
                     onChange={handleInputChange}
                     step="0.01"
                     min="0"
-                    className={`w-full px-4 py-3 bg-dark-700 border rounded-lg text-white placeholder-dark-400 focus:outline-none focus:ring-2 focus:ring-neon-green focus:border-transparent ${
-                      errors.price ? 'border-red-500' : 'border-dark-600'
+                    className={`w-full px-4 py-3 bg-white border rounded-lg text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent ${
+                      errors.price ? 'border-red-500' : 'border-gray-300'
                     }`}
                     placeholder="0.00"
                   />
@@ -490,7 +498,7 @@ export default function EditProductPage() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-white mb-2">
+                  <label className="block text-sm font-medium text-gray-900 mb-2">
                     Precio de Comparación
                   </label>
                   <input
@@ -500,13 +508,13 @@ export default function EditProductPage() {
                     onChange={handleInputChange}
                     step="0.01"
                     min="0"
-                    className="w-full px-4 py-3 bg-dark-700 border border-dark-600 rounded-lg text-white placeholder-dark-400 focus:outline-none focus:ring-2 focus:ring-neon-green focus:border-transparent"
+                    className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                     placeholder="0.00"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-white mb-2">
+                  <label className="block text-sm font-medium text-gray-900 mb-2">
                     Precio de Costo
                   </label>
                   <input
@@ -516,7 +524,7 @@ export default function EditProductPage() {
                     onChange={handleInputChange}
                     step="0.01"
                     min="0"
-                    className="w-full px-4 py-3 bg-dark-700 border border-dark-600 rounded-lg text-white placeholder-dark-400 focus:outline-none focus:ring-2 focus:ring-neon-green focus:border-transparent"
+                    className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                     placeholder="0.00"
                   />
                 </div>
@@ -524,20 +532,20 @@ export default function EditProductPage() {
             </div>
 
             {/* Category and Brand */}
-            <div className="bg-dark-800 border border-dark-700 rounded-xl p-6">
-              <h2 className="text-xl font-semibold text-white mb-6">Categorización</h2>
+            <div className="bg-white border border-gray-200 rounded-xl p-6">
+              <h2 className="text-xl font-semibold text-gray-900 mb-6">Categorización</h2>
               
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div>
-                  <label className="block text-sm font-medium text-white mb-2">
+                  <label className="block text-sm font-medium text-gray-900 mb-2">
                     Categoría *
                   </label>
                   <select
                     name="category"
                     value={formData.category || ''}
                     onChange={handleInputChange}
-                    className={`w-full px-4 py-3 bg-dark-700 border rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-neon-green focus:border-transparent ${
-                      errors.category ? 'border-red-500' : 'border-dark-600'
+                    className={`w-full px-4 py-3 bg-white border rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent ${
+                      errors.category ? 'border-red-500' : 'border-gray-300'
                     }`}
                     title="Seleccionar categoría"
                     aria-label="Seleccionar categoría"
@@ -553,14 +561,14 @@ export default function EditProductPage() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-white mb-2">
+                  <label className="block text-sm font-medium text-gray-900 mb-2">
                     Marca
                   </label>
                   <select
                     name="brand"
                     value={formData.brand || ''}
                     onChange={handleInputChange}
-                    className="w-full px-4 py-3 bg-dark-700 border border-dark-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-neon-green focus:border-transparent"
+                    className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                     title="Seleccionar marca"
                     aria-label="Seleccionar marca"
                   >
@@ -574,14 +582,14 @@ export default function EditProductPage() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-white mb-2">
+                  <label className="block text-sm font-medium text-gray-900 mb-2">
                     Género
                   </label>
                   <select
                     name="gender"
                     value={formData.gender}
                     onChange={handleInputChange}
-                    className="w-full px-4 py-3 bg-dark-700 border border-dark-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-neon-green focus:border-transparent"
+                    className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                     title="Seleccionar género"
                     aria-label="Seleccionar género"
                   >
@@ -595,12 +603,12 @@ export default function EditProductPage() {
             </div>
 
             {/* Inventory */}
-            <div className="bg-dark-800 border border-dark-700 rounded-xl p-6">
-              <h2 className="text-xl font-semibold text-white mb-6">Inventario</h2>
+            <div className="bg-white border border-gray-200 rounded-xl p-6">
+              <h2 className="text-xl font-semibold text-gray-900 mb-6">Inventario</h2>
               
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div>
-                  <label className="block text-sm font-medium text-white mb-2">
+                  <label className="block text-sm font-medium text-gray-900 mb-2">
                     Cantidad en Inventario
                   </label>
                   <input
@@ -609,8 +617,8 @@ export default function EditProductPage() {
                     value={formData.inventory_quantity}
                     onChange={handleInputChange}
                     min="0"
-                    className={`w-full px-4 py-3 bg-dark-700 border rounded-lg text-white placeholder-dark-400 focus:outline-none focus:ring-2 focus:ring-neon-green focus:border-transparent ${
-                      errors.inventory_quantity ? 'border-red-500' : 'border-dark-600'
+                    className={`w-full px-4 py-3 bg-white border rounded-lg text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent ${
+                      errors.inventory_quantity ? 'border-red-500' : 'border-gray-300'
                     }`}
                     placeholder="0"
                   />
@@ -618,7 +626,7 @@ export default function EditProductPage() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-white mb-2">
+                  <label className="block text-sm font-medium text-gray-900 mb-2">
                     Umbral de Stock Bajo
                   </label>
                   <input
@@ -627,13 +635,13 @@ export default function EditProductPage() {
                     value={formData.low_stock_threshold}
                     onChange={handleInputChange}
                     min="0"
-                    className="w-full px-4 py-3 bg-dark-700 border border-dark-600 rounded-lg text-white placeholder-dark-400 focus:outline-none focus:ring-2 focus:ring-neon-green focus:border-transparent"
+                    className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                     placeholder="5"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-white mb-2">
+                  <label className="block text-sm font-medium text-gray-900 mb-2">
                     Peso (kg)
                   </label>
                   <input
@@ -643,7 +651,7 @@ export default function EditProductPage() {
                     onChange={handleInputChange}
                     step="0.01"
                     min="0"
-                    className="w-full px-4 py-3 bg-dark-700 border border-dark-600 rounded-lg text-white placeholder-dark-400 focus:outline-none focus:ring-2 focus:ring-neon-green focus:border-transparent"
+                    className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                     placeholder="0.00"
                   />
                 </div>
@@ -656,11 +664,11 @@ export default function EditProductPage() {
                     name="track_inventory"
                     checked={formData.track_inventory}
                     onChange={handleInputChange}
-                    className="w-4 h-4 text-neon-green bg-dark-700 border-dark-600 rounded focus:ring-neon-green focus:ring-2"
+                    className="w-4 h-4 text-primary-600 bg-white border-gray-300 rounded focus:ring-primary-500 focus:ring-2"
                     title="Controlar inventario"
                     aria-label="Controlar inventario"
                   />
-                  <label className="ml-3 text-sm text-white">Controlar inventario</label>
+                  <label className="ml-3 text-sm text-gray-900">Controlar inventario</label>
                 </div>
 
                 <div className="flex items-center">
@@ -669,29 +677,29 @@ export default function EditProductPage() {
                     name="allow_backorder"
                     checked={formData.allow_backorder}
                     onChange={handleInputChange}
-                    className="w-4 h-4 text-neon-green bg-dark-700 border-dark-600 rounded focus:ring-neon-green focus:ring-2"
+                    className="w-4 h-4 text-primary-600 bg-white border-gray-300 rounded focus:ring-primary-500 focus:ring-2"
                     title="Permitir pedidos pendientes"
                     aria-label="Permitir pedidos pendientes"
                   />
-                  <label className="ml-3 text-sm text-white">Permitir pedidos pendientes</label>
+                  <label className="ml-3 text-sm text-gray-900">Permitir pedidos pendientes</label>
                 </div>
               </div>
             </div>
 
             {/* Status and Settings */}
-            <div className="bg-dark-800 border border-dark-700 rounded-xl p-6">
-              <h2 className="text-xl font-semibold text-white mb-6">Estado y Configuración</h2>
+            <div className="bg-white border border-gray-200 rounded-xl p-6">
+              <h2 className="text-xl font-semibold text-gray-900 mb-6">Estado y Configuración</h2>
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <label className="block text-sm font-medium text-white mb-2">
+                  <label className="block text-sm font-medium text-gray-900 mb-2">
                     Estado
                   </label>
                   <select
                     name="status"
                     value={formData.status}
                     onChange={handleInputChange}
-                    className="w-full px-4 py-3 bg-dark-700 border border-dark-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-neon-green focus:border-transparent"
+                    className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                     title="Seleccionar estado"
                     aria-label="Seleccionar estado"
                   >
@@ -709,11 +717,11 @@ export default function EditProductPage() {
                     name="is_featured"
                     checked={formData.is_featured}
                     onChange={handleInputChange}
-                    className="w-4 h-4 text-neon-green bg-dark-700 border-dark-600 rounded focus:ring-neon-green focus:ring-2"
+                    className="w-4 h-4 text-primary-600 bg-white border-gray-300 rounded focus:ring-primary-500 focus:ring-2"
                     title="Producto destacado"
                     aria-label="Producto destacado"
                   />
-                  <label className="ml-3 text-sm text-white">Producto destacado</label>
+                  <label className="ml-3 text-sm text-gray-900">Producto destacado</label>
                 </div>
 
                 <div className="flex items-center">
@@ -722,11 +730,11 @@ export default function EditProductPage() {
                     name="is_digital"
                     checked={formData.is_digital}
                     onChange={handleInputChange}
-                    className="w-4 h-4 text-neon-green bg-dark-700 border-dark-600 rounded focus:ring-neon-green focus:ring-2"
+                    className="w-4 h-4 text-primary-600 bg-white border-gray-300 rounded focus:ring-primary-500 focus:ring-2"
                     title="Producto digital"
                     aria-label="Producto digital"
                   />
-                  <label className="ml-3 text-sm text-white">Producto digital</label>
+                  <label className="ml-3 text-sm text-gray-900">Producto digital</label>
                 </div>
 
                 <div className="flex items-center">
@@ -735,11 +743,11 @@ export default function EditProductPage() {
                     name="requires_shipping"
                     checked={formData.requires_shipping}
                     onChange={handleInputChange}
-                    className="w-4 h-4 text-neon-green bg-dark-700 border-dark-600 rounded focus:ring-neon-green focus:ring-2"
+                    className="w-4 h-4 text-primary-600 bg-white border-gray-300 rounded focus:ring-primary-500 focus:ring-2"
                     title="Requiere envío"
                     aria-label="Requiere envío"
                   />
-                  <label className="ml-3 text-sm text-white">Requiere envío</label>
+                  <label className="ml-3 text-sm text-gray-900">Requiere envío</label>
                 </div>
               </div>
             </div>
@@ -748,12 +756,12 @@ export default function EditProductPage() {
           {/* Sidebar */}
           <div className="space-y-6">
             {/* Images */}
-            <div className="bg-dark-800 border border-dark-700 rounded-xl p-6">
-              <h3 className="text-lg font-semibold text-white mb-4">Imágenes</h3>
+            <div className="bg-white border border-gray-200 rounded-xl p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Imágenes</h3>
               
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-white mb-2">
+                  <label className="block text-sm font-medium text-gray-900 mb-2">
                     Agregar Imágenes
                   </label>
                   <input
@@ -761,7 +769,7 @@ export default function EditProductPage() {
                     multiple
                     accept="image/*"
                     onChange={handleImageUpload}
-                    className="w-full px-4 py-3 bg-dark-700 border border-dark-600 rounded-lg text-white file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-neon-green file:text-dark-900 hover:file:bg-neon-green/90"
+                    className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg text-gray-900 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-primary-600 file:text-white hover:file:bg-primary-700"
                     title="Seleccionar imágenes"
                     aria-label="Seleccionar imágenes"
                   />
@@ -769,10 +777,10 @@ export default function EditProductPage() {
 
                 {formData.images.length > 0 && (
                   <div className="space-y-2">
-                    <p className="text-sm text-white">Imágenes seleccionadas:</p>
+                    <p className="text-sm text-gray-900">Imágenes seleccionadas:</p>
                     {formData.images.map((image, index) => (
-                      <div key={index} className="flex items-center justify-between p-2 bg-dark-700 rounded">
-                        <span className="text-sm text-white truncate">{image.name}</span>
+                      <div key={index} className="flex items-center justify-between p-2 bg-white rounded">
+                        <span className="text-sm text-gray-900 truncate">{image.name}</span>
                         <button
                           type="button"
                           onClick={() => removeImage(index)}
@@ -790,8 +798,8 @@ export default function EditProductPage() {
             </div>
 
             {/* Product Variants */}
-            <div className="bg-dark-800 border border-dark-700 rounded-xl p-6">
-              <h3 className="text-lg font-semibold text-white mb-4">Variantes del Producto</h3>
+            <div className="bg-white border border-gray-200 rounded-xl p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Variantes del Producto</h3>
               <ProductVariants
                 variants={formData.variants}
                 onVariantsChange={handleVariantsChange}
@@ -803,12 +811,12 @@ export default function EditProductPage() {
             </div>
 
             {/* SEO */}
-            <div className="bg-dark-800 border border-dark-700 rounded-xl p-6">
-              <h3 className="text-lg font-semibold text-white mb-4">SEO</h3>
+            <div className="bg-white border border-gray-200 rounded-xl p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">SEO</h3>
               
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-white mb-2">
+                  <label className="block text-sm font-medium text-gray-900 mb-2">
                     Meta Título
                   </label>
                   <input
@@ -816,13 +824,13 @@ export default function EditProductPage() {
                     name="meta_title"
                     value={formData.meta_title}
                     onChange={handleInputChange}
-                    className="w-full px-4 py-3 bg-dark-700 border border-dark-600 rounded-lg text-white placeholder-dark-400 focus:outline-none focus:ring-2 focus:ring-neon-green focus:border-transparent"
+                    className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                     placeholder="Título para SEO"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-white mb-2">
+                  <label className="block text-sm font-medium text-gray-900 mb-2">
                     Meta Descripción
                   </label>
                   <textarea
@@ -830,7 +838,7 @@ export default function EditProductPage() {
                     value={formData.meta_description}
                     onChange={handleInputChange}
                     rows={3}
-                    className="w-full px-4 py-3 bg-dark-700 border border-dark-600 rounded-lg text-white placeholder-dark-400 focus:outline-none focus:ring-2 focus:ring-neon-green focus:border-transparent"
+                    className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                     placeholder="Descripción para SEO"
                   />
                 </div>
