@@ -505,6 +505,10 @@ python verify_imports.py
 # Error: "No such file or directory: 'logs/django.log'"
 # El directorio se crea automáticamente
 
+# Error de rotación de logs en Windows
+python clean_logs.py
+# Luego reinicia el servidor
+
 # Error de migraciones
 python manage.py makemigrations
 python manage.py migrate
@@ -543,6 +547,30 @@ El proyecto incluye varios scripts para diagnosticar problemas:
 - `test_setup.py`: Verificación completa del setup
 - `verify_imports.py`: Verificación de importaciones
 - `py312_compat.py`: Compatibilidad con Python 3.12+
+- `clean_logs.py`: Limpieza de logs y resolución de permisos
+- `logging_config.py`: Configuración robusta de logging
+
+### 🪟 Problemas Específicos de Windows
+
+#### Error de Rotación de Logs
+```bash
+# Error: PermissionError: [WinError 32] The process cannot access the file
+python clean_logs.py
+# Luego reinicia el servidor Django
+```
+
+#### Problemas de Permisos
+```bash
+# Ejecutar como administrador si es necesario
+# O usar el script de limpieza automática
+python clean_logs.py
+```
+
+#### Configuración de Logging Optimizada
+El proyecto incluye configuración de logging optimizada para Windows:
+- `TimedRotatingFileHandler` en lugar de `RotatingFileHandler`
+- Manejo automático de permisos
+- Fallback a logging de consola si hay problemas
 
 ### Logs y Debugging
 
