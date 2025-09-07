@@ -83,17 +83,40 @@ ecommerce-template/
 ## 🛠️ Instalación y Configuración
 
 ### Prerrequisitos
-- Python 3.9+
-- Node.js 18+
-- PostgreSQL 12+
-- Redis 6+
+- **Python**: 3.8+ (compatible con 3.8, 3.9, 3.10, 3.11, 3.12, 3.13+)
+- **Node.js**: 18+
+- **PostgreSQL**: 12+ (opcional, también funciona con SQLite)
+- **Redis**: 6+ (opcional, tiene fallback a cache local)
+
+### 🚀 Instalación Rápida
+
+#### Opción 1: Script Automático (Recomendado)
+```bash
+# Clonar el repositorio
+git clone https://github.com/JuanoBQ/eCommerce-Template.git
+cd eCommerce-Template/backend
+
+# Ejecutar script de instalación automática
+python install_dependencies.py
+
+# Verificar que todo esté funcionando
+python test_setup.py
+
+# Ejecutar migraciones
+python manage.py migrate
+
+# Iniciar servidor
+python manage.py runserver
+```
+
+#### Opción 2: Instalación Manual
 
 ### Backend (Django)
 
 1. **Clonar el repositorio**
 ```bash
-git clone <repository-url>
-cd ecommerce-template/backend
+git clone https://github.com/JuanoBQ/eCommerce-Template.git
+cd eCommerce-Template/backend
 ```
 
 2. **Crear entorno virtual**
@@ -104,32 +127,141 @@ source venv/bin/activate  # En Windows: venv\Scripts\activate
 
 3. **Instalar dependencias**
 ```bash
+# Actualizar pip y setuptools
+pip install --upgrade pip setuptools wheel
+
+# Instalar todas las dependencias
 pip install -r requirements.txt
 ```
 
-4. **Configurar variables de entorno**
+4. **Verificar instalación**
+```bash
+# Verificar que todas las importaciones funcionen
+python verify_imports.py
+
+# Verificar configuración completa
+python test_setup.py
+```
+
+5. **Configurar variables de entorno**
 ```bash
 cp env.example env
 # Editar el archivo env con tus configuraciones
 ```
 
-5. **Configurar base de datos**
+6. **Configurar base de datos**
 ```bash
-# Crear base de datos PostgreSQL
+# Para PostgreSQL (recomendado para producción)
 createdb ecommerce_db
 
+# Para SQLite (desarrollo - ya configurado por defecto)
+# No requiere configuración adicional
+
 # Ejecutar migraciones
-python manage.py makemigrations
 python manage.py migrate
 
 # Crear superusuario
 python manage.py createsuperuser
 ```
 
-6. **Ejecutar servidor**
+7. **Ejecutar servidor**
 ```bash
 python manage.py runserver
 ```
+
+### 🔧 Solución de Problemas Comunes
+
+#### Error: "No module named 'pkg_resources'"
+```bash
+# Solución automática
+pip install --upgrade setuptools
+
+# O usar el script de compatibilidad
+python py312_compat.py
+```
+
+#### Error: "Module not found: Can't resolve '@/lib/utils'"
+```bash
+# Este error ya está solucionado en el repositorio
+# Los archivos de frontend/lib/ están incluidos
+```
+
+#### Error: "No module named 'django_redis'"
+```bash
+# El proyecto tiene fallback automático a cache local
+# Pero puedes instalar Redis si lo prefieres:
+pip install django-redis
+```
+
+#### Error: "No module named 'drf_yasg'"
+```bash
+# Instalar dependencia faltante
+pip install drf-yasg
+```
+
+#### Verificar todas las dependencias
+```bash
+# Script de verificación completa
+python verify_imports.py
+
+# Script de test completo
+python test_setup.py
+```
+
+### 📋 Dependencias Incluidas
+
+El proyecto incluye todas las dependencias necesarias:
+
+#### Core Django & DRF
+- Django >=4.2.7,<5.0
+- djangorestframework >=3.14.0
+- django-cors-headers >=4.3.1
+- django-filter >=23.3
+
+#### Autenticación & Autorización
+- dj-rest-auth >=5.0.2
+- django-allauth >=0.57.0
+- djangorestframework-simplejwt >=5.3.0
+
+#### API Documentation
+- drf-yasg >=1.21.7
+
+#### Base de Datos
+- psycopg2-binary >=2.9.7
+
+#### Cache & Sesiones
+- django-redis >=5.4.0
+- redis >=5.0.1
+
+#### Cola de Tareas
+- celery >=5.3.4
+- django-celery-beat >=2.5.0
+
+#### Pagos
+- requests >=2.31.0
+- mercadopago >=2.0.0
+
+#### Procesamiento de Imágenes
+- Pillow >=10.0.1
+
+#### Configuración & Entorno
+- python-decouple >=3.8
+- setuptools >=65.0.0
+
+#### Herramientas de Desarrollo
+- django-debug-toolbar >=4.2.0
+- django-extensions >=3.2.3
+
+#### Producción
+- gunicorn >=21.2.0
+- whitenoise >=6.6.0
+
+#### Seguridad
+- cryptography >=41.0.0
+
+#### Utilidades
+- python-dateutil >=2.8.2
+- pytz >=2023.3
 
 ### Frontend (Next.js)
 
@@ -152,6 +284,35 @@ cp env.example env
 4. **Ejecutar servidor de desarrollo**
 ```bash
 npm run dev
+```
+
+### 🐍 Compatibilidad con Python 3.12+
+
+El proyecto está completamente optimizado para Python 3.12+ y versiones anteriores:
+
+#### Características de Compatibilidad
+- ✅ **Python 3.8+**: Compatible con versiones 3.8, 3.9, 3.10, 3.11, 3.12, 3.13+
+- ✅ **Fallbacks automáticos**: Cache local si Redis no está disponible
+- ✅ **Configuración robusta**: Manejo automático de dependencias faltantes
+- ✅ **Scripts de verificación**: Validación completa del setup
+
+#### Archivos de Compatibilidad Incluidos
+- `py312_compat.py`: Manejo de compatibilidad con Python 3.12+
+- `install_dependencies.py`: Instalación automática de dependencias
+- `test_setup.py`: Verificación completa del proyecto
+- `verify_imports.py`: Verificación de importaciones
+- `PYTHON312_SETUP.md`: Documentación específica para Python 3.12+
+
+#### Instalación Específica para Python 3.12+
+```bash
+# Usar el script de instalación optimizado
+python install_dependencies.py
+
+# Verificar compatibilidad
+python test_setup.py
+
+# Si hay problemas con pkg_resources
+python py312_compat.py
 ```
 
 ## 🔧 Configuración de Servicios
@@ -315,13 +476,100 @@ La documentación de la API está disponible en:
 
 Este proyecto está bajo la Licencia MIT. Ver el archivo `LICENSE` para más detalles.
 
-## 🆘 Soporte
+## 🆘 Soporte y Troubleshooting
+
+### Problemas Comunes y Soluciones
+
+#### 🐍 Problemas de Python
+```bash
+# Error: "No module named 'pkg_resources'"
+pip install --upgrade setuptools
+python py312_compat.py
+
+# Error: "No module named 'django_redis'"
+# El proyecto tiene fallback automático, pero puedes instalar:
+pip install django-redis
+
+# Error: "No module named 'drf_yasg'"
+pip install drf-yasg
+
+# Verificar todas las dependencias
+python verify_imports.py
+```
+
+#### 🚀 Problemas de Django
+```bash
+# Error: "Could not find backend 'django_redis.cache.RedisCache'"
+# El proyecto usa fallback automático a cache local
+
+# Error: "No such file or directory: 'logs/django.log'"
+# El directorio se crea automáticamente
+
+# Error de migraciones
+python manage.py makemigrations
+python manage.py migrate
+```
+
+#### ⚛️ Problemas de Frontend
+```bash
+# Error: "Module not found: Can't resolve '@/lib/utils'"
+# Los archivos ya están incluidos en el repositorio
+
+# Error: "Next.js is outdated"
+npm update
+
+# Limpiar cache
+rm -rf .next node_modules
+npm install
+```
+
+#### 🔧 Verificación Completa
+```bash
+# Backend
+cd backend
+python test_setup.py
+python verify_imports.py
+
+# Frontend
+cd frontend
+npm run build
+```
+
+### Scripts de Diagnóstico
+
+El proyecto incluye varios scripts para diagnosticar problemas:
+
+- `install_dependencies.py`: Instalación automática
+- `test_setup.py`: Verificación completa del setup
+- `verify_imports.py`: Verificación de importaciones
+- `py312_compat.py`: Compatibilidad con Python 3.12+
+
+### Logs y Debugging
+
+```bash
+# Ver logs de Django
+tail -f backend/logs/django.log
+
+# Debug mode en Django
+export DEBUG=True
+python manage.py runserver
+
+# Logs de Next.js
+npm run dev -- --verbose
+```
+
+### Contacto y Ayuda
 
 Si tienes preguntas o necesitas ayuda:
 
-1. Revisa la documentación
-2. Busca en los issues existentes
-3. Crea un nuevo issue con detalles del problema
+1. **Revisa la documentación** en `docs/`
+2. **Ejecuta los scripts de diagnóstico** incluidos
+3. **Busca en los issues existentes** del repositorio
+4. **Crea un nuevo issue** con:
+   - Versión de Python y Node.js
+   - Sistema operativo
+   - Logs de error completos
+   - Resultado de `python test_setup.py`
 
 ## 🎯 Roadmap
 

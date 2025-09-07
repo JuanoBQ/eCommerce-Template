@@ -25,7 +25,7 @@ def test_imports():
         import dj_rest_auth
         print("✅ dj-rest-auth")
         
-        import djangorestframework_simplejwt
+        import rest_framework_simplejwt
         print("✅ djangorestframework-simplejwt")
         
         # API Documentation
