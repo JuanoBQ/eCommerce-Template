@@ -3,6 +3,12 @@
 import os
 import sys
 
+# Importar compatibilidad para Python 3.12+ antes de Django
+try:
+    from py312_compat import *
+except ImportError:
+    pass
+
 
 def main():
     """Run administrative tasks."""
