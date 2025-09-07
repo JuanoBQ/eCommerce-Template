@@ -1,37 +1,201 @@
-# Dependencies
-node_modules/
+# ===========================================
+# PYTHON / DJANGO
+# ===========================================
+
+# Byte-compiled / optimized / DLL files
 __pycache__/
-*.pyc
-*.pyo
-*.pyd
+*.py[cod]
+*$py.class
+*.so
 .Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# PyInstaller
+*.manifest
+*.spec
+
+# Installer logs
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Unit test / coverage reports
+htmlcov/
+.tox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+.hypothesis/
+.pytest_cache/
+
+# Translations
+*.mo
+*.pot
+
+# Django stuff
+*.log
+local_settings.py
+db.sqlite3
+db.sqlite3-journal
+media/
+staticfiles/
+static/
+
+# Flask stuff
+instance/
+.webassets-cache
+
+# Scrapy stuff
+.scrapy
+
+# Sphinx documentation
+docs/_build/
+
+# PyBuilder
+target/
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# IPython
+profile_default/
+ipython_config.py
+
+# pyenv
+.python-version
+
+# pipenv
+Pipfile.lock
+
+# PEP 582
+__pypackages__/
+
+# Celery
+celerybeat-schedule
+celerybeat.pid
+
+# SageMath parsed files
+*.sage.py
+
+# Environments
+.env
+.venv
 env/
 venv/
 ENV/
 env.bak/
 venv.bak/
 
-# Next.js
+# Spyder project settings
+.spyderproject
+.spyproject
+
+# Rope project settings
+.ropeproject
+
+# mkdocs documentation
+/site
+
+# mypy
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# ===========================================
+# NODE.JS / NEXT.JS
+# ===========================================
+
+# Dependencies
+node_modules/
+jspm_packages/
+
+# Optional npm cache directory
+.npm
+
+# Optional eslint cache
+.eslintcache
+
+# Microbundle cache
+.rpt2_cache/
+.rts2_cache_cjs/
+.rts2_cache_es/
+.rts2_cache_umd/
+
+# Optional REPL history
+.node_repl_history
+
+# Output of 'npm pack'
+*.tgz
+
+# Yarn Integrity file
+.yarn-integrity
+
+# parcel-bundler cache
+.cache
+.parcel-cache
+
+# Next.js build output
 .next/
 out/
 build/
 dist/
 
-# Environment variables
-.env
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
-.env.*
+# Nuxt.js build / generate output
+.nuxt
+dist
 
-# Database
+# Gatsby files
+.cache/
+public
+
+# Storybook build outputs
+.out
+.storybook-out
+
+# TypeScript
+*.tsbuildinfo
+next-env.d.ts
+
+# Vercel
+.vercel
+
+# ===========================================
+# DATABASE
+# ===========================================
+
+# Database files
 *.db
 *.sqlite3
+*.sqlite3-journal
 db.sqlite3
+db.sqlite3-journal
+
+# Redis
+dump.rdb
+
+# ===========================================
+# LOGS
+# ===========================================
 
 # Logs
-logs
+logs/
 *.log
 npm-debug.log*
 yarn-debug.log*
@@ -43,6 +207,19 @@ pids
 *.pid
 *.seed
 *.pid.lock
+
+# ===========================================
+# DOCKER
+# ===========================================
+
+# Docker
+.dockerignore
+docker-compose.override.yml
+.docker/
+
+# ===========================================
+# DEVELOPMENT TOOLS
+# ===========================================
 
 # Coverage directory used by tools like istanbul
 coverage/
@@ -97,6 +274,12 @@ public
 # Temporary folders
 tmp/
 temp/
+.tmp/
+.temp/
+
+# ===========================================
+# IDE AND EDITORS
+# ===========================================
 
 # Editor directories and files
 .vscode/
@@ -104,6 +287,13 @@ temp/
 *.swp
 *.swo
 *~
+.project
+.settings/
+.classpath
+
+# ===========================================
+# OPERATING SYSTEM
+# ===========================================
 
 # OS generated files
 .DS_Store
@@ -113,115 +303,72 @@ temp/
 .Trashes
 ehthumbs.db
 Thumbs.db
+desktop.ini
 
-# Django
-*.log
-local_settings.py
-db.sqlite3
-db.sqlite3-journal
-media/
-staticfiles/
-static/
+# ===========================================
+# PACKAGE MANAGERS
+# ===========================================
 
-# Python
-*.py[cod]
-*$py.class
-*.so
-.Python
-build/
-develop-eggs/
-dist/
-downloads/
-eggs/
-.eggs/
-lib/
-lib64/
-parts/
-sdist/
-var/
-wheels/
-*.egg-info/
-.installed.cfg
-*.egg
-MANIFEST
+# Package managers
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
 
-# PyInstaller
-*.manifest
-*.spec
+# Yarn
+.yarn/cache
+.yarn/unplugged
+.yarn/build-state.yml
+.yarn/install-state.gz
+.pnp.*
 
-# Installer logs
-pip-log.txt
-pip-delete-this-directory.txt
+# ===========================================
+# ENVIRONMENT VARIABLES
+# ===========================================
 
-# Unit test / coverage reports
-htmlcov/
-.tox/
-.coverage
-.coverage.*
-.cache
-nosetests.xml
-coverage.xml
-*.cover
-.hypothesis/
-.pytest_cache/
-
-# Translations
-*.mo
-*.pot
-
-# Django stuff:
-*.log
-local_settings.py
-db.sqlite3
-
-# Flask stuff:
-instance/
-.webassets-cache
-
-# Scrapy stuff:
-.scrapy
-
-# Sphinx documentation
-docs/_build/
-
-# PyBuilder
-target/
-
-# Jupyter Notebook
-.ipynb_checkpoints
-
-# pyenv
-.python-version
-
-# celery beat schedule file
-celerybeat-schedule
-
-# SageMath parsed files
-*.sage.py
-
-# Environments
+# Environment variables
 .env
-.venv
-env/
-venv/
-ENV/
-env.bak/
-venv.bak/
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+.env.*
+!.env.example
 
-# Spyder project settings
-.spyderproject
-.spyproject
+# ===========================================
+# BACKUP AND TEMPORARY FILES
+# ===========================================
 
-# Rope project settings
-.ropeproject
+# Backup files
+*.bak
+*.backup
+*.old
 
-# mkdocs documentation
-/site
+# Temporary files
+tmp/
+temp/
+.tmp/
+.temp/
 
-# mypy
+# ===========================================
+# BUILD ARTIFACTS
+# ===========================================
+
+# Build artifacts
+build/
+dist/
+out/
+
+# Cache directories
+.cache/
+.parcel-cache/
+.eslintcache
 .mypy_cache/
 .dmypy.json
 dmypy.json
+
+# ===========================================
+# UPLOADS AND MEDIA
+# ===========================================
 
 # Large files and uploads
 uploads/
