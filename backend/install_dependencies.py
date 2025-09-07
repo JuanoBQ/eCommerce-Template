@@ -63,6 +63,20 @@ def main():
         print("❌ Django REST Framework no se instaló correctamente")
         sys.exit(1)
     
+    # Verificar instalación de django-redis
+    try:
+        import django_redis
+        print("✅ django-redis instalado correctamente")
+    except ImportError:
+        print("⚠️  django-redis no está disponible, usando cache local")
+    
+    # Verificar instalación de Celery
+    try:
+        import celery
+        print("✅ Celery instalado correctamente")
+    except ImportError:
+        print("⚠️  Celery no está disponible")
+    
     print("🎉 ¡Todas las dependencias se instalaron correctamente!")
     print("\n📋 Próximos pasos:")
     print("1. Ejecuta: python manage.py migrate")
