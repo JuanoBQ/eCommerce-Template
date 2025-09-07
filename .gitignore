@@ -198,6 +198,7 @@ dump.rdb
 
 # Logs
 logs/
+!logs/.gitkeep
 *.log
 npm-debug.log*
 yarn-debug.log*
