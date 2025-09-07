@@ -63,7 +63,7 @@ export const useDashboard = () => {
     setError(null)
     
     try {
-      console.log('🔄 Cargando datos del dashboard...')
+      // Cargando datos del dashboard
       
       // Cargar datos directamente de las APIs
       const [ordersResponse, productsResponse, usersResponse, monthlyResponse, categoryResponse, activityResponse] = await Promise.all([
@@ -75,40 +75,41 @@ export const useDashboard = () => {
         apiClient.get('/orders/recent-activity/').catch(() => null)
       ])
 
-      console.log('📊 Respuestas de la API:', {
+      // Respuestas de la API
+      const responses = {
         orders: ordersResponse,
         products: productsResponse,
         users: usersResponse,
         monthly: monthlyResponse,
         categories: categoryResponse,
         activity: activityResponse
-      })
+      }
 
       // Obtener datos de órdenes
-      const totalRevenue = ordersResponse?.total_revenue || 0
-      const totalOrders = ordersResponse?.total_orders || 0
-      const deliveredRevenue = ordersResponse?.delivered_revenue || 0
-      const ordersLast6Months = ordersResponse?.orders_last_6_months || 0
+      const totalRevenue = (ordersResponse as any)?.total_revenue || 0
+      const totalOrders = (ordersResponse as any)?.total_orders || 0
+      const deliveredRevenue = (ordersResponse as any)?.delivered_revenue || 0
+      const ordersLast6Months = (ordersResponse as any)?.orders_last_6_months || 0
 
       // Obtener datos de productos
-      const totalProducts = productsResponse?.published_products || 0
-      const allProducts = productsResponse?.total_products || 0
+      const totalProducts = (productsResponse as any)?.published_products || 0
+      const allProducts = (productsResponse as any)?.total_products || 0
 
       // Obtener datos de usuarios
-      const totalUsers = usersResponse?.total_users || 0
+      const totalUsers = (usersResponse as any)?.total_users || 0
 
       // Usar datos reales de distribución por categorías
       let categoryData = []
       try {
-        console.log('📂 categoryResponse recibido:', categoryResponse)
-        console.log('📂 Es array?', Array.isArray(categoryResponse))
+        // categoryResponse recibido
+        // Es array?
         
         if (categoryResponse && Array.isArray(categoryResponse)) {
           categoryData = categoryResponse.map((item: any) => ({
             name: item.name,
             value: item.value
           }))
-          console.log('📂 Distribución real por categorías:', categoryData)
+          // Distribución real por categorías
         } else {
           // Fallback: usar categorías del hook de productos
           const categoriesArray = Array.isArray(categories) ? categories : []
@@ -122,14 +123,14 @@ export const useDashboard = () => {
               }
             }).filter(cat => cat.value > 0)
           } else {
-            console.log('⚠️ No hay categorías disponibles, usando datos por defecto')
+            // No hay categorías disponibles, usando datos por defecto
             categoryData = [
               { name: 'Sin categoría', value: 100 }
             ]
           }
         }
       } catch (err) {
-        console.error('❌ Error calculando distribución por categorías:', err)
+        // Error calculando distribución por categorías
         categoryData = [
           { name: 'Error al cargar', value: 100 }
         ]
@@ -145,13 +146,13 @@ export const useDashboard = () => {
             revenue: item.revenue,
             orders: item.orders
           }))
-          console.log('📈 Datos mensuales reales:', monthlyRevenue)
+          // Datos mensuales reales
         } else {
           // Fallback: generar datos simulados
           monthlyRevenue = await generateMonthlyRevenueData(ordersResponse)
         }
       } catch (err) {
-        console.error('❌ Error cargando datos mensuales:', err)
+        // Error cargando datos mensuales
         monthlyRevenue = await generateMonthlyRevenueData(ordersResponse)
       }
       
@@ -167,13 +168,13 @@ export const useDashboard = () => {
             amount: item.amount,
             type: item.type
           }))
-          console.log('🔄 Actividad reciente real:', activity)
+          // Actividad reciente real
         } else {
           // Fallback: generar actividad local
           activity = generateRecentActivity(orders, products)
         }
       } catch (err) {
-        console.error('❌ Error cargando actividad reciente:', err)
+        // Error cargando actividad reciente
         activity = generateRecentActivity(orders, products)
       }
 
@@ -194,7 +195,7 @@ export const useDashboard = () => {
         usersGrowth
       }
 
-      console.log('📈 Estadísticas calculadas:', newStats)
+      // Estadísticas calculadas
 
       setStats(newStats)
       setCategoryData(categoryData)
@@ -203,13 +204,13 @@ export const useDashboard = () => {
       setLastUpdated(new Date())
       setIsInitialized(true)
 
-      console.log('✅ Datos del dashboard cargados exitosamente')
+      // Datos del dashboard cargados exitosamente
       if (isInitialized) {
         showSuccess('Dashboard actualizado')
       }
 
     } catch (err) {
-      console.error('❌ Error loading dashboard data:', err)
+      // Error loading dashboard data
       setError('Error al cargar datos del dashboard')
       showError('Error al cargar datos del dashboard')
     } finally {
@@ -230,7 +231,7 @@ export const useDashboard = () => {
         }))
       }
     } catch (err) {
-      console.log('📊 Usando datos simulados para gráficos mensuales')
+      // Usando datos simulados para gráficos mensuales
     }
 
     // Fallback: generar datos simulados basados en datos reales
@@ -357,7 +358,7 @@ export const useDashboard = () => {
             totalUsers: prev.totalUsers || totalUsers
           }))
         } catch (err) {
-          console.error('Error updating dashboard stats:', err)
+          // Error updating dashboard stats
         }
       }
       updateData()

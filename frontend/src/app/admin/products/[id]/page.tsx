@@ -47,7 +47,7 @@ export default function ProductDetailPage() {
       const productData = await getProduct(parseInt(productId))
       setProduct(productData as Product)
     } catch (error) {
-      console.error('Error loading product:', error)
+      // Error loading product
       toast.error('Error al cargar el producto')
       router.push('/admin/products')
     } finally {
@@ -65,7 +65,7 @@ export default function ProductDetailPage() {
         // El alert de éxito se muestra desde el hook useProducts
         router.push('/admin/products')
       } catch (error) {
-        console.error('Error deleting product:', error)
+        // Error deleting product
         toast.error('Error al eliminar el producto')
       } finally {
         setIsDeleting(false)

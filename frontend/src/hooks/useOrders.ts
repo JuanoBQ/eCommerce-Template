@@ -173,7 +173,7 @@ export const useOrders = () => {
         })
       }
     } catch (err: any) {
-      console.error('❌ Error al cargar estadísticas de órdenes:', err)
+      // Error al cargar estadísticas de órdenes
     }
   }, [])
 
@@ -183,7 +183,7 @@ export const useOrders = () => {
       setIsLoading(true)
       setError(null)
       const response = await apiClient.get('/orders/', { params })
-      console.log('Orders API response:', response)
+      // Orders API response
 
       if (!response) {
         throw new Error('No se recibieron datos del servidor')
@@ -241,12 +241,12 @@ export const useOrders = () => {
             await loadOrderStats()
           }
         } else {
-          console.warn('Unexpected orders data format:', ordersData)
+          // Unexpected orders data format
           setOrders([])
         }
       }
     } catch (err: any) {
-      console.error('Error loading orders:', err)
+      // Error loading orders
       const errorMessage = err.response?.data?.detail || err.message || 'Error al cargar las órdenes'
       setError(errorMessage)
     } finally {
@@ -265,7 +265,7 @@ export const useOrders = () => {
     } catch (err: any) {
       const errorMessage = err.response?.data?.detail || 'Error al cargar los detalles de la orden'
       setError(errorMessage)
-      console.error('Error loading order details:', err)
+      // Error loading order details
       throw err
     } finally {
       setIsLoading(false)
@@ -289,7 +289,7 @@ export const useOrders = () => {
       const errorMessage = err.response?.data?.detail || err.response?.data?.message || 'Error al crear la orden'
       setError(errorMessage)
       toast.error(errorMessage)
-      console.error('Error creating order:', err)
+      // Error creating order
       throw err
     } finally {
       setIsLoading(false)
@@ -309,7 +309,7 @@ export const useOrders = () => {
       const errorMessage = err.response?.data?.error || 'Error al cancelar la orden'
       setError(errorMessage)
       toast.error(errorMessage)
-      console.error('Error canceling order:', err)
+      // Error canceling order
       throw err
     } finally {
       setIsLoading(false)
@@ -328,7 +328,7 @@ export const useOrders = () => {
       const errorMessage = err.response?.data?.error || 'Error al confirmar la orden'
       setError(errorMessage)
       toast.error(errorMessage)
-      console.error('Error confirming order:', err)
+      // Error confirming order
       throw err
     } finally {
       setIsLoading(false)
@@ -347,7 +347,7 @@ export const useOrders = () => {
       const errorMessage = err.response?.data?.error || 'Error al procesar la orden'
       setError(errorMessage)
       toast.error(errorMessage)
-      console.error('Error processing order:', err)
+      // Error processing order
       throw err
     } finally {
       setIsLoading(false)
@@ -366,7 +366,7 @@ export const useOrders = () => {
       const errorMessage = err.response?.data?.error || 'Error al enviar la orden'
       setError(errorMessage)
       toast.error(errorMessage)
-      console.error('Error shipping order:', err)
+      // Error shipping order
       throw err
     } finally {
       setIsLoading(false)
@@ -385,7 +385,7 @@ export const useOrders = () => {
       const errorMessage = err.response?.data?.error || 'Error al entregar la orden'
       setError(errorMessage)
       toast.error(errorMessage)
-      console.error('Error delivering order:', err)
+      // Error delivering order
       throw err
     } finally {
       setIsLoading(false)
@@ -400,7 +400,7 @@ export const useOrders = () => {
       if (token) {
         loadOrders()
       } else {
-        console.log('No access token found, skipping orders load')
+        // No access token found, skipping orders load
         setError('Debes iniciar sesión para ver tus órdenes')
       }
     }

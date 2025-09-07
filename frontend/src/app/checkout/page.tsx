@@ -123,7 +123,7 @@ export default function CheckoutPage() {
           }))
         }
       } catch (error) {
-        console.log('No hay dirección predeterminada')
+        // No hay dirección predeterminada
       }
     }
 
@@ -280,7 +280,7 @@ export default function CheckoutPage() {
       router.push(`/account/orders/${(order as any).id}`)
       
     } catch (error) {
-      console.error('Error creating order:', error)
+      // Error creating order
       toast.error('Error al crear la orden. Por favor intenta de nuevo.')
     } finally {
       setIsSubmitting(false)

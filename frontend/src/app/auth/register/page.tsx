@@ -121,7 +121,7 @@ export default function RegisterPage() {
       toast.success('¡Cuenta creada exitosamente! Revisa tu correo para verificar tu cuenta.')
       router.push('/auth/verify-email')
     } catch (error: any) {
-      console.error('Error de registro:', error)
+      // Error de registro
 
       if (error.response?.data) {
         const apiErrors = error.response.data

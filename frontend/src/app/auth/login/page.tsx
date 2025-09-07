@@ -57,11 +57,11 @@ export default function LoginPage() {
     setIsLoading(true)
 
     try {
-      console.log('🔐 Iniciando login...')
+      // Iniciando login
       const result = await login({ email: formData.email, password: formData.password })
 
       if (result.success) {
-        console.log('✅ Login exitoso, esperando actualización del estado...')
+        // Login exitoso, esperando actualización del estado
 
         // Refrescar estado inmediatamente para asegurar que se propague
         await refreshAuthState()
@@ -72,11 +72,11 @@ export default function LoginPage() {
         toast.success('¡Inicio de sesión exitoso!')
 
         // Forzar re-renderizado de la página para actualizar el Header
-        console.log('🔄 Forzando re-renderizado de la página...')
+        // Forzando re-renderizado de la página
         window.location.href = new URLSearchParams(window.location.search).get('redirect') || '/'
       }
     } catch (error: any) {
-      console.error('❌ Error de login:', error)
+      // Error de login
       const errorMessage = error.response?.data?.detail ||
                           error.response?.data?.email ||
                           error.response?.data?.password ||
@@ -91,7 +91,7 @@ export default function LoginPage() {
   React.useEffect(() => {
     if (isAuthenticated && !authLoading) {
       const redirectTo = new URLSearchParams(window.location.search).get('redirect') || '/'
-      console.log('🔄 Usuario ya autenticado, redirigiendo a:', redirectTo)
+      // Usuario ya autenticado, redirigiendo
       router.push(redirectTo)
     }
   }, [isAuthenticated, authLoading, router])

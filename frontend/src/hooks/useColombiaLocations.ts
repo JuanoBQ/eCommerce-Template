@@ -33,7 +33,7 @@ export const useColombiaLocations = () => {
       const data = await response.json()
       setDepartments(data)
     } catch (err: any) {
-      console.error('Error al cargar departamentos:', err)
+      // Error al cargar departamentos
       setError(err.message)
     } finally {
       setIsLoadingDepartments(false)
@@ -54,7 +54,7 @@ export const useColombiaLocations = () => {
       const data = await response.json()
       setCities(data)
     } catch (err: any) {
-      console.error('Error al cargar ciudades:', err)
+      // Error al cargar ciudades
       setError(err.message)
     } finally {
       setIsLoadingCities(false)

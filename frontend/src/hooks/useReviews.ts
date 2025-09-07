@@ -37,7 +37,7 @@ export const useReviews = (productId?: number) => {
       const response = await apiClient.get(`/products/${targetProductId}/reviews/`)
       setReviews((response as any).results || response || [])
     } catch (err: any) {
-      console.error('Error loading reviews:', err)
+      // Error loading reviews
       const errorMessage = err.response?.data?.detail || 'Error al cargar las reseñas'
       setError(errorMessage)
     } finally {
@@ -64,7 +64,7 @@ export const useReviews = (productId?: number) => {
       toast.success('Reseña agregada exitosamente')
       return response
     } catch (err: any) {
-      console.error('Error creating review:', err)
+      // Error creating review
       
       // Manejar error específico de reseña duplicada
       if (err.response?.data?.non_field_errors) {
@@ -108,7 +108,7 @@ export const useReviews = (productId?: number) => {
       toast.success('Reseña actualizada exitosamente')
       return response
     } catch (err: any) {
-      console.error('Error updating review:', err)
+      // Error updating review
       const errorMessage = err.response?.data?.detail || 'Error al actualizar la reseña'
       setError(errorMessage)
       toast.error(errorMessage)
@@ -136,7 +136,7 @@ export const useReviews = (productId?: number) => {
       
       toast.success('Reseña eliminada exitosamente')
     } catch (err: any) {
-      console.error('Error deleting review:', err)
+      // Error deleting review
       const errorMessage = err.response?.data?.detail || 'Error al eliminar la reseña'
       setError(errorMessage)
       toast.error(errorMessage)

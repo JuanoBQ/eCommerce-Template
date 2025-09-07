@@ -139,7 +139,7 @@ export const useUsers = () => {
         })
       }
     } catch (err: any) {
-      console.error('❌ Error al cargar estadísticas de usuarios:', err)
+      // Error al cargar estadísticas de usuarios
     }
   }, [])
 
@@ -148,10 +148,10 @@ export const useUsers = () => {
     try {
       setIsLoading(true)
       setError(null)
-      console.log('🔍 Cargando usuarios...')
+      // Cargando usuarios
 
       const response = await apiClient.get('/users/', { params }) as { results: User[], count: number, next: string | null, previous: string | null }
-      console.log('📊 Respuesta completa:', response)
+      // Respuesta completa
 
       // Manejar respuesta paginada
       if (response.results) {
@@ -197,7 +197,7 @@ export const useUsers = () => {
           await loadUserStats()
         }
 
-        console.log('✅ Usuarios cargados:', usersData.length)
+        // Usuarios cargados
       } else {
         // Respuesta sin paginación (todos los usuarios)
         const usersData = (response as unknown) as User[]
@@ -225,7 +225,7 @@ export const useUsers = () => {
         }
       }
     } catch (err: any) {
-      console.error('❌ Error al cargar usuarios:', err)
+      // Error al cargar usuarios
       setError(err.response?.data?.detail || 'Error al cargar usuarios')
       toast.error('Error al cargar usuarios')
     } finally {
@@ -236,16 +236,16 @@ export const useUsers = () => {
   // Crear usuario
   const createUser = useCallback(async (userData: CreateUserData) => {
     try {
-      console.log('➕ Creando usuario:', userData)
+      // Creando usuario
       const response = await apiClient.post('/users/', userData) as { data: User }
-      console.log('✅ Usuario creado:', response.data)
+      // Usuario creado
       
       // Recargar usuarios
       await loadUsers()
       toast.success('Usuario creado exitosamente')
       return response.data
     } catch (err: any) {
-      console.error('❌ Error al crear usuario:', err)
+      // Error al crear usuario
       const errorMessage = err.response?.data?.detail || 'Error al crear usuario'
       toast.error(errorMessage)
       throw new Error(errorMessage)
@@ -255,9 +255,9 @@ export const useUsers = () => {
   // Actualizar usuario
   const updateUser = useCallback(async (userId: number, userData: UpdateUserData) => {
     try {
-      console.log('✏️ Actualizando usuario:', userId, userData)
+      // Actualizando usuario
       const response = await apiClient.patch(`/users/${userId}/`, userData) as { data: User }
-      console.log('✅ Usuario actualizado:', response.data)
+      // Usuario actualizado
       
       // Actualizar la lista local
       setUsers(prevUsers => 
@@ -269,7 +269,7 @@ export const useUsers = () => {
       toast.success('Usuario actualizado exitosamente')
       return response.data
     } catch (err: any) {
-      console.error('❌ Error al actualizar usuario:', err)
+      // Error al actualizar usuario
       const errorMessage = err.response?.data?.detail || 'Error al actualizar usuario'
       toast.error(errorMessage)
       throw new Error(errorMessage)
@@ -279,16 +279,16 @@ export const useUsers = () => {
   // Eliminar usuario
   const deleteUser = useCallback(async (userId: number) => {
     try {
-      console.log('🗑️ Eliminando usuario:', userId)
+      // Eliminando usuario
       await apiClient.delete(`/users/${userId}/`)
-      console.log('✅ Usuario eliminado')
+      // Usuario eliminado
       
       // Actualizar la lista local
       setUsers(prevUsers => prevUsers.filter(user => user.id !== userId))
       
       toast.success('Usuario eliminado exitosamente')
     } catch (err: any) {
-      console.error('❌ Error al eliminar usuario:', err)
+      // Error al eliminar usuario
       const errorMessage = err.response?.data?.detail || 'Error al eliminar usuario'
       toast.error(errorMessage)
       throw new Error(errorMessage)
@@ -298,13 +298,13 @@ export const useUsers = () => {
   // Activar/Desactivar usuario
   const toggleUserStatus = useCallback(async (userId: number, isActive: boolean) => {
     try {
-      console.log('🔄 Cambiando estado del usuario:', userId, isActive)
+      // Cambiando estado del usuario
       await updateUser(userId, { is_active: isActive })
       
       const action = isActive ? 'activado' : 'desactivado'
       toast.success(`Usuario ${action} exitosamente`)
     } catch (err: any) {
-      console.error('❌ Error al cambiar estado del usuario:', err)
+      // Error al cambiar estado del usuario
       toast.error('Error al cambiar estado del usuario')
     }
   }, [updateUser])
@@ -312,13 +312,13 @@ export const useUsers = () => {
   // Cambiar rol de usuario
   const toggleUserRole = useCallback(async (userId: number, isStaff: boolean) => {
     try {
-      console.log('🔄 Cambiando rol del usuario:', userId, isStaff)
+      // Cambiando rol del usuario
       await updateUser(userId, { is_staff: isStaff })
       
       const role = isStaff ? 'administrador' : 'cliente'
       toast.success(`Usuario convertido a ${role} exitosamente`)
     } catch (err: any) {
-      console.error('❌ Error al cambiar rol del usuario:', err)
+      // Error al cambiar rol del usuario
       toast.error('Error al cambiar rol del usuario')
     }
   }, [updateUser])

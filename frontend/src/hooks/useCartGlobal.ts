@@ -61,9 +61,9 @@ export const useCartGlobal = () => {
           totalPrice,
         }
         
-        console.log('Cart loaded from storage:', globalCartState)
+        // Cart loaded from storage
       } catch (error) {
-        console.error('Error loading cart:', error)
+        // Error loading cart
         // Reset to default state if there's an error
         globalCartState = {
           items: [],
@@ -83,7 +83,7 @@ export const useCartGlobal = () => {
   }, [rerender])
 
   const addToCart = useCallback((product: Product, quantity: number = 1, variant?: any) => {
-    console.log('Adding to cart:', product.id, product.name, quantity, variant)
+    // Adding to cart
 
     // Si hay variante, buscar por producto + variante, sino solo por producto
     const existingItemIndex = globalCartState.items.findIndex(item => 
@@ -103,7 +103,7 @@ export const useCartGlobal = () => {
         variant_details: variant,
         total_price: unitPrice * newQuantity
       }
-      console.log('Updated existing item:', newItems[existingItemIndex])
+      // Updated existing item
     } else {
       // Add new item
       const unitPrice = variant?.price || product.price
@@ -121,7 +121,7 @@ export const useCartGlobal = () => {
         total_price: unitPrice * quantity
       }
       newItems = [...globalCartState.items, newItem]
-      console.log('Added new item:', newItem)
+      // Added new item
     }
 
     const { totalItems, totalPrice } = calculateTotals(newItems)
@@ -132,7 +132,7 @@ export const useCartGlobal = () => {
       totalPrice,
     }
 
-    console.log('New cart state:', newState)
+    // New cart state
     updateGlobalState(newState)
   }, [])
 
@@ -195,7 +195,7 @@ export const useCartGlobal = () => {
   }, [])
 
   // Debug: Log every time the hook returns values (commented out for production)
-  // console.log('useCartGlobal returning:', {
+  // useCartGlobal returning
   //   items: globalCartState.items.length,
   //   totalItems: globalCartState.totalItems,
   //   totalPrice: globalCartState.totalPrice

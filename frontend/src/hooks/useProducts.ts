@@ -46,9 +46,7 @@ export const useProducts = () => {
   // Load categories and brands
   const loadCategories = useCallback(async () => {
     try {
-      console.log('🔍 Loading categories from API...')
       const response = await categoriesApi.getCategories()
-      console.log('🔍 Categories API response:', response)
       const categoriesData = response.results || response
       
       // Mapear product_count a productCount para compatibilidad con el frontend
@@ -57,10 +55,8 @@ export const useProducts = () => {
         productCount: category.product_count || 0
       }))
       
-      console.log('🔍 Categories data to set:', mappedCategories)
       setCategories(mappedCategories)
     } catch (err) {
-      console.error('Error loading categories, using mock data:', err)
       // Usar datos mock como fallback
       setCategories(getMockCategories())
     }
@@ -68,9 +64,7 @@ export const useProducts = () => {
 
   const loadBrands = useCallback(async () => {
     try {
-      console.log('🔍 Loading brands from API...')
       const response = await categoriesApi.getBrands()
-      console.log('🔍 Brands API response:', response)
       const brandsData = response.results || response
       
       // Mapear product_count a productCount para compatibilidad con el frontend
@@ -79,10 +73,8 @@ export const useProducts = () => {
         productCount: brand.product_count || 0
       }))
       
-      console.log('🔍 Brands data to set:', mappedBrands)
       setBrands(mappedBrands)
     } catch (err) {
-      console.error('Error loading brands, using mock data:', err)
       // Usar datos mock como fallback
       setBrands(getMockBrands())
     }
@@ -100,7 +92,6 @@ export const useProducts = () => {
 
   // Load products
   const loadProducts = useCallback(async (params?: any, isPublicView: boolean = false, isAdminView: boolean = false) => {
-    console.log('🔍 loadProducts called with params:', params, 'isPublicView:', isPublicView)
     setIsLoading(true)
     setError(null)
     try {
@@ -179,8 +170,6 @@ export const useProducts = () => {
         }
       }
 
-      console.log('🔍 Request params:', requestParams)
-      
       let response
       if (isPublicView) {
         // Para vista pública, hacer petición sin token de autenticación
@@ -193,7 +182,6 @@ export const useProducts = () => {
           },
         })
         response = await publicApi.get('/products/', { params: requestParams })
-        console.log('🔍 API Response:', response.data)
         response = response.data
       } else {
         // Para admin, usar la API normal con autenticación
@@ -203,7 +191,6 @@ export const useProducts = () => {
       // Manejar respuesta paginada
       if (response.results) {
         // Respuesta paginada
-        console.log('🔍 Setting products from API response:', response.results.length, 'products')
         setProducts(response.results)
 
         // Calcular página actual desde la URL de next/previous
@@ -246,7 +233,6 @@ export const useProducts = () => {
         })
       }
     } catch (err) {
-      console.error('Error loading products:', err)
       setError('Error al cargar productos')
       showError('Error al cargar productos')
     } finally {
@@ -278,7 +264,6 @@ export const useProducts = () => {
 
       return categoryStats
     } catch (err) {
-      console.error('Error loading category stats:', err)
       return []
     }
   }, [categories])
@@ -301,7 +286,6 @@ export const useProducts = () => {
 
       return count
     } catch (err) {
-      console.error('Error getting product count by category:', err)
       return 0
     }
   }, [])
@@ -314,7 +298,7 @@ export const useProducts = () => {
         loadBrands()
       ])
     } catch (err) {
-      console.error('Error loading real data:', err)
+      // Error silencioso, se usan datos mock como fallback
     }
   }, [loadCategories, loadBrands])
 
@@ -328,18 +312,11 @@ export const useProducts = () => {
     setIsLoading(true)
     setError(null)
     try {
-      console.log('🚀 Enviando datos al backend:', productData)
-      console.log('🚀 Estructura de datos:', JSON.stringify(productData, null, 2))
-      console.log('🚀 Variantes:', productData.variants)
       const newProduct = await productsApi.createProduct(productData) as Product
       setProducts(prev => [newProduct, ...prev])
       showSuccess('Producto creado exitosamente')
       return newProduct
     } catch (err: any) {
-      console.error('Error creating product, creating mock product:', err)
-      console.error('Error response data:', err.response?.data)
-      console.error('Error status:', err.response?.status)
-      console.error('Error message:', err.message)
       // Crear un producto mock como fallback
       const mockProduct: Product = {
         id: Date.now(),
@@ -390,7 +367,6 @@ export const useProducts = () => {
       showSuccess('Producto actualizado exitosamente')
       return updatedProduct
     } catch (err: any) {
-      console.error('Error updating product:', err)
       const errorMessage = err.response?.data?.detail || 'Error al actualizar producto'
       setError(errorMessage)
       showError(errorMessage)
@@ -409,7 +385,6 @@ export const useProducts = () => {
       setProducts(prev => prev.filter(p => p.id !== id))
       showSuccess('Producto eliminado exitosamente')
     } catch (err: any) {
-      console.error('Error deleting product:', err)
       const errorMessage = err.response?.data?.detail || 'Error al eliminar producto'
       setError(errorMessage)
       showError(errorMessage)
@@ -440,7 +415,6 @@ export const useProducts = () => {
 
       return productWithVariants
     } catch (err: any) {
-      console.error('Error getting product:', err)
       const errorMessage = err.response?.data?.detail || 'Error al obtener producto'
       setError(errorMessage)
       showError(errorMessage)
@@ -457,7 +431,6 @@ export const useProducts = () => {
       showSuccess('Imagen subida exitosamente')
       return result
     } catch (err: any) {
-      console.error('Error uploading image, simulating upload:', err)
       // Simular upload en modo offline
       if (onProgress) {
         // Simular progreso de upload
@@ -495,7 +468,6 @@ export const useProducts = () => {
       showSuccess('Imagen de variante subida exitosamente')
       return result
     } catch (err: any) {
-      console.error('Error uploading variant image:', err)
       const errorMessage = err.response?.data?.detail || 'Error al subir imagen de variante'
       showError(errorMessage)
       throw err

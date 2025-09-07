@@ -50,35 +50,22 @@ class UserProfileView(APIView):
         Actualizar el perfil del usuario autenticado.
         """
         try:
-            print(f"🔍 Datos recibidos: {request.data}")
-            print(f"👤 Usuario: {request.user}")
-            
             serializer = UserProfileUpdateSerializer(
                 request.user,
                 data=request.data,
                 partial=True
             )
 
-            print(f"✅ Serializer creado exitosamente")
-
             if serializer.is_valid():
-                print("✅ Datos válidos, guardando...")
                 updated_user = serializer.save()
-                print(f"✅ Usuario actualizado: {updated_user}")
                 
                 # Devolver el perfil completo actualizado
                 user_serializer = UserSerializer(updated_user)
-                print(f"✅ Respuesta preparada: {user_serializer.data}")
                 return Response(user_serializer.data)
             else:
-                print(f"❌ Errores de validación: {serializer.errors}")
                 return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
         except Exception as e:
-            print(f"❌ Error en patch: {str(e)}")
-            print(f"❌ Tipo de error: {type(e)}")
-            import traceback
-            print(f"❌ Traceback: {traceback.format_exc()}")
             return Response(
                 {'detail': f'Error interno del servidor: {str(e)}'}, 
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
@@ -96,36 +83,26 @@ class ChangePasswordView(APIView):
         Cambiar la contraseña del usuario autenticado.
         """
         try:
-            print(f"🔍 Cambio de contraseña - Usuario: {request.user}")
-            print(f"📊 Datos recibidos: {request.data}")
-            
             serializer = ChangePasswordSerializer(
                 data=request.data,
                 context={'request': request}
             )
 
             if serializer.is_valid():
-                print("✅ Datos de contraseña válidos")
-                
                 # Obtener el usuario y cambiar la contraseña
                 user = request.user
                 new_password = serializer.validated_data['new_password']
                 user.set_password(new_password)
                 user.save()
                 
-                print("✅ Contraseña actualizada exitosamente")
                 return Response(
                     {'message': 'Contraseña actualizada exitosamente'},
                     status=status.HTTP_200_OK
                 )
             else:
-                print(f"❌ Errores de validación: {serializer.errors}")
                 return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
         except Exception as e:
-            print(f"❌ Error en cambio de contraseña: {str(e)}")
-            import traceback
-            print(f"❌ Traceback: {traceback.format_exc()}")
             return Response(
                 {'error': 'Error interno del servidor'},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
@@ -228,19 +205,11 @@ class UserAddressViewSet(viewsets.ModelViewSet):
         """
         Instantiates and returns the list of permissions that this view requires.
         """
-        print(f"🔍 UserAddressViewSet.get_permissions - Action: {self.action}")
-        print(f"🔍 UserAddressViewSet.get_permissions - Usuario: {self.request.user}")
         return [permissions.IsAuthenticated()]
     
     def get_queryset(self):
         """Retorna solo las direcciones del usuario autenticado."""
-        print(f"🔍 UserAddressViewSet - Usuario autenticado: {self.request.user}")
-        print(f"🔍 UserAddressViewSet - Es anónimo: {self.request.user.is_anonymous}")
-        print(f"🔍 UserAddressViewSet - Headers: {dict(self.request.headers)}")
-        
-        # Temporalmente retornar todas las direcciones para debug
         if self.request.user.is_anonymous:
-            print("⚠️ Usuario anónimo, retornando lista vacía")
             return UserAddress.objects.none()
         
         return UserAddress.objects.filter(user=self.request.user)
@@ -253,8 +222,6 @@ class UserAddressViewSet(viewsets.ModelViewSet):
     
     def list(self, request, *args, **kwargs):
         """Lista las direcciones del usuario autenticado."""
-        print(f"🔍 UserAddressViewSet.list - Usuario: {request.user}")
-        print(f"🔍 UserAddressViewSet.list - Es anónimo: {request.user.is_anonymous}")
         return super().list(request, *args, **kwargs)
     
     def perform_create(self, serializer):
@@ -334,9 +301,6 @@ def simple_addresses_endpoint(request):
         addresses = UserAddress.objects.filter(user=request.user)
         serializer = UserAddressSerializer(addresses, many=True)
         return Response({
-            'message': 'Direcciones obtenidas correctamente',
-            'user': str(request.user),
-            'is_anonymous': request.user.is_anonymous,
             'addresses': serializer.data
         })
     elif request.method == 'POST':
@@ -360,9 +324,6 @@ def simple_addresses_endpoint(request):
             # Asignar el usuario autenticado
             address = serializer.save()
             return Response({
-                'message': 'Dirección creada correctamente',
-                'user': str(request.user),
-                'is_anonymous': request.user.is_anonymous,
                 'address': serializer.data
             }, status=status.HTTP_201_CREATED)
         else:

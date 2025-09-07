@@ -9,7 +9,7 @@ export interface StoreFiltersState {
 export interface UseStoreFiltersOptions {
   categories: Array<{ id: number; name: string; slug: string }>
   brands: Array<{ id: number; name: string; slug: string }>
-  products: Array<{ id: number; category: number; brand: number; gender: string; price: number; compare_price?: number }>
+  products: Array<{ id: number; category: number; brand?: number; gender?: string; price: number; compare_price?: number }>
   onFiltersChange?: (filters: StoreFiltersState) => void
   loadProducts?: (params: any, isPublicView: boolean) => Promise<void>
   pagination?: {
@@ -24,9 +24,8 @@ export const useStoreFilters = ({ categories, brands, products, onFiltersChange,
   const [filters, setFilters] = useState<Record<string, (string | number | null)[]>>({})
   const [isLoading, setIsLoading] = useState(false)
   
-  // Wrapper para setFilters con logging
+  // Wrapper para setFilters
   const setFiltersWithLog = useCallback((newFilters: Record<string, (string | number | null)[]>) => {
-    console.log('🔍 setFilters llamado:', newFilters)
     setFilters(newFilters)
   }, [])
 
@@ -56,9 +55,6 @@ export const useStoreFilters = ({ categories, brands, products, onFiltersChange,
   }
 
   const filterGroups: FilterGroup[] = useMemo(() => {
-    console.log('🔍 useStoreFilters - categories:', categories.map(c => ({ name: c.name, productCount: c.productCount })))
-    console.log('🔍 useStoreFilters - brands:', brands.map(b => ({ name: b.name, productCount: b.productCount })))
-    
     return [
       {
         id: 'category',
@@ -70,7 +66,7 @@ export const useStoreFilters = ({ categories, brands, products, onFiltersChange,
             id: `cat-${cat.id}`,
             label: cat.name,
             value: cat.id,
-            count: cat.productCount || 0
+            count: (cat as any).productCount || 0
           }))
       },
       {
@@ -83,7 +79,7 @@ export const useStoreFilters = ({ categories, brands, products, onFiltersChange,
             id: `brand-${brand.id}`,
             label: brand.name,
             value: brand.id,
-            count: brand.productCount || 0
+            count: (brand as any).productCount || 0
           }))
       },
     {
@@ -123,7 +119,6 @@ export const useStoreFilters = ({ categories, brands, products, onFiltersChange,
   const applyFiltersToAPI = useCallback(async (searchValue: string, currentFilters: Record<string, (string | number | null)[]>, page: number = 1) => {
     if (!loadProducts) return
 
-    console.log('🔍 applyFiltersToAPI called with:', { searchValue, currentFilters, page })
     setIsLoading(true)
     try {
       const apiParams: any = {
@@ -175,12 +170,9 @@ export const useStoreFilters = ({ categories, brands, products, onFiltersChange,
         apiParams.sale = true
       }
 
-      console.log('🔍 useStoreFilters - API Params:', apiParams)
-      console.log('🔍 useStoreFilters - Current Filters:', currentFilters)
-      
       await loadProducts(apiParams, true)
     } catch (error) {
-      console.error('Error applying filters:', error)
+      // Error silencioso, se maneja en el componente padre
     } finally {
       setIsLoading(false)
     }
@@ -197,13 +189,10 @@ export const useStoreFilters = ({ categories, brands, products, onFiltersChange,
   }, [filters, onFiltersChange, applyFiltersToAPI])
 
   const handleFilterChange = useCallback((groupId: string, values: (string | number | null)[]) => {
-    console.log('🔍 handleFilterChange called:', { groupId, values, currentFilters: filters })
     const newFilters = { ...filters, [groupId]: values }
-    console.log('🔍 New filters:', newFilters)
     setFilters(newFilters)
     onFiltersChange?.({ search, filters: newFilters })
     // Aplicar filtros a la API inmediatamente para filtros
-    console.log('🔍 Calling applyFiltersToAPI with:', { search, newFilters })
     applyFiltersToAPI(search, newFilters, 1)
   }, [search, filters, onFiltersChange, applyFiltersToAPI])
 

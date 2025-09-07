@@ -93,7 +93,7 @@ export const useAdminSettings = () => {
       const errorMessage = err.response?.data?.error || 'Error al cargar configuraciones'
       setError(errorMessage)
       toast.error(errorMessage)
-      console.error('Error loading admin settings:', err)
+      // Error loading admin settings
     } finally {
       setIsLoading(false)
     }
@@ -112,7 +112,7 @@ export const useAdminSettings = () => {
       const errorMessage = err.response?.data?.error || 'Error al guardar configuraciones'
       setError(errorMessage)
       toast.error(errorMessage)
-      console.error('Error saving admin settings:', err)
+      // Error saving admin settings
       throw err
     } finally {
       setIsSaving(false)
@@ -132,7 +132,7 @@ export const useAdminSettings = () => {
       const errorMessage = err.response?.data?.error || 'Error al restablecer configuraciones'
       setError(errorMessage)
       toast.error(errorMessage)
-      console.error('Error resetting admin settings:', err)
+      // Error resetting admin settings
       throw err
     } finally {
       setIsSaving(false)
@@ -145,7 +145,7 @@ export const useAdminSettings = () => {
       const response = await apiClient.get('/admin/stats/')
       setStats(response as AdminStats)
     } catch (err: any) {
-      console.error('Error loading admin stats:', err)
+      // Error loading admin stats
     }
   }, [])
 

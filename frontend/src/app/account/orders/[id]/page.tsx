@@ -143,7 +143,7 @@ export default function OrderDetailPage() {
         priority: 'medium'
       })
     } catch (error) {
-      console.error('Error al enviar reclamo:', error)
+      // Error al enviar reclamo
       toast.error('Error al enviar el reclamo. Inténtalo de nuevo.')
     } finally {
       setIsSubmittingClaim(false)

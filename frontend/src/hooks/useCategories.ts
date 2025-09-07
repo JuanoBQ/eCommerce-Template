@@ -41,7 +41,7 @@ export const useCategories = () => {
       const categoriesArray = Array.from(allCategories.values())
       setCategories(categoriesArray)
     } catch (err) {
-      console.error('Error loading categories:', err)
+      // Error loading categories
       setError('Error al cargar categorías')
       // No mostrar toast de error para evitar spam
     } finally {
@@ -57,7 +57,7 @@ export const useCategories = () => {
       setCategories(prev => [...prev, newCategory as Category])
       return newCategory
     } catch (err: any) {
-      console.error('Error creating category:', err)
+      // Error creating category
       const errorMessage = err.response?.data?.detail || 'Error al crear categoría'
       setError(errorMessage)
       toast.error(errorMessage)
@@ -75,7 +75,7 @@ export const useCategories = () => {
       setCategories(prev => prev.map(cat => cat.id === id ? (updatedCategory as Category) : cat))
       return updatedCategory
     } catch (err: any) {
-      console.error('Error updating category:', err)
+      // Error updating category
       const errorMessage = err.response?.data?.detail || 'Error al actualizar categoría'
       setError(errorMessage)
       toast.error(errorMessage)
@@ -92,7 +92,7 @@ export const useCategories = () => {
       await categoriesApi.deleteCategory(id)
       setCategories(prev => prev.filter(cat => cat.id !== id))
     } catch (err: any) {
-      console.error('Error deleting category:', err)
+      // Error deleting category
       const errorMessage = err.response?.data?.detail || 'Error al eliminar categoría'
       setError(errorMessage)
       toast.error(errorMessage)
@@ -109,7 +109,7 @@ export const useCategories = () => {
       const category = await categoriesApi.getCategory(id)
       return category
     } catch (err: any) {
-      console.error('Error getting category:', err)
+      // Error getting category
       const errorMessage = err.response?.data?.detail || 'Error al obtener categoría'
       setError(errorMessage)
       toast.error(errorMessage)

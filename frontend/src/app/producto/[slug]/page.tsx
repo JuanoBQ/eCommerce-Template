@@ -26,8 +26,8 @@ export default function ProductDetailPage() {
   const { sizes, colors } = useSizesAndColors()
   
   // Debug logs
-  console.log('🔍 Sizes in product detail:', sizes)
-  console.log('🔍 Colors in product detail:', colors)
+  // Sizes in product detail
+  // Colors in product detail
   
   const [product, setProduct] = useState<Product | null>(null)
   const [selectedImage, setSelectedImage] = useState(0)
@@ -108,16 +108,17 @@ export default function ProductDetailPage() {
         const foundProduct = products.find(p => p.slug === slug)
         
         if (foundProduct) {
-          console.log('🔍 Product found:', foundProduct)
-          console.log('🔍 Product description:', foundProduct.description)
-          console.log('🔍 Product short_description:', foundProduct.short_description)
-          console.log('🔍 Product variants:', foundProduct.variants)
+          // Product found
+          // Product description
+          // Product short_description
+          // Product variants
 
           
           // Log detallado de cada variante
           if (foundProduct.variants && foundProduct.variants.length > 0) {
             foundProduct.variants.forEach((variant, index) => {
-              console.log(`🔍 Variant ${index}:`, {
+              // Variant info
+              const variantInfo = {
                 id: variant.id,
                 sku: variant.sku,
                 size: variant.size,
@@ -125,7 +126,7 @@ export default function ProductDetailPage() {
                 size_details: variant.size_details,
                 color_details: variant.color_details,
                 inventory_quantity: variant.inventory_quantity
-              })
+              }
             })
           }
           
@@ -134,7 +135,7 @@ export default function ProductDetailPage() {
           setError('Producto no encontrado')
         }
       } catch (err) {
-        console.error('Error loading product:', err)
+        // Error loading product
         setError('Error al cargar el producto')
       }
     }
@@ -156,20 +157,21 @@ export default function ProductDetailPage() {
 
   // Obtener tallas únicas disponibles
   const getAvailableSizes = () => {
-    console.log('🔍 getAvailableSizes called')
+    // getAvailableSizes called
     if (!product?.variants) {
-      console.log('🔍 No product variants, returning empty array')
+      // No product variants, returning empty array
       return []
     }
     
-    console.log('🔍 Product variants for sizes:', product.variants)
+    // Product variants for sizes
     const sizes = new Map()
     product.variants.forEach((variant, index) => {
-      console.log(`🔍 Processing variant ${index} for sizes:`, {
+      // Processing variant for sizes
+      const variantData = {
         size_details: variant.size_details,
         inventory_quantity: variant.inventory_quantity,
         selectedColor
-      })
+      }
       
       if (variant.size_details && variant.inventory_quantity > 0) {
         // Si hay un color seleccionado, solo mostrar tallas de ese color
@@ -179,38 +181,39 @@ export default function ProductDetailPage() {
           )
           if (hasColorVariant) {
             sizes.set(variant.size, variant.size_details)
-            console.log(`🔍 Added size ${variant.size} to available sizes`)
+            // Added size to available sizes
           }
         } else {
           sizes.set(variant.size, variant.size_details)
-          console.log(`🔍 Added size ${variant.size} to available sizes (no color filter)`)
+          // Added size to available sizes (no color filter)
         }
       } else {
-        console.log(`🔍 Skipped variant ${index} - no size_details or no inventory`)
+        // Skipped variant - no size_details or no inventory
       }
     })
     
     const result = Array.from(sizes.values())
-    console.log('🔍 Available sizes result:', result)
+    // Available sizes result
     return result
   }
 
   // Obtener colores únicos disponibles
   const getAvailableColors = () => {
-    console.log('🔍 getAvailableColors called')
+    // getAvailableColors called
     if (!product?.variants) {
-      console.log('🔍 No product variants, returning empty array')
+      // No product variants, returning empty array
       return []
     }
     
-    console.log('🔍 Product variants for colors:', product.variants)
+    // Product variants for colors
     const colors = new Map()
     product.variants.forEach((variant, index) => {
-      console.log(`🔍 Processing variant ${index} for colors:`, {
+      // Processing variant for colors
+      const variantData = {
         color_details: variant.color_details,
         inventory_quantity: variant.inventory_quantity,
         selectedSize
-      })
+      }
       
       if (variant.color_details && variant.inventory_quantity > 0) {
         // Si hay una talla seleccionada, solo mostrar colores de esa talla
@@ -220,19 +223,19 @@ export default function ProductDetailPage() {
           )
           if (hasSizeVariant) {
             colors.set(variant.color, variant.color_details)
-            console.log(`🔍 Added color ${variant.color} to available colors`)
+            // Added color to available colors
           }
         } else {
           colors.set(variant.color, variant.color_details)
-          console.log(`🔍 Added color ${variant.color} to available colors (no size filter)`)
+          // Added color to available colors (no size filter)
         }
       } else {
-        console.log(`🔍 Skipped variant ${index} - no color_details or no inventory`)
+        // Skipped variant - no color_details or no inventory
       }
     })
     
     const result = Array.from(colors.values())
-    console.log('🔍 Available colors result:', result)
+    // Available colors result
     return result
   }
 
@@ -364,7 +367,7 @@ export default function ProductDetailPage() {
           url: window.location.href,
         })
       } catch (error) {
-        console.log('Error sharing:', error)
+        // Error sharing
       }
     } else {
       // Fallback: copiar URL al portapapeles
@@ -494,10 +497,10 @@ export default function ProductDetailPage() {
             {product.images && product.images.length > 0 && (
               <div className="flex items-center justify-between text-sm text-gray-600 bg-gray-50 px-3 py-2 rounded-lg">
                 <span>
-                  {product.images.length} imagen{product.images.length !== 1 ? 'es' : ''} disponible{product.images.length !== 1 ? 's' : ''}
+                  {product.images?.length || 0} imagen{(product.images?.length || 0) !== 1 ? 'es' : ''} disponible{(product.images?.length || 0) !== 1 ? 's' : ''}
                 </span>
                 <span>
-                  {selectedImage + 1} de {product.images.length}
+                  {selectedImage + 1} de {product.images?.length || 0}
                 </span>
               </div>
             )}
@@ -589,7 +592,7 @@ export default function ProductDetailPage() {
             {product.images && product.images.length > 1 && (
               <div className="flex items-center justify-between">
                 <button
-                  onClick={() => setSelectedImage(prev => prev > 0 ? prev - 1 : product.images.length - 1)}
+                  onClick={() => setSelectedImage(prev => prev > 0 ? prev - 1 : (product.images?.length || 1) - 1)}
                   className="flex items-center gap-2 px-3 py-2 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
                 >
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -598,7 +601,7 @@ export default function ProductDetailPage() {
                   Anterior
                 </button>
                 <button
-                  onClick={() => setSelectedImage(prev => prev < product.images.length - 1 ? prev + 1 : 0)}
+                  onClick={() => setSelectedImage(prev => prev < (product.images?.length || 1) - 1 ? prev + 1 : 0)}
                   className="flex items-center gap-2 px-3 py-2 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
                 >
                   Siguiente

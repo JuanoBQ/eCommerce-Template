@@ -17,8 +17,6 @@ export const useGenderCategories = (gender: 'men' | 'women' | 'unisex') => {
     setIsLoading(true)
     setError(null)
     try {
-      console.log(`Loading categories for gender: ${gender}`)
-      
       // Cargar categorías desde la API de categorías
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api'}/categories/categories/`)
       const data = await response.json()
@@ -34,13 +32,11 @@ export const useGenderCategories = (gender: 'men' | 'women' | 'unisex') => {
           (category.productCount || 0) > 0
         )
         
-        console.log(`Found ${categoriesWithProducts.length} categories with products:`, categoriesWithProducts)
         setCategories(categoriesWithProducts)
       } else {
         throw new Error('Error al cargar categorías')
       }
     } catch (err) {
-      console.error('Error loading gender categories:', err)
       setError('Error al cargar categorías')
     } finally {
       setIsLoading(false)

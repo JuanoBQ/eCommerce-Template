@@ -128,34 +128,34 @@ export function useClaims() {
     try {
       setLoading(true)
       setError(null)
-      console.log('🔍 Cargando reclamos...')
+      // Cargando reclamos
       const response = await reportsApi.getClaims()
-      console.log('📊 Respuesta de la API:', response)
+      // Respuesta de la API
       
       let claimsData = []
       
       if (response) {
         if (Array.isArray(response)) {
           claimsData = response
-          console.log('✅ Datos como array directo:', claimsData.length, 'reclamos')
+          // Datos como array directo
         } else if (response.results && Array.isArray(response.results)) {
           claimsData = response.results
-          console.log('✅ Datos en results:', claimsData.length, 'reclamos')
+          // Datos en results
         } else if ((response as any).data && Array.isArray((response as any).data)) {
           claimsData = (response as any).data
-          console.log('✅ Datos en data:', claimsData.length, 'reclamos')
+          // Datos en data
         } else {
-          console.log('❌ Estructura de datos no reconocida:', Object.keys(response))
+          // Estructura de datos no reconocida
         }
       } else {
-        console.log('❌ No hay data en la respuesta')
+        // No hay data en la respuesta
       }
       
-      console.log('📋 Claims finales:', claimsData)
+      // Claims finales
       setClaims(claimsData)
     } catch (err: any) {
-      console.error('❌ Error loading claims:', err)
-      console.error('❌ Error response:', err.response)
+      // Error loading claims
+      // Error response
       setError(err.response?.data?.detail || 'Error al cargar los reclamos')
     } finally {
       setLoading(false)
@@ -170,7 +170,7 @@ export function useClaims() {
       await loadClaims() // Recargar la lista
       return (response as any).data
     } catch (err: any) {
-      console.error('Error creating claim:', err)
+      // Error creating claim
       const errorMessage = err.response?.data?.detail || 'Error al crear el reclamo'
       setError(errorMessage)
       throw new Error(errorMessage)
@@ -185,7 +185,7 @@ export function useClaims() {
       await loadClaims() // Recargar la lista
       return (response as any).data
     } catch (err: any) {
-      console.error('Error updating claim:', err)
+      // Error updating claim
       const errorMessage = err.response?.data?.detail || 'Error al actualizar el reclamo'
       setError(errorMessage)
       throw new Error(errorMessage)
@@ -199,7 +199,7 @@ export function useClaims() {
       await reportsApi.deleteClaim(claimId)
       await loadClaims() // Recargar la lista
     } catch (err: any) {
-      console.error('Error deleting claim:', err)
+      // Error deleting claim
       const errorMessage = err.response?.data?.detail || 'Error al eliminar el reclamo'
       setError(errorMessage)
       throw new Error(errorMessage)
@@ -213,7 +213,7 @@ export function useClaims() {
       const response = await reportsApi.getClaim(claimId)
       return (response as any).data
     } catch (err: any) {
-      console.error('Error getting claim:', err)
+      // Error getting claim
       const errorMessage = err.response?.data?.detail || 'Error al obtener el reclamo'
       setError(errorMessage)
       throw new Error(errorMessage)
@@ -248,13 +248,13 @@ export function useClaimsReport() {
     try {
       setLoading(true)
       setError(null)
-      console.log('🔍 Loading claims report...')
+      // Loading claims report
       const data = await reportsApi.getClaimsReport()
-      console.log('🔍 Claims report data:', data)
+      // Claims report data
       setReport(data as ClaimsReport)
     } catch (err: any) {
-      console.error('Error loading claims report:', err)
-      console.error('Error details:', err.response)
+      // Error loading claims report
+      // Error details
       setError(err.response?.data?.detail || 'Error al cargar el reporte de reclamos')
     } finally {
       setLoading(false)
@@ -282,14 +282,14 @@ export function useReviewsReport() {
     try {
       setLoading(true)
       setError(null)
-      console.log('🔍 Loading reviews report...')
+      // Loading reviews report
       
       // Usar el apiClient configurado
       const data = await apiClient.get('/reports/reviews/')
-      console.log('🔍 Reviews report data:', data)
+      // Reviews report data
       setReport(data as ReviewsReport)
     } catch (err: any) {
-      console.error('❌ Error loading reviews report:', err)
+      // Error loading reviews report
       setError(err.response?.data?.detail || err.message || 'Error al cargar el reporte de reviews')
     } finally {
       setLoading(false)

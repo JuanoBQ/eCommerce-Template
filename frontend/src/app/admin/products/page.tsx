@@ -44,7 +44,7 @@ export default function ProductsPage() {
           const stats = await loadCategoryStats()
           setCategoryStats(stats)
         } catch (error) {
-          console.error('Error loading category stats:', error)
+          // Error loading category stats
         } finally {
           setLoadingStats(false)
         }

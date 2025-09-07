@@ -133,7 +133,7 @@ export default function AdminOrderDetailPage() {
       const updatedOrder = await loadOrderDetails(order.id)
       setOrder(updatedOrder as Order)
     } catch (error) {
-      console.error('Error updating order status:', error)
+      // Error updating order status
     } finally {
       setIsUpdating(false)
     }

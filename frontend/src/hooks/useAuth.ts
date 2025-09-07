@@ -45,7 +45,6 @@ export const useAuth = () => {
   useEffect(() => {
     const handleStorageChange = (e: StorageEvent) => {
       if (e.key === 'access_token') {
-        console.log('🔄 Token cambió en otra pestaña, verificando autenticación...')
         checkAuthStatus()
       }
     }
@@ -54,21 +53,15 @@ export const useAuth = () => {
     return () => window.removeEventListener('storage', handleStorageChange)
   }, [])
 
-  // Debug: Log auth state changes (usando useRef para evitar bucles)
+  // Track auth state changes for debugging (removed console logs)
   const prevAuthState = useRef<{ user: string | null; isLoading: boolean }>({ user: null, isLoading: true })
   
   useEffect(() => {
     const currentState = { user: authState.user?.first_name || null, isLoading: authState.isLoading }
     const prevState = prevAuthState.current
     
-    // Solo loggear si realmente cambió algo
+    // Update ref if state changed
     if (prevState.user !== currentState.user || prevState.isLoading !== currentState.isLoading) {
-      console.log('🔄 Auth state changed:', { 
-        isAuthenticated: authState.isAuthenticated, 
-        user: currentState.user, 
-        isLoading: currentState.isLoading,
-        hasUser: !!authState.user 
-      })
       prevAuthState.current = currentState
     }
   })
@@ -81,11 +74,8 @@ export const useAuth = () => {
         return
       }
 
-      console.log('🔍 Verificando autenticación...')
-
       // Get user profile to verify token
       const userData = await usersApi.getProfile() as any
-      console.log('✅ Usuario autenticado:', userData)
       const user = userData as User
 
       setAuthState({
@@ -95,7 +85,6 @@ export const useAuth = () => {
         error: null,
       })
     } catch (error) {
-      console.error('❌ Auth check failed:', error)
       localStorage.removeItem('access_token')
       localStorage.removeItem('refresh_token')
       setAuthState({
@@ -130,7 +119,7 @@ export const useAuth = () => {
 
   const login = useCallback(async (credentials: LoginCredentials) => {
     try {
-      console.log('🚀 Iniciando proceso de login...')
+      // Iniciando proceso de login
       setAuthState(prev => ({ ...prev, isLoading: true, error: null }))
 
       const response = await authApi.login(credentials.email, credentials.password) as any
@@ -139,20 +128,20 @@ export const useAuth = () => {
       if (response?.access_token && response?.refresh_token) {
         localStorage.setItem('access_token', response.access_token)
         localStorage.setItem('refresh_token', response.refresh_token)
-        console.log('🔑 Tokens guardados (access_token/refresh_token)')
+        // Tokens guardados
       } else if (response?.access && response?.refresh) {
         localStorage.setItem('access_token', response.access)
         localStorage.setItem('refresh_token', response.refresh)
-        console.log('🔑 Tokens guardados (access/refresh)')
+        // Tokens guardados
       } else {
-        console.error('❌ Respuesta de login inválida:', response)
+        // Respuesta de login inválida
         throw new Error('Invalid login response')
       }
 
       // Get user profile
-      console.log('👤 Obteniendo perfil de usuario...')
+      // Obteniendo perfil de usuario
       const userData = await usersApi.getProfile() as any
-      console.log('✅ Perfil obtenido:', userData)
+      // Perfil obtenido
       const user = userData as User
 
       // Actualizar estado de autenticación
@@ -163,10 +152,10 @@ export const useAuth = () => {
         error: null,
       })
 
-      console.log('✅ Login completado exitosamente')
+      // Login completado exitosamente
       return { success: true }
     } catch (error: any) {
-      console.error('❌ Login error:', error)
+      // Login error
       const errorMessage = error.response?.data?.detail ||
                           error.response?.data?.non_field_errors?.[0] ||
                           error.response?.data?.email?.[0] ||
@@ -186,17 +175,17 @@ export const useAuth = () => {
 
   // Función para forzar actualización del estado después del login
   const forceAuthUpdate = useCallback(async () => {
-    console.log('🔄 Forzando actualización del estado de autenticación...')
+    // Forzando actualización del estado de autenticación
     await checkAuthStatus()
   }, [checkAuthStatus])
 
   // Función para refrescar el estado inmediatamente (útil después de login)
   const refreshAuthState = useCallback(async () => {
-    console.log('🔄 Refrescando estado de autenticación inmediatamente...')
+    // Refrescando estado de autenticación inmediatamente
     try {
       const token = localStorage.getItem('access_token')
       if (!token) {
-        console.log('❌ No hay token, estableciendo estado no autenticado')
+        // No hay token, estableciendo estado no autenticado
         setAuthState({
           user: null,
           isAuthenticated: false,
@@ -207,11 +196,11 @@ export const useAuth = () => {
       }
 
       // Obtener perfil inmediatamente
-      console.log('👤 Obteniendo perfil para refresh...')
+      // Obteniendo perfil para refresh
       const userData = await usersApi.getProfile() as any
       const user = userData as User
 
-      console.log('✅ Perfil obtenido para refresh:', user?.first_name)
+      // Perfil obtenido para refresh
 
       setAuthState({
         user,
@@ -220,9 +209,9 @@ export const useAuth = () => {
         error: null,
       })
 
-      console.log('✅ Estado refrescado exitosamente - isAuthenticated: true, user:', user?.first_name)
+      // Estado refrescado exitosamente
     } catch (error) {
-      console.error('❌ Error al refrescar estado:', error)
+      // Error al refrescar estado
       setAuthState({
         user: null,
         isAuthenticated: false,
@@ -254,7 +243,7 @@ export const useAuth = () => {
 
       return { success: true, message: 'Cuenta creada exitosamente. Revisa tu correo para verificar tu cuenta.' }
     } catch (error: any) {
-      console.error('Register error:', error)
+      // Register error
 
       const errorMessage = error.response?.data?.detail ||
                           error.response?.data?.email?.[0] ||
@@ -282,7 +271,7 @@ export const useAuth = () => {
       // Try to logout from server first
       await authApi.logout()
     } catch (error) {
-      console.error('Server logout error:', error)
+      // Server logout error
       // Continue with client-side logout even if server logout fails
     }
 
@@ -302,14 +291,14 @@ export const useAuth = () => {
   }, [router])
 
   const updateProfile = useCallback(async (data: Partial<User>) => {
-    console.log('🔄 Iniciando actualización de perfil...')
-    console.log('📊 Datos a enviar:', data)
+    // Iniciando actualización de perfil
+    // Datos a enviar
 
     try {
       setAuthState(prev => ({ ...prev, isLoading: true, error: null }))
 
       const updatedUserData = await usersApi.updateProfile(data) as any
-      console.log('📥 Respuesta del backend:', updatedUserData)
+      // Respuesta del backend
 
       const updatedUser = updatedUserData as User
 
@@ -320,12 +309,12 @@ export const useAuth = () => {
         error: null,
       }))
 
-      console.log('✅ Estado actualizado correctamente')
+      // Estado actualizado correctamente
       return updatedUserData
     } catch (error: any) {
-      console.error('❌ Error en updateProfile:', error)
-      console.error('❌ Status code:', error.response?.status)
-      console.error('❌ Error data:', error.response?.data)
+      // Error en updateProfile
+      // Status code
+      // Error data
 
       const errorMessage = error.response?.data?.detail ||
                           error.response?.data?.non_field_errors?.[0] ||
@@ -385,7 +374,7 @@ export const useAuth = () => {
 
       return response.access
     } catch (error) {
-      console.error('Token refresh failed:', error)
+      // Token refresh failed
       localStorage.removeItem('access_token')
       localStorage.removeItem('refresh_token')
       setAuthState({

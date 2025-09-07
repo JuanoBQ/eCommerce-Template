@@ -62,7 +62,7 @@ export default function UsersPage() {
       try {
         await deleteUser(userId)
       } catch (error) {
-        console.error('Error al eliminar usuario:', error)
+        // Error al eliminar usuario
       }
     }
   }
@@ -118,7 +118,7 @@ export default function UsersPage() {
       try {
         await toggleUserStatus(userId, !currentStatus)
       } catch (error) {
-        console.error('Error al cambiar estado del usuario:', error)
+        // Error al cambiar estado del usuario
       }
     }
   }
@@ -129,7 +129,7 @@ export default function UsersPage() {
       try {
         await toggleUserRole(userId, !currentRole)
       } catch (error) {
-        console.error('Error al cambiar rol del usuario:', error)
+        // Error al cambiar rol del usuario
       }
     }
   }
@@ -165,7 +165,7 @@ export default function UsersPage() {
         is_active: true
       })
     } catch (error) {
-      console.error('Error al crear usuario:', error)
+      // Error al crear usuario
     }
   }
 
@@ -492,7 +492,16 @@ export default function UsersPage() {
                   </div>
 
                   <div>
-                    <label className="text-gray-600 text-sm">Avatar</label>
+                    
+
+
+
+
+
+
+
+
+                    
                     <p className="text-gray-900">{selectedUser.avatar ? 'Tiene avatar' : 'Sin avatar'}</p>
                   </div>
                 </div>

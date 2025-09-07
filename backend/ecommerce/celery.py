@@ -11,4 +11,5 @@ app.autodiscover_tasks()
 
 @app.task(bind=True)
 def debug_task(self):
+    # Request info
     print(f'Request: {self.request!r}')

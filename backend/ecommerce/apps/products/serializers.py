@@ -255,12 +255,14 @@ class ProductCreateUpdateSerializer(serializers.ModelSerializer):
     )
     
     def is_valid(self, raise_exception=False):
-        print("🔍 ProductCreateUpdateSerializer.is_valid - data:", self.initial_data)
+        # ProductCreateUpdateSerializer.is_valid - data
         is_valid = super().is_valid(raise_exception=raise_exception)
         if not is_valid:
-            print("❌ Validation errors:", self.errors)
+            # Validation errors
+            pass
         else:
-            print("✅ Validation successful")
+            # Validation successful
+            pass
         return is_valid
     
     class Meta:
@@ -277,19 +279,20 @@ class ProductCreateUpdateSerializer(serializers.ModelSerializer):
         }
     
     def is_valid(self, raise_exception=False):
-        print("🔍 ProductCreateUpdateSerializer.is_valid - data:", self.initial_data)
+        # ProductCreateUpdateSerializer.is_valid - data
         result = super().is_valid(raise_exception=raise_exception)
         if not result:
-            print("❌ Validation errors:", self.errors)
+            # Validation errors
+            pass
         return result
     
     def create(self, validated_data):
-        print("🔍 ProductCreateUpdateSerializer.create - validated_data:", validated_data)
-        print("🔍 Validated data keys:", list(validated_data.keys()))
+        # ProductCreateUpdateSerializer.create - validated_data
+        # Validated data keys
         images_data = validated_data.pop('images', [])
         variants_data = validated_data.pop('variants', [])
-        print("🔍 Images data:", images_data)
-        print("🔍 Variants data:", variants_data)
+        # Images data
+        # Variants data
         
         # Generar SKU único para el producto si no se proporciona o si ya existe
         if 'sku' not in validated_data or not validated_data['sku']:
@@ -299,9 +302,10 @@ class ProductCreateUpdateSerializer(serializers.ModelSerializer):
             if Product.objects.filter(sku=validated_data['sku']).exists():
                 validated_data['sku'] = self.generate_product_sku(validated_data)
         
-        print("🔍 Creating product with data:", validated_data)
+        # Creating product with data
         product = Product.objects.create(**validated_data)
-        print("✅ Product created successfully:", product.id)
+        # Product created successfully
+        pass
         
         # Crear imágenes
         for image_data in images_data:
@@ -417,7 +421,7 @@ class ProductCreateUpdateSerializer(serializers.ModelSerializer):
         
         # Actualizar variantes si se proporcionan
         if variants_data:
-            print(f"🔍 Actualizando variantes: {variants_data}")
+            # Actualizando variantes
             existing_variant_ids = []
             
             for variant_data in variants_data:

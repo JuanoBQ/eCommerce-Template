@@ -50,18 +50,24 @@ export const useAddresses = () => {
     try {
       setIsLoading(true)
       setError(null)
-      console.log('🔍 Cargando direcciones...')
       
       const response = await apiClient.get('/users/simple-addresses/') as { addresses: UserAddress[] }
-      console.log('📊 Respuesta de direcciones:', response)
-      console.log('📊 Direcciones encontradas:', response.addresses?.length || 0)
       
       setAddresses(response.addresses || [])
-      console.log('✅ Direcciones cargadas en el estado')
     } catch (err: any) {
-      console.error('❌ Error al cargar direcciones:', err)
-      setError(err.response?.data?.detail || 'Error al cargar direcciones')
-      toast.error('Error al cargar direcciones')
+      const errorMessage = err.response?.data?.detail || 'Error al cargar direcciones'
+      setError(errorMessage)
+      
+      // Si es un error 401, el usuario no está autenticado
+      if (err.response?.status === 401) {
+        toast.error('Sesión expirada. Por favor, inicia sesión nuevamente.')
+        // Opcional: redirigir al login
+        if (typeof window !== 'undefined') {
+          window.location.href = '/auth/login'
+        }
+      } else {
+        toast.error(errorMessage)
+      }
     } finally {
       setIsLoading(false)
     }
@@ -115,7 +121,7 @@ export const useAddresses = () => {
   // Marcar como predeterminada
   const setDefaultAddress = useCallback(async (id: number): Promise<void> => {
     try {
-      console.log('⭐ Marcando dirección como predeterminada:', id)
+      // Marcando dirección como predeterminada
       
       await apiClient.post(`/users/addresses/${id}/set_default/`)
       
@@ -126,9 +132,9 @@ export const useAddresses = () => {
       })))
       
       toast.success('Dirección predeterminada actualizada')
-      console.log('✅ Dirección predeterminada actualizada')
+      // Dirección predeterminada actualizada
     } catch (err: any) {
-      console.error('❌ Error al marcar dirección como predeterminada:', err)
+      // Error al marcar dirección como predeterminada
       const errorMessage = err.response?.data?.detail || 'Error al actualizar la dirección predeterminada'
       
       toast.error(errorMessage)
@@ -139,7 +145,7 @@ export const useAddresses = () => {
   // Actualizar dirección
   const updateAddress = useCallback(async (data: UpdateAddressData): Promise<UserAddress> => {
     try {
-      console.log('📤 Actualizando dirección:', data)
+      // Actualizando dirección
       
       const { id, ...updateData } = data
       const response = await apiClient.patch(`/users/addresses/${id}/`, updateData) as UserAddress
@@ -160,11 +166,11 @@ export const useAddresses = () => {
       })
       
       toast.success('Dirección actualizada exitosamente')
-      console.log('✅ Dirección actualizada:', response)
+      // Dirección actualizada
       
       return response
     } catch (err: any) {
-      console.error('❌ Error al actualizar dirección:', err)
+      // Error al actualizar dirección
       const errorMessage = err.response?.data?.detail || 
                           err.response?.data?.title?.[0] ||
                           err.response?.data?.first_name?.[0] ||
@@ -184,7 +190,7 @@ export const useAddresses = () => {
   // Eliminar dirección
   const deleteAddress = useCallback(async (id: number): Promise<void> => {
     try {
-      console.log('🗑️ Eliminando dirección:', id)
+      // Eliminando dirección
       
       // Verificar si la dirección a eliminar es la predeterminada
       const addressToDelete = addresses.find(addr => addr.id === id)
@@ -215,19 +221,19 @@ export const useAddresses = () => {
           const firstRemainingAddress = remainingAddresses[0]
           if (firstRemainingAddress && firstRemainingAddress.id) {
             try {
-              console.log('🔄 Actualizando dirección predeterminada en backend:', firstRemainingAddress.id)
+              // Actualizando dirección predeterminada en backend
               await setDefaultAddress(firstRemainingAddress.id)
             } catch (err) {
-              console.warn('No se pudo actualizar la dirección predeterminada automáticamente:', err)
+              // No se pudo actualizar la dirección predeterminada automáticamente
             }
           }
         }
       }
       
       toast.success('Dirección eliminada exitosamente')
-      console.log('✅ Dirección eliminada')
+      // Dirección eliminada
     } catch (err: any) {
-      console.error('❌ Error al eliminar dirección:', err)
+      // Error al eliminar dirección
       const errorMessage = err.response?.data?.detail || 'Error al eliminar la dirección'
       
       toast.error(errorMessage)
@@ -238,19 +244,19 @@ export const useAddresses = () => {
   // Obtener dirección predeterminada
   const getDefaultAddress = useCallback(async (): Promise<UserAddress | null> => {
     try {
-      console.log('🔍 Obteniendo dirección predeterminada...')
+      // Obteniendo dirección predeterminada
       
       const response = await apiClient.get('/users/addresses/default/') as UserAddress
-      console.log('✅ Dirección predeterminada obtenida:', response)
+      // Dirección predeterminada obtenida
       
       return response
     } catch (err: any) {
       if (err.response?.status === 404) {
-        console.log('ℹ️ No hay dirección predeterminada')
+        // No hay dirección predeterminada
         return null
       }
       
-      console.error('❌ Error al obtener dirección predeterminada:', err)
+      // Error al obtener dirección predeterminada
       throw err
     }
   }, [])

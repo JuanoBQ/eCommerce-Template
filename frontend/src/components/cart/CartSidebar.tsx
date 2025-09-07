@@ -25,7 +25,7 @@ export default function CartSidebar({ isOpen, onClose }: CartSidebarProps) {
   const [isUpdating, setIsUpdating] = useState<number | null>(null)
 
   // Debug: Log cart data in sidebar (commented out for production)
-  // console.log('CartSidebar data:', { items: items.length, totalItems, totalPrice })
+  // CartSidebar data tracking
 
 
 

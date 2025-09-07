@@ -52,7 +52,7 @@ export default function CategoriesPage() {
         loadBrands()
       ])
     } catch (error) {
-      console.error('Error loading data:', error)
+      // Error loading data
       toast.error('Error al cargar datos')
     } finally {
       setIsLoading(false)
@@ -74,7 +74,7 @@ export default function CategoriesPage() {
       )
       setProductCounts(counts)
     } catch (error) {
-      console.error('Error loading product counts:', error)
+      // Error loading product counts
     } finally {
       setLoadingCounts(false)
     }
@@ -149,7 +149,7 @@ export default function CategoriesPage() {
       setShowCreateForm(false)
       toast.success('Categoría creada exitosamente')
     } catch (error) {
-      console.error('Error creating category:', error)
+      // Error creating category
       toast.error('Error al crear categoría')
     }
   }
@@ -164,7 +164,7 @@ export default function CategoriesPage() {
       setCategoryFormData({ name: '', description: '', is_active: true, sort_order: 0 })
       toast.success('Categoría actualizada exitosamente')
     } catch (error) {
-      console.error('Error updating category:', error)
+      // Error updating category
       toast.error('Error al actualizar categoría')
     }
   }
@@ -176,7 +176,7 @@ export default function CategoriesPage() {
       await deleteCategory(id)
       toast.success('Categoría eliminada exitosamente')
     } catch (error) {
-      console.error('Error deleting category:', error)
+      // Error deleting category
       toast.error('Error al eliminar categoría')
     }
   }
@@ -204,7 +204,7 @@ export default function CategoriesPage() {
       setShowBrandForm(false)
       toast.success('Marca creada exitosamente')
     } catch (error) {
-      console.error('Error creating brand:', error)
+      // Error creating brand
       toast.error('Error al crear marca')
     }
   }
@@ -219,7 +219,7 @@ export default function CategoriesPage() {
       setBrandFormData({ name: '', description: '', website: '', is_active: true, sort_order: 0, slug: '' })
       toast.success('Marca actualizada exitosamente')
     } catch (error) {
-      console.error('Error updating brand:', error)
+      // Error updating brand
       toast.error('Error al actualizar marca')
     }
   }
@@ -231,7 +231,7 @@ export default function CategoriesPage() {
       await deleteBrand(id)
       toast.success('Marca eliminada exitosamente')
     } catch (error) {
-      console.error('Error deleting brand:', error)
+      // Error deleting brand
       toast.error('Error al eliminar marca')
     }
   }
@@ -257,7 +257,7 @@ export default function CategoriesPage() {
       setShowSizeForm(false)
       toast.success('Talla creada exitosamente')
     } catch (error) {
-      console.error('Error creating size:', error)
+      // Error creating size
       toast.error('Error al crear talla')
     }
   }
@@ -272,7 +272,7 @@ export default function CategoriesPage() {
       setSizeFormData({ name: '', type: 'clothing', sort_order: 0, is_active: true })
       toast.success('Talla actualizada exitosamente')
     } catch (error) {
-      console.error('Error updating size:', error)
+      // Error updating size
       toast.error('Error al actualizar talla')
     }
   }
@@ -284,7 +284,7 @@ export default function CategoriesPage() {
       await deleteSize(id)
       toast.success('Talla eliminada exitosamente')
     } catch (error) {
-      console.error('Error deleting size:', error)
+      // Error deleting size
       toast.error('Error al eliminar talla')
     }
   }
@@ -308,7 +308,7 @@ export default function CategoriesPage() {
       setShowColorForm(false)
       toast.success('Color creado exitosamente')
     } catch (error) {
-      console.error('Error creating color:', error)
+      // Error creating color
       toast.error('Error al crear color')
     }
   }
@@ -323,7 +323,7 @@ export default function CategoriesPage() {
       setColorFormData({ name: '', hex_code: '#000000', is_active: true })
       toast.success('Color actualizado exitosamente')
     } catch (error) {
-      console.error('Error updating color:', error)
+      // Error updating color
       toast.error('Error al actualizar color')
     }
   }
@@ -335,7 +335,7 @@ export default function CategoriesPage() {
       await deleteColor(id)
       // El alert de éxito se muestra desde el hook useSizesAndColors
     } catch (error) {
-      console.error('Error deleting color:', error)
+      // Error deleting color
       toast.error('Error al eliminar color')
     }
   }

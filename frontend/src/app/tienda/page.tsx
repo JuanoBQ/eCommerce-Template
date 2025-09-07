@@ -121,7 +121,7 @@ function TiendaContent() {
     loadProducts,
     pagination,
     onFiltersChange: (newFilters) => {
-      console.log('🔍 useStoreFilters - onFiltersChange called:', newFilters)
+      // Manejar cambio de filtros
     }
   })
 
@@ -151,11 +151,7 @@ function TiendaContent() {
     const saleParam = searchParams.get('sale') === 'true'
     const clearFiltersParam = searchParams.get('clear_filters')
     
-    console.log('🔍 Navegación detectada:', { 
-      gender: genderParam, 
-      category: categoryParam, 
-      clearFilters: clearFiltersParam 
-    })
+    // Manejar navegación desde la navbar
     
     // Si debe limpiar filtros, limpiar búsqueda y resetear filtros existentes
     if (clearFiltersParam === 'true') {
@@ -174,11 +170,8 @@ function TiendaContent() {
     
     // Aplicar filtro de género si existe
     if (genderParam) {
-      // Mapear género de la URL al estado interno
-      const mappedGender = genderParam === 'masculino' ? 'men' : 
-                          genderParam === 'femenino' ? 'women' : 
-                          genderParam
-      newFilters.gender = [mappedGender]
+      // genderParam ya está mapeado correctamente
+      newFilters.gender = [genderParam]
       hasFilters = true
     }
     
@@ -234,7 +227,6 @@ function TiendaContent() {
     
     // Aplicar filtros si hay alguno
     if (hasFilters) {
-      console.log('🔍 Aplicando filtros:', newFilters)
       setFilters(newFilters)
       applyFiltersToAPI(searchParam || '', newFilters, 1)
     }

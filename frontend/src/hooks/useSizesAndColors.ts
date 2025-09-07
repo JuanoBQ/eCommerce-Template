@@ -57,7 +57,7 @@ export const useSizesAndColors = () => {
   ]
 
   const loadSizes = useCallback(async () => {
-    console.log('🔍 Loading sizes from API...')
+    // Loading sizes from API
     setIsLoading(true)
     setError(null)
     try {
@@ -68,9 +68,9 @@ export const useSizesAndColors = () => {
         categoriesApi.getSizes('accessories')
       ])
       
-      console.log('🔍 Clothing sizes response:', clothingRes)
-      console.log('🔍 Shoes sizes response:', shoesRes)
-      console.log('🔍 Accessories sizes response:', accessoriesRes)
+      // Clothing sizes response
+      // Shoes sizes response
+      // Accessories sizes response
       
       const allSizes = [
         ...(clothingRes.results || clothingRes || []),
@@ -78,10 +78,10 @@ export const useSizesAndColors = () => {
         ...(accessoriesRes.results || accessoriesRes || [])
       ]
       
-      console.log('🔍 All sizes combined:', allSizes)
+      // All sizes combined
       setSizes(allSizes)
     } catch (err) {
-      console.error('Error loading sizes, using mock data:', err)
+      // Error loading sizes, using mock data
       // Usar datos mock como fallback
       setSizes(mockSizes)
     } finally {
@@ -90,15 +90,15 @@ export const useSizesAndColors = () => {
   }, [])
 
   const loadColors = useCallback(async () => {
-    console.log('🔍 Loading colors from API...')
+    // Loading colors from API
     setIsLoading(true)
     setError(null)
     try {
       const response = await categoriesApi.getColors()
-      console.log('🔍 Colors response:', response)
+      // Colors response
       setColors(response.results || response)
     } catch (err) {
-      console.error('Error loading colors, using mock data:', err)
+      // Error loading colors, using mock data
       // Usar datos mock como fallback
       setColors(mockColors)
     } finally {
@@ -113,7 +113,7 @@ export const useSizesAndColors = () => {
       toast.success('Talla creada exitosamente')
       return newSize
     } catch (err: any) {
-      console.error('Error creating size:', err)
+      // Error creating size
       const errorMessage = err.response?.data?.detail || 'Error al crear talla'
       toast.error(errorMessage)
       throw err
@@ -129,7 +129,7 @@ export const useSizesAndColors = () => {
       toast.success('Talla actualizada exitosamente')
       return updatedSize
     } catch (err: any) {
-      console.error('Error updating size:', err)
+      // Error updating size
       const errorMessage = err.response?.data?.detail || 'Error al actualizar talla'
       toast.error(errorMessage)
       throw err
@@ -142,7 +142,7 @@ export const useSizesAndColors = () => {
       setSizes(prev => prev.filter(size => size.id !== id))
       toast.success('Talla eliminada exitosamente')
     } catch (err: any) {
-      console.error('Error deleting size:', err)
+      // Error deleting size
       const errorMessage = err.response?.data?.detail || 'Error al eliminar talla'
       toast.error(errorMessage)
       throw err
@@ -156,7 +156,7 @@ export const useSizesAndColors = () => {
       toast.success('Color creado exitosamente')
       return newColor
     } catch (err: any) {
-      console.error('Error creating color:', err)
+      // Error creating color
       const errorMessage = err.response?.data?.detail || 'Error al crear color'
       toast.error(errorMessage)
       throw err
@@ -172,7 +172,7 @@ export const useSizesAndColors = () => {
       toast.success('Color actualizado exitosamente')
       return updatedColor
     } catch (err: any) {
-      console.error('Error updating color:', err)
+      // Error updating color
       const errorMessage = err.response?.data?.detail || 'Error al actualizar color'
       toast.error(errorMessage)
       throw err
@@ -185,7 +185,7 @@ export const useSizesAndColors = () => {
       setColors(prev => prev.filter(color => color.id !== id))
       toast.success('Color eliminado exitosamente')
     } catch (err: any) {
-      console.error('Error deleting color:', err)
+      // Error deleting color
       const errorMessage = err.response?.data?.detail || 'Error al eliminar color'
       toast.error(errorMessage)
       throw err

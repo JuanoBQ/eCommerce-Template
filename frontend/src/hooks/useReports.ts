@@ -50,26 +50,27 @@ export function useReports(dateRange: string = '30') {
     try {
       setLoading(true)
       setError(null)
-      console.log('🔄 Cargando reporte del dashboard...')
+      // Cargando reporte del dashboard
       
       // Usar el apiClient configurado
       const data = await apiClient.get(`/reports/dashboard/?days=${dateRange}`)
-      console.log('📊 Datos del API:', data)
-      console.log('📊 Tipo de datos:', typeof data)
+      // Datos del API
+      // Tipo de datos
       
       if (!data) {
         throw new Error('No se recibieron datos del servidor')
       }
       
-      console.log('📊 Estructura de datos:', {
-        summary: data.summary,
-        monthly_data: data.monthly_data,
-        top_products: data.top_products,
-        top_customers: data.top_customers
-      })
-      setReport(data)
+      // Estructura de datos
+      const reportData = {
+        summary: (data as any).summary,
+        monthly_data: (data as any).monthly_data,
+        top_products: (data as any).top_products,
+        top_customers: (data as any).top_customers
+      }
+      setReport(data as any)
     } catch (err: any) {
-      console.error('❌ Error loading dashboard report:', err)
+      // Error loading dashboard report
       setError(err.response?.data?.detail || err.message || 'Error al cargar el reporte')
     } finally {
       setLoading(false)

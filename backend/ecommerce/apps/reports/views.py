@@ -107,8 +107,8 @@ def dashboard_report(request):
     except Exception as e:
         import traceback
         error_details = traceback.format_exc()
-        print(f"Error en dashboard_report: {str(e)}")
-        print(f"Traceback: {error_details}")
+        # Error en dashboard_report
+        # Traceback details
         return Response(
             {'error': f'Error al generar reporte: {str(e)}', 'details': error_details},
             status=status.HTTP_500_INTERNAL_SERVER_ERROR

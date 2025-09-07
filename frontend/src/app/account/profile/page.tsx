@@ -118,17 +118,17 @@ export default function ProfilePage() {
 
     // Limpiar datos antes de enviar
     const cleanedData = cleanFormData(formData)
-    console.log('📤 Datos originales:', formData)
-    console.log('🧹 Datos limpiados:', cleanedData)
+    // Datos originales
+    // Datos limpiados
 
     try {
       const result = await updateProfile(cleanedData)
-      console.log('✅ Perfil actualizado:', result)
+      // Perfil actualizado
       setIsEditing(false)
       toast.success('Perfil actualizado exitosamente')
     } catch (error: any) {
-      console.error('❌ Error al actualizar perfil:', error)
-      console.error('❌ Detalles del error:', error.response?.data)
+      // Error al actualizar perfil
+      // Detalles del error
 
       // Función para extraer el primer error de validación
       const getValidationError = (errorData: any): string => {
@@ -242,11 +242,12 @@ export default function ProfilePage() {
     }
 
     try {
-      console.log('Cambiando contraseña...', {
+      // Cambiando contraseña
+      const passwordChangeData = {
         old_password: passwordData.current_password,
         new_password: passwordData.new_password,
         new_password_confirm: passwordData.confirm_password
-      })
+      }
       
       // Llamar a la API real para cambiar la contraseña
       await changePassword({
@@ -263,7 +264,7 @@ export default function ProfilePage() {
       })
       setShowPasswordChange(false)
     } catch (error: any) {
-      console.error('Error al cambiar contraseña:', error)
+      // Error al cambiar contraseña
       const errorMessage = error.response?.data?.detail || 
                           error.response?.data?.old_password?.[0] ||
                           error.response?.data?.new_password?.[0] ||

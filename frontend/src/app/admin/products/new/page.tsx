@@ -168,12 +168,13 @@ export default function NewProductPage() {
 
     try {
       // Debug: Log form data before sending
-      console.log('🔍 Form data before sending:', {
+      // Form data before sending
+      const debugData = {
         description: formData.description,
         short_description: formData.short_description,
         hasDescription: !!formData.description,
         descriptionLength: formData.description?.length || 0
-      })
+      }
 
       // Prepare product data for API
       const productData = {
@@ -208,7 +209,7 @@ export default function NewProductPage() {
       }
 
       // Create the product
-      console.log('📦 Datos del producto a enviar:', productData)
+      // Datos del producto a enviar
       const newProduct = await createProduct(productData) as any
       
       // Upload images if any
@@ -220,7 +221,7 @@ export default function NewProductPage() {
               setUploadProgress(prev => ({ ...prev, [i]: progress }))
             })
           } catch (error) {
-            console.error(`Error uploading image ${i + 1}:`, error)
+            // Error uploading image
           }
         }
       }
@@ -235,9 +236,9 @@ export default function NewProductPage() {
           // if (variant.image && createdVariant) {
           //   try {
           //     await uploadVariantImage(createdVariant.id, variant.image)
-          //     console.log(`✅ Imagen de variante ${i + 1} subida correctamente`)
+          //     // Imagen de variante subida correctamente
           //   } catch (error) {
-          //     console.error(`Error uploading variant image ${i + 1}:`, error)
+          //     // Error uploading variant image
           //   }
           // }
         }
@@ -245,7 +246,7 @@ export default function NewProductPage() {
       
       router.push('/admin/products')
     } catch (error) {
-      console.error('Error creating product:', error)
+      // Error creating product
     }
   }
 

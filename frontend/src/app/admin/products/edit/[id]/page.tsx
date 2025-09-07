@@ -174,7 +174,7 @@ export default function EditProductPage() {
         variants: existingVariants
       })
     } catch (error) {
-      console.error('Error loading product:', error)
+      // Error loading product
       toast.error('Error al cargar el producto')
       router.push('/admin/products')
     } finally {
@@ -261,12 +261,13 @@ export default function EditProductPage() {
       setIsSaving(true)
 
       // Debug: Log form data before sending
-      console.log('🔍 Edit form data before sending:', {
+      // Edit form data before sending
+      const debugData = {
         description: formData.description,
         short_description: formData.short_description,
         hasDescription: !!formData.description,
         descriptionLength: formData.description?.length || 0
-      })
+      }
 
       // Prepare product data for API
       const productData = {
@@ -315,7 +316,7 @@ export default function EditProductPage() {
           try {
             await updateProduct(parseInt(productId), { images: [file] })
           } catch (error) {
-            console.error('Error uploading image:', error)
+            // Error uploading image
             toast.error(`Error al subir imagen ${i + 1}`)
           }
         }
@@ -327,7 +328,7 @@ export default function EditProductPage() {
       toast.success('Producto actualizado exitosamente')
       router.push('/admin/products')
     } catch (error: any) {
-      console.error('Error updating product:', error)
+      // Error updating product
       const errorMessage = error.response?.data?.detail || 'Error al actualizar el producto'
       toast.error(errorMessage)
     } finally {

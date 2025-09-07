@@ -250,20 +250,20 @@ export const StoreFilters: React.FC<StoreFiltersProps> = ({
   }, [])
 
   const handleFilterToggle = useCallback((groupId: string, value: string | number | null) => {
-    console.log('🔍 handleFilterToggle called:', { groupId, value, activeFilters })
+    // handleFilterToggle called
     const group = filterGroups.find(g => g.id === groupId)
     if (!group) return
 
     const currentValues = activeFilters[groupId] || []
     
     if (group.type === 'single') {
-      console.log('🔍 Single filter - calling onFilterChange with:', [value])
+      // Single filter - calling onFilterChange
       onFilterChange(groupId, [value])
     } else {
       const newValues = currentValues.includes(value)
         ? currentValues.filter(v => v !== value)
         : [...currentValues, value]
-      console.log('🔍 Multiple filter - calling onFilterChange with:', newValues)
+      // Multiple filter - calling onFilterChange
       onFilterChange(groupId, newValues)
     }
   }, [filterGroups, activeFilters, onFilterChange])

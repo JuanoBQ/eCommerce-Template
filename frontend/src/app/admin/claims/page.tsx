@@ -107,7 +107,7 @@ export default function ClaimsManagementPage() {
         await updateClaim(claimId, { status })
         toast.success(successMessages[status])
       } catch (error) {
-        console.error('Error updating claim status:', error)
+        // Error updating claim status
         toast.error('Error al actualizar el estado del ticket')
       } finally {
         setLoadingActions(prev => {
@@ -155,7 +155,7 @@ export default function ClaimsManagementPage() {
         await deleteClaim(claimId)
         toast.success('Ticket eliminado correctamente')
       } catch (error) {
-        console.error('Error deleting claim:', error)
+        // Error deleting claim
         toast.error('Error al eliminar el ticket')
       } finally {
         setLoadingActions(prev => {
@@ -185,7 +185,7 @@ export default function ClaimsManagementPage() {
       toast.success('Ticket actualizado correctamente')
       setShowModal(false)
     } catch (error) {
-      console.error('Error updating claim:', error)
+      // Error updating claim
       toast.error('Error al actualizar el ticket')
     }
   }

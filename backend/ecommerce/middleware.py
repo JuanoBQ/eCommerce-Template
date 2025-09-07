@@ -29,13 +29,13 @@ class JWTAuthenticationMiddleware:
                     if user and not user.is_anonymous:
                         request.user = user
                         request._force_auth_user = user  # Forzar usuario autenticado
-                        print(f"✅ JWT Auth - Usuario autenticado: {user} (ID: {user.id})")
+                        # JWT Auth - Usuario autenticado
                     else:
-                        print("⚠️ JWT Auth - Usuario no válido")
+                        # JWT Auth - Usuario no válido
                         request.user = AnonymousUser()
                         
                 except (InvalidToken, TokenError) as e:
-                    print(f"❌ JWT Auth - Error: {e}")
+                    # JWT Auth - Error
                     request.user = AnonymousUser()
             else:
                 # No hay token, mantener usuario anónimo

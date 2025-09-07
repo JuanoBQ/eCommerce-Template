@@ -48,7 +48,7 @@ export default function AdminSettingsPage() {
     try {
       await saveSettings(localSettings)
     } catch (error) {
-      console.error('Error saving settings:', error)
+      // Error saving settings
     }
   }
 
@@ -56,7 +56,7 @@ export default function AdminSettingsPage() {
     try {
       await resetSettings()
     } catch (error) {
-      console.error('Error resetting settings:', error)
+      // Error resetting settings
     }
   }
 

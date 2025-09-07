@@ -159,7 +159,7 @@ export const useToast = () => {
       },
     }
 
-    return toast.update(toastId, {
+    return toast(toastId, {
       ...config[type],
       duration: type === 'error' ? 4000 : 2500,
     })

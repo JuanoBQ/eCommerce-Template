@@ -41,9 +41,9 @@ export const useWishlist = () => {
       try {
         const wishlistData = JSON.parse(savedWishlist)
         globalWishlistState = wishlistData
-        console.log('Wishlist loaded from storage:', wishlistData)
+        // Wishlist loaded from storage
       } catch (error) {
-        console.error('Error loading wishlist:', error)
+        // Error loading wishlist
         globalWishlistState = []
       }
     }
@@ -59,7 +59,7 @@ export const useWishlist = () => {
 
   // Add to wishlist
   const addToWishlist = useCallback((product: Product) => {
-    console.log('Adding to wishlist:', product.id, product.name)
+    // Adding to wishlist
 
     // Check if product is already in wishlist
     const existingItem = globalWishlistState.find(item => item.product.id === product.id)
@@ -79,17 +79,17 @@ export const useWishlist = () => {
     const newState = [...globalWishlistState, newItem]
     updateGlobalState(newState)
     toast.success('Producto agregado a tu lista de deseos')
-    console.log('Added to wishlist:', newItem)
+    // Added to wishlist
   }, [])
 
   // Remove from wishlist
   const removeFromWishlist = useCallback((productId: number) => {
-    console.log('Removing from wishlist:', productId)
+    // Removing from wishlist
 
     const newState = globalWishlistState.filter(item => item.product.id !== productId)
     updateGlobalState(newState)
     toast.success('Producto eliminado de tu lista de deseos')
-    console.log('Removed from wishlist:', productId)
+    // Removed from wishlist
   }, [])
 
   // Check if product is in wishlist

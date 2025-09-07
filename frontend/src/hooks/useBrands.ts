@@ -23,15 +23,15 @@ export const useBrands = () => {
   const [error, setError] = useState<string | null>(null)
 
   const loadBrands = useCallback(async () => {
-    console.log('🔍 Loading brands from API...')
+    // Loading brands from API
     setIsLoading(true)
     setError(null)
     try {
       const response = await categoriesApi.getBrands()
-      console.log('🔍 Brands response:', response)
+      // Brands response
       setBrands(response.results || response)
     } catch (err) {
-      console.error('Error loading brands:', err)
+      // Error loading brands
       setError('Error al cargar marcas')
       toast.error('Error al cargar marcas')
     } finally {
@@ -46,7 +46,7 @@ export const useBrands = () => {
       toast.success('Marca creada exitosamente')
       return newBrand
     } catch (err: any) {
-      console.error('Error creating brand:', err)
+      // Error creating brand
       const errorMessage = err.response?.data?.detail || 'Error al crear marca'
       toast.error(errorMessage)
       throw err
@@ -62,7 +62,7 @@ export const useBrands = () => {
       toast.success('Marca actualizada exitosamente')
       return updatedBrand
     } catch (err: any) {
-      console.error('Error updating brand:', err)
+      // Error updating brand
       const errorMessage = err.response?.data?.detail || 'Error al actualizar marca'
       toast.error(errorMessage)
       throw err
@@ -75,7 +75,7 @@ export const useBrands = () => {
       setBrands(prev => prev.filter(brand => brand.id !== id))
       toast.success('Marca eliminada exitosamente')
     } catch (err: any) {
-      console.error('Error deleting brand:', err)
+      // Error deleting brand
       const errorMessage = err.response?.data?.detail || 'Error al eliminar marca'
       toast.error(errorMessage)
       throw err
@@ -87,7 +87,7 @@ export const useBrands = () => {
       const brand = await categoriesApi.getBrand(id)
       return brand
     } catch (err: any) {
-      console.error('Error getting brand:', err)
+      // Error getting brand
       const errorMessage = err.response?.data?.detail || 'Error al obtener marca'
       toast.error(errorMessage)
       throw err

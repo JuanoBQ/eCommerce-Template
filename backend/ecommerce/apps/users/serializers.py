@@ -154,20 +154,21 @@ class UserProfileUpdateSerializer(serializers.ModelSerializer):
         return value.strip() if value else None
 
     def update(self, instance, validated_data):
-        print(f"🔄 Actualizando usuario: {instance}")
-        print(f"📊 Datos validados: {validated_data}")
+        # Actualizando usuario
+        # Datos validados
         
         # Actualizar solo los campos permitidos
         for attr, value in validated_data.items():
-            print(f"🔧 Actualizando campo {attr}: {value} (tipo: {type(value)})")
+            # Actualizando campo
             if value is not None:
                 setattr(instance, attr, value)
             else:
-                print(f"⚠️ Saltando campo {attr} porque es None")
+                # Saltando campo porque es None
+                pass
         
-        print("💾 Guardando instancia...")
+        # Guardando instancia
         instance.save()
-        print("✅ Instancia guardada exitosamente")
+        # Instancia guardada exitosamente
         return instance
 
 
