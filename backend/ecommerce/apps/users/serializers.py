@@ -154,12 +154,8 @@ class UserProfileUpdateSerializer(serializers.ModelSerializer):
         return value.strip() if value else None
 
     def update(self, instance, validated_data):
-        # Actualizando usuario
-        # Datos validados
-        
         # Actualizar solo los campos permitidos
         for attr, value in validated_data.items():
-            # Actualizando campo
             if value is not None:
                 setattr(instance, attr, value)
             else:

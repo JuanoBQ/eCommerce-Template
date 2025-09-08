@@ -50,12 +50,7 @@ export function useReports(dateRange: string = '30') {
     try {
       setLoading(true)
       setError(null)
-      // Cargando reporte del dashboard
-      
-      // Usar el apiClient configurado
       const data = await apiClient.get(`/reports/dashboard/?days=${dateRange}`)
-      // Datos del API
-      // Tipo de datos
       
       if (!data) {
         throw new Error('No se recibieron datos del servidor')

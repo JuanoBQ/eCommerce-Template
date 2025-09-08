@@ -119,7 +119,6 @@ export const useAuth = () => {
 
   const login = useCallback(async (credentials: LoginCredentials) => {
     try {
-      // Iniciando proceso de login
       setAuthState(prev => ({ ...prev, isLoading: true, error: null }))
 
       const response = await authApi.login(credentials.email, credentials.password) as any
@@ -134,7 +133,6 @@ export const useAuth = () => {
         localStorage.setItem('refresh_token', response.refresh)
         // Tokens guardados
       } else {
-        // Respuesta de login inválida
         throw new Error('Invalid login response')
       }
 
@@ -291,15 +289,10 @@ export const useAuth = () => {
   }, [router])
 
   const updateProfile = useCallback(async (data: Partial<User>) => {
-    // Iniciando actualización de perfil
-    // Datos a enviar
-
     try {
       setAuthState(prev => ({ ...prev, isLoading: true, error: null }))
 
       const updatedUserData = await usersApi.updateProfile(data) as any
-      // Respuesta del backend
-
       const updatedUser = updatedUserData as User
 
       setAuthState(prev => ({
@@ -312,10 +305,6 @@ export const useAuth = () => {
       // Estado actualizado correctamente
       return updatedUserData
     } catch (error: any) {
-      // Error en updateProfile
-      // Status code
-      // Error data
-
       const errorMessage = error.response?.data?.detail ||
                           error.response?.data?.non_field_errors?.[0] ||
                           error.response?.data?.first_name?.[0] ||

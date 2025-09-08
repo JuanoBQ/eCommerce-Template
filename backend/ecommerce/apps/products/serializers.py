@@ -255,7 +255,6 @@ class ProductCreateUpdateSerializer(serializers.ModelSerializer):
     )
     
     def is_valid(self, raise_exception=False):
-        # ProductCreateUpdateSerializer.is_valid - data
         is_valid = super().is_valid(raise_exception=raise_exception)
         if not is_valid:
             # Validation errors
@@ -279,7 +278,6 @@ class ProductCreateUpdateSerializer(serializers.ModelSerializer):
         }
     
     def is_valid(self, raise_exception=False):
-        # ProductCreateUpdateSerializer.is_valid - data
         result = super().is_valid(raise_exception=raise_exception)
         if not result:
             # Validation errors
@@ -421,7 +419,6 @@ class ProductCreateUpdateSerializer(serializers.ModelSerializer):
         
         # Actualizar variantes si se proporcionan
         if variants_data:
-            # Actualizando variantes
             existing_variant_ids = []
             
             for variant_data in variants_data:
