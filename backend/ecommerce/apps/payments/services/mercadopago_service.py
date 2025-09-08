@@ -345,6 +345,7 @@ class MercadoPagoService(BasePaymentService):
             if payment_status == 'completed':
                 order = payment.order
                 order.status = 'confirmed'
+                order.payment_status = 'paid'  # Actualizar estado de pago
                 order.save()
             
             return {
@@ -435,15 +436,21 @@ class MercadoPagoService(BasePaymentService):
         Obtiene los datos de la dirección de envío para MercadoPago.
         """
         try:
-            from ecommerce.apps.users.models import UserAddress
-            address = UserAddress.objects.get(id=order.shipping_address)
+            # order.shipping_address es un string completo, no un ID
+            # Usar valores por defecto para MercadoPago
             return {
-                'zip_code': address.postal_code,
-                'state_name': address.state,
-                'city_name': address.city,
-                'address_line_1': address.address_line_1,
-                'address_line_2': address.address_line_2 or ''
+                'zip_code': '000000',
+                'state_name': 'Arauca',
+                'city_name': 'Arauca',
+                'address_line_1': order.shipping_address or 'Dirección no especificada',
+                'address_line_2': ''
             }
         except Exception as e:
             print(f'🔍 MercadoPagoService - Error obteniendo dirección: {e}')
-            return None
+            return {
+                'zip_code': '000000',
+                'state_name': 'Arauca',
+                'city_name': 'Arauca',
+                'address_line_1': 'Dirección no especificada',
+                'address_line_2': ''
+            }

@@ -90,19 +90,35 @@ export const useProducts = () => {
     setBrands(mockBrands)
   }, [])
 
-  // Load products
+  // Load products with advanced filtering
   const loadProducts = useCallback(async (params?: any, isPublicView: boolean = false, isAdminView: boolean = false) => {
     setIsLoading(true)
     setError(null)
     try {
-      // Para la tienda pública, solo cargar productos publicados
-      // Para el dashboard de admin, cargar todos los productos sin paginación
-      const requestParams = { ...params }
+      // Construir parámetros de consulta
+      const requestParams: any = { ...params }
 
       // Para el panel de admin, usar paginación normal
       if (isAdminView) {
-        requestParams.page_size = 20  // 20 productos por página en admin
+        requestParams.page_size = 20
         requestParams.page = params?.page || 1
+        
+        // Agregar filtros específicos para admin
+        if (params?.search) {
+          requestParams.search = params.search
+        }
+        if (params?.status && params?.status !== 'all') {
+          requestParams.status = params.status
+        }
+        if (params?.category && params?.category !== 'all') {
+          requestParams.category = params.category
+        }
+        if (params?.brand && params?.brand !== 'all') {
+          requestParams.brand = params.brand
+        }
+        if (params?.is_featured !== undefined) {
+          requestParams.is_featured = params.is_featured
+        }
       }
 
       // Para la tienda pública, usar paginación y filtros

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import { Users, Search, Filter, MoreVertical, Trash2, Eye, Shield, UserCheck, UserX, X, Save, UserPlus } from 'lucide-react'
 import { useUsers, User, CreateUserData } from '@/hooks/useUsers'
 import toast from 'react-hot-toast'
@@ -22,7 +22,8 @@ export default function UsersPage() {
     toggleUserStatus,
     toggleUserRole,
     createUser,
-    loadUserStats
+    loadUserStats,
+    loadUsers
   } = useUsers()
   const [searchTerm, setSearchTerm] = useState('')
   const [statusFilter, setStatusFilter] = useState('all')
@@ -43,19 +44,41 @@ export default function UsersPage() {
     is_active: true
   })
 
-  const filteredUsers = users?.filter(user => {
-    const matchesSearch = user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         user.first_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         user.last_name.toLowerCase().includes(searchTerm.toLowerCase())
-    const matchesStatus = statusFilter === 'all' ||
-                         (statusFilter === 'active' && user.is_active) ||
-                         (statusFilter === 'inactive' && !user.is_active)
-    const matchesRole = roleFilter === 'all' ||
-                       (roleFilter === 'staff' && user.is_staff) ||
-                       (roleFilter === 'regular' && !user.is_staff)
+  // Los filtros ahora se manejan en el backend, no necesitamos filtrar en el frontend
+  const filteredUsers = users || []
 
-    return matchesSearch && matchesStatus && matchesRole
-  }) || []
+  // Aplicar filtros con debounce para la búsqueda
+  const applyFilters = useCallback(() => {
+    const filterParams: any = {
+      page: 1, // Resetear a la primera página
+    }
+    
+    if (searchTerm) {
+      filterParams.search = searchTerm
+    }
+    if (statusFilter !== 'all') {
+      filterParams.is_active = statusFilter
+    }
+    if (roleFilter !== 'all') {
+      filterParams.is_staff = roleFilter
+    }
+    
+    loadUsers(filterParams)
+  }, [searchTerm, statusFilter, roleFilter, loadUsers])
+
+  // Aplicar filtros cuando cambien (excepto búsqueda)
+  useEffect(() => {
+    applyFilters()
+  }, [statusFilter, roleFilter])
+
+  // Aplicar búsqueda con debounce
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      applyFilters()
+    }, 1000) // Debounce de 1000ms (1 segundo)
+
+    return () => clearTimeout(timeoutId)
+  }, [searchTerm])
 
   const handleDeleteUser = async (userId: number, userName: string) => {
     if (confirm(`¿Estás seguro de que quieres eliminar al usuario ${userName}?`)) {
@@ -167,14 +190,6 @@ export default function UsersPage() {
     } catch (error) {
       // Error al crear usuario
     }
-  }
-
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-500"></div>
-      </div>
-    )
   }
 
   if (error) {
@@ -317,6 +332,7 @@ export default function UsersPage() {
               <tr>
                 <th className="px-6 py-4 text-left text-sm font-medium text-gray-500">Usuario</th>
                 <th className="px-6 py-4 text-left text-sm font-medium text-gray-500">Email</th>
+                <th className="px-6 py-4 text-left text-sm font-medium text-gray-500">Dirección</th>
                 <th className="px-6 py-4 text-left text-sm font-medium text-gray-500">Rol</th>
                 <th className="px-6 py-4 text-left text-sm font-medium text-gray-500">Estado</th>
                 <th className="px-6 py-4 text-left text-sm font-medium text-gray-500">Último Acceso</th>
@@ -344,6 +360,20 @@ export default function UsersPage() {
                     </div>
                   </td>
                   <td className="px-6 py-4 text-gray-900">{user.email}</td>
+                  <td className="px-6 py-4">
+                    {user.default_address_obj ? (
+                      <div className="max-w-xs">
+                        <div className="text-gray-900 text-sm font-medium truncate">
+                          {user.default_address_obj.title}
+                        </div>
+                        <div className="text-gray-500 text-xs truncate">
+                          {user.default_address_obj.full_address}
+                        </div>
+                      </div>
+                    ) : (
+                      <span className="text-gray-400 text-sm">Sin dirección</span>
+                    )}
+                  </td>
                   <td className="px-6 py-4">
                     <span className={`px-2 py-1 rounded-full text-xs font-medium ${
                       user.is_staff

@@ -63,6 +63,14 @@ def main():
         print("❌ Django REST Framework no se instaló correctamente")
         sys.exit(1)
     
+    # Verificar instalación de SimpleJWT
+    try:
+        import rest_framework_simplejwt
+        print("✅ djangorestframework-simplejwt instalado correctamente")
+    except ImportError:
+        print("❌ djangorestframework-simplejwt no se instaló correctamente")
+        sys.exit(1)
+    
     # Verificar instalación de django-redis
     try:
         import django_redis

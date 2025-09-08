@@ -7,6 +7,7 @@ import Image from 'next/image'
 import ProtectedRoute from '@/components/auth/ProtectedRoute'
 import { useCartGlobal } from '@/hooks/useCartGlobal'
 import { useOrders, CreateOrderData } from '@/hooks/useOrders'
+import PaymentMethodSelector from '@/components/checkout/PaymentMethodSelector'
 import { useAuth } from '@/hooks/useAuth'
 import { useAddresses } from '@/hooks/useAddresses'
 import { formatPrice } from '@/utils/currency'
@@ -50,13 +51,7 @@ interface CheckoutFormData {
   selected_billing_address?: number
 }
 
-const paymentMethods = [
-  { id: 'credit_card', name: 'Tarjeta de Crédito', icon: '💳' },
-  { id: 'debit_card', name: 'Tarjeta de Débito', icon: '💳' },
-  { id: 'paypal', name: 'PayPal', icon: '🅿️' },
-  { id: 'bank_transfer', name: 'Transferencia Bancaria', icon: '🏦' },
-  { id: 'cash_on_delivery', name: 'Pago Contra Entrega', icon: '💰' }
-]
+// Métodos de pago ahora se manejan en PaymentMethodSelector
 
 export default function CheckoutPage() {
   const router = useRouter()
@@ -82,7 +77,7 @@ export default function CheckoutPage() {
     billing_state: '',
     billing_postal_code: '',
     billing_phone: '',
-    payment_method: 'credit_card',
+    payment_method: 'wompi',
     notes: '',
     selected_shipping_address: undefined,
     selected_billing_address: undefined
@@ -90,6 +85,8 @@ export default function CheckoutPage() {
   
   const [errors, setErrors] = useState<Partial<CheckoutFormData>>({})
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [createdOrder, setCreatedOrder] = useState<any>(null)
+  const [paymentStatus, setPaymentStatus] = useState<'idle' | 'processing' | 'success' | 'error'>('idle')
 
   // Calcular costo de envío
   const shippingCost = totalPrice > 150000 ? 0 : 15000
@@ -113,24 +110,15 @@ export default function CheckoutPage() {
 
   // Cargar dirección predeterminada
   useEffect(() => {
-    const loadDefaultAddress = async () => {
-      try {
-        const defaultAddress = await getDefaultAddress()
-        if (defaultAddress) {
-          setFormData(prev => ({
-            ...prev,
-            selected_shipping_address: defaultAddress.id
-          }))
-        }
-      } catch (error) {
-        // No hay dirección predeterminada
-      }
-    }
-
     if (addresses.length > 0) {
-      loadDefaultAddress()
+      // Usar automáticamente la primera (y única) dirección
+      setFormData(prev => ({
+        ...prev,
+        selected_shipping_address: addresses[0].id,
+        shipping_address: addresses[0].full_address
+      }))
     }
-  }, [addresses, getDefaultAddress])
+  }, [addresses])
 
   // Redirigir si el carrito está vacío
   useEffect(() => {
@@ -207,8 +195,17 @@ export default function CheckoutPage() {
       newErrors.phone = 'El teléfono es requerido'
     }
 
-    if (!formData.selected_shipping_address && !formData.shipping_address.trim()) {
-      newErrors.shipping_address = 'La dirección de envío es requerida'
+    // Validación de dirección de envío
+    if (addresses.length > 0) {
+      // Si hay dirección guardada, usarla automáticamente
+      if (!formData.shipping_address.trim()) {
+        formData.shipping_address = addresses[0].full_address
+      }
+    } else {
+      // Si no hay dirección guardada, debe escribir una
+      if (!formData.shipping_address.trim()) {
+        newErrors.shipping_address = 'La dirección de envío es requerida'
+      }
     }
 
     // Validar dirección de facturación si es diferente
@@ -243,8 +240,6 @@ export default function CheckoutPage() {
     setIsSubmitting(true)
     
     try {
-
-      
       // Preparar datos de la orden
       const orderData: CreateOrderData = {
         first_name: formData.first_name,
@@ -265,27 +260,63 @@ export default function CheckoutPage() {
         }))
       }
       
-
-
       // Crear la orden
       const order = await createOrder(orderData)
+      console.log('🔍 Checkout - Orden creada:', order)
+      setCreatedOrder(order)
       
-      // Limpiar el carrito
-      clearCart()
+      // Procesar pago con pasarela seleccionada
+      console.log('🔍 Checkout - Método de pago seleccionado:', {
+        method: formData.payment_method,
+        orderId: (order as any).id
+      })
       
-      // Mostrar mensaje de éxito
-      toast.success('¡Orden creada exitosamente!')
+      console.log('🔍 Checkout - Procesando pago automáticamente...')
+      setPaymentStatus('processing')
       
-      // Redirigir a la página de órdenes
-      router.push(`/account/orders/${(order as any).id}`)
+      try {
+        console.log('🔍 Checkout - Creando intención de pago directamente...')
+        
+        // Usar apiClient directamente para crear la intención de pago
+        const { apiClient } = await import('@/lib/api')
+        const paymentData = await apiClient.post('/payments/payments/create_payment_intent/', {
+          order_id: (order as any).id,
+          provider: formData.payment_method
+        })
+        
+        console.log('🔍 Checkout - Respuesta de pago:', paymentData)
+        
+        if (paymentData.success && paymentData.payment_url) {
+          console.log('🔍 Checkout - Redirigiendo directamente a:', paymentData.payment_url)
+          
+          // Redirigir inmediatamente a la pasarela de pagos
+          window.open(paymentData.payment_url, '_blank')
+          
+          // Limpiar carrito y mostrar mensaje
+          clearCart()
+          toast.success('¡Redirigiendo a la pasarela de pago!')
+          
+          // Redirigir a página de seguimiento
+          router.push(`/checkout/pending?order=${(order as any).order_number}&payment=${paymentData.payment_id}`)
+        } else {
+          throw new Error(paymentData.error || 'Error al procesar el pago')
+        }
+      } catch (error) {
+        console.error('🔍 Checkout - Error procesando pago:', error)
+        toast.error('Error al procesar el pago. Por favor intenta de nuevo.')
+        setPaymentStatus('error')
+      }
       
     } catch (error) {
-      // Error creating order
+      console.error('Error creating order:', error)
       toast.error('Error al crear la orden. Por favor intenta de nuevo.')
     } finally {
       setIsSubmitting(false)
     }
   }
+
+  // Las funciones de callback de pago ya no son necesarias 
+  // porque el proceso es directo
 
   // Si el carrito está vacío, no mostrar nada
   if (items.length === 0) {
@@ -450,21 +481,16 @@ export default function CheckoutPage() {
                       
                       {addresses.length > 0 ? (
                         <div className="space-y-3">
-                          <Select
-                            options={addresses.filter(addr => addr.is_shipping).map((address) => ({
-                              value: address.id,
-                              label: `${address.title} - ${address.full_address}`
-                            }))}
-                            value={formData.selected_shipping_address || ''}
-                            onChange={(value) => handleAddressSelection('shipping', value ? Number(value) : undefined)}
-                            placeholder="Seleccionar dirección guardada"
-                            error={!!errors.shipping_address}
-                          />
-                          
-                          <div className="text-sm text-gray-600">
-                            <Link href="/account/profile" className="text-primary-500 hover:text-primary-600">
-                              Gestionar direcciones
-                            </Link>
+                          <div className="p-4 bg-gray-50 border border-gray-200 rounded-md">
+                            <div className="flex items-center justify-between">
+                              <div>
+                                <h4 className="font-medium text-gray-900">{addresses[0].title}</h4>
+                                <p className="text-sm text-gray-600 mt-1">{addresses[0].full_address}</p>
+                              </div>
+                              <Link href="/account/profile" className="text-primary-500 hover:text-primary-600 text-sm">
+                                Editar
+                              </Link>
+                            </div>
                           </div>
                         </div>
                       ) : (
@@ -730,32 +756,12 @@ export default function CheckoutPage() {
                     <h2 className="text-xl font-semibold text-gray-900">MÉTODO DE PAGO</h2>
                   </div>
                   
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {paymentMethods.map((method) => (
-                      <label
-                        key={method.id}
-                        className={`relative flex items-center p-4 border rounded-md cursor-pointer transition-colors ${
-                          formData.payment_method === method.id
-                            ? 'border-primary-500 bg-primary-50'
-                            : 'border-gray-300 hover:border-gray-400'
-                        }`}
-                      >
-                        <input
-                          type="radio"
-                          name="payment_method"
-                          value={method.id}
-                          checked={formData.payment_method === method.id}
-                          onChange={handleInputChange}
-                          className="sr-only"
-                        />
-                        <span className="text-2xl mr-3">{method.icon}</span>
-                        <span className="text-gray-900 font-medium">{method.name}</span>
-                        {formData.payment_method === method.id && (
-                          <CheckCircle className="w-5 h-5 text-primary-500 ml-auto" />
-                        )}
-                      </label>
-                    ))}
-                  </div>
+                  <PaymentMethodSelector
+                    selectedMethod={formData.payment_method}
+                    onMethodChange={(method) => setFormData(prev => ({...prev, payment_method: method}))}
+                    orderId={createdOrder?.id}
+                  />
+                  
                   {errors.payment_method && (
                     <p className="text-red-500 text-sm mt-2">{errors.payment_method}</p>
                   )}
@@ -780,18 +786,28 @@ export default function CheckoutPage() {
                     type="submit"
                     variant="black"
                     size="lg"
-                    disabled={isSubmitting || isCreatingOrder}
+                    disabled={isSubmitting || isCreatingOrder || paymentStatus === 'processing'}
                     className="flex items-center gap-2"
                   >
                     {isSubmitting || isCreatingOrder ? (
                       <>
                         <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
-                        Procesando...
+                        Procesando orden...
+                      </>
+                    ) : paymentStatus === 'processing' ? (
+                      <>
+                        <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                        Pago en proceso...
+                      </>
+                    ) : paymentStatus === 'success' ? (
+                      <>
+                        <CheckCircle className="w-5 h-5" />
+                        ¡PAGO COMPLETADO!
                       </>
                     ) : (
                       <>
                         <Lock className="w-5 h-5" />
-                        FINALIZAR COMPRA
+                        PROCEDER AL PAGO
                       </>
                     )}
                   </Button>

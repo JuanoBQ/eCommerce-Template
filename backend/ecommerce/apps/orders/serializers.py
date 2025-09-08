@@ -80,10 +80,11 @@ class OrderCreateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Order
         fields = [
-            'first_name', 'last_name', 'document_id',
+            'id', 'order_number', 'first_name', 'last_name', 'document_id',
             'email', 'phone', 'shipping_address', 'billing_address',
-            'shipping_amount', 'notes', 'items'
+            'shipping_amount', 'total_amount', 'notes', 'items', 'status'
         ]
+        read_only_fields = ['id', 'order_number', 'total_amount', 'status']
         extra_kwargs = {
             'shipping_address': {'required': True},
             'billing_address': {'required': False},
@@ -135,3 +136,25 @@ class OrderCreateSerializer(serializers.ModelSerializer):
             )
         
         return order
+    
+    def to_representation(self, instance):
+        """
+        Personaliza la representación después de crear la orden.
+        Incluye todos los campos necesarios para el frontend.
+        """
+        return {
+            'id': instance.id,
+            'order_number': instance.order_number,
+            'first_name': instance.first_name,
+            'last_name': instance.last_name,
+            'document_id': instance.document_id,
+            'email': instance.email,
+            'phone': instance.phone,
+            'shipping_address': instance.shipping_address,
+            'billing_address': instance.billing_address,
+            'shipping_amount': str(instance.shipping_amount),
+            'total_amount': str(instance.total_amount),
+            'notes': instance.notes,
+            'status': instance.status,
+            'created_at': instance.created_at.isoformat() if instance.created_at else None,
+        }

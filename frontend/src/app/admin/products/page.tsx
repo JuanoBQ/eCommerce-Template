@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
 import {
   Plus,
@@ -64,20 +64,47 @@ export default function ProductsPage() {
     }
   }
 
-  const filteredProducts = products.filter(product => {
-    const matchesSearch = (product.name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         (product.description || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         (product.short_description || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         (product.sku || '').toLowerCase().includes(searchTerm.toLowerCase())
-    const matchesStatus = statusFilter === 'all' || product.status === statusFilter
-    const matchesCategory = categoryFilter === 'all' ||
-                           (product.category_details && product.category_details.name === categoryFilter)
-    const matchesBrand = brandFilter === 'all' ||
-                        (product.brand_details && product.brand_details.name === brandFilter)
-    const matchesGender = genderFilter === 'all' || product.gender === genderFilter
+  // Los filtros ahora se manejan en el backend, no necesitamos filtrar en el frontend
+  const filteredProducts = products || []
 
-    return matchesSearch && matchesStatus && matchesCategory && matchesBrand && matchesGender
-  })
+  // Aplicar filtros con debounce para la búsqueda
+  const applyFilters = useCallback(() => {
+    const filterParams: any = {
+      page: 1, // Resetear a la primera página
+    }
+    
+    if (searchTerm) {
+      filterParams.search = searchTerm
+    }
+    if (statusFilter !== 'all') {
+      filterParams.status = statusFilter
+    }
+    if (categoryFilter !== 'all') {
+      filterParams.category = categoryFilter
+    }
+    if (brandFilter !== 'all') {
+      filterParams.brand = brandFilter
+    }
+    if (genderFilter !== 'all') {
+      filterParams.gender = genderFilter
+    }
+    
+    loadProducts(filterParams, false, true) // isPublicView=false, isAdminView=true
+  }, [searchTerm, statusFilter, categoryFilter, brandFilter, genderFilter, loadProducts])
+
+  // Aplicar filtros cuando cambien (excepto búsqueda)
+  useEffect(() => {
+    applyFilters()
+  }, [statusFilter, categoryFilter, brandFilter, genderFilter])
+
+  // Aplicar búsqueda con debounce
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      applyFilters()
+    }, 1000) // Debounce de 1000ms (1 segundo)
+
+    return () => clearTimeout(timeoutId)
+  }, [searchTerm])
 
   const getStatusBadge = (status: string) => {
     const styles = {

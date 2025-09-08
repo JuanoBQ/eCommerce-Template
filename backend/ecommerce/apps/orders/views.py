@@ -1,6 +1,8 @@
 from rest_framework import viewsets, status, permissions, generics
 from rest_framework.decorators import action, api_view, permission_classes
 from rest_framework.response import Response
+from django_filters.rest_framework import DjangoFilterBackend
+from rest_framework import filters
 from django.db.models import Q, Count, Sum
 from decimal import Decimal
 from .models import Order, OrderItem
@@ -16,6 +18,11 @@ class OrderViewSet(viewsets.ModelViewSet):
     ViewSet para gestionar órdenes.
     """
     permission_classes = [permissions.IsAuthenticated, IsOwnerOrAdmin]
+    filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
+    search_fields = ['order_number', 'user__email', 'user__first_name', 'user__last_name']
+    ordering_fields = ['created_at', 'total_amount', 'status', 'payment_status']
+    ordering = ['-created_at']
+    filterset_fields = ['status', 'payment_status']
     
     def get_serializer_class(self):
         """
@@ -161,27 +168,27 @@ def order_stats(request):
         refunded_orders = Order.objects.filter(payment_status='refunded').count()
         
         # Ingresos (solo órdenes con pago completado)
-        total_revenue = Order.objects.filter(payment_status='completed').aggregate(
+        total_revenue = Order.objects.filter(payment_status='paid').aggregate(
             total=Sum('total_amount')
         )['total'] or Decimal('0.00')
         
         # Ingresos por estado (solo órdenes con pago completado)
         delivered_revenue = Order.objects.filter(
             status='delivered', 
-            payment_status='completed'
+            payment_status='paid'
         ).aggregate(
             total=Sum('total_amount')
         )['total'] or Decimal('0.00')
         
-        # Órdenes con pago completado (solo payment_status='completed')
+        # Órdenes con pago completado (solo payment_status='paid')
         paid_orders_completed = Order.objects.filter(
-            payment_status='completed'
+            payment_status='paid'
         ).count()
         
         # Órdenes completadas (delivered + payment completed)
         completed_orders = Order.objects.filter(
             status='delivered',
-            payment_status='completed'
+            payment_status='paid'
         ).count()
         
         # Órdenes por mes (últimos 6 meses)

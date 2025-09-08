@@ -177,13 +177,36 @@ export const useOrders = () => {
     }
   }, [])
 
-  // Cargar órdenes del usuario
+  // Cargar órdenes con filtros avanzados
   const loadOrders = useCallback(async (params?: any) => {
     try {
       setIsLoading(true)
       setError(null)
-      const response = await apiClient.get('/orders/', { params })
-      // Orders API response
+      
+      // Construir parámetros de consulta
+      const queryParams: any = {
+        page_size: params?.page_size || 20,
+        page: params?.page || 1,
+        ...params
+      }
+
+      // Agregar filtros específicos
+      if (params?.search) {
+        queryParams.search = params.search
+      }
+      if (params?.status && params?.status !== 'all') {
+        queryParams.status = params.status
+      }
+      if (params?.payment_status && params?.payment_status !== 'all') {
+        queryParams.payment_status = params.payment_status
+      }
+
+      console.log('🔍 useOrders - Parámetros de consulta:', queryParams)
+      console.log('🔍 useOrders - URL completa:', `/orders/?${new URLSearchParams(queryParams).toString()}`)
+
+      const response = await apiClient.get('/orders/', { params: queryParams })
+      
+      console.log('🔍 useOrders - Respuesta del servidor:', response)
 
       if (!response) {
         throw new Error('No se recibieron datos del servidor')
@@ -191,7 +214,6 @@ export const useOrders = () => {
 
       // Manejar respuesta paginada
       if ((response as any).results) {
-        // Respuesta paginada
         const ordersData = (response as any).results
         setOrders(ordersData)
 

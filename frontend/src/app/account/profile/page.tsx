@@ -532,13 +532,13 @@ export default function ProfilePage() {
             </form>
           </div>
 
-          {/* Addresses Section */}
+          {/* Address Section */}
           <div className="bg-white border border-gray-200 rounded-md p-8 shadow-sm mb-8">
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-2xl font-bold text-gray-900 uppercase tracking-wide">
-                MIS DIRECCIONES
+                MI DIRECCIÓN
               </h2>
-              {addresses.length < 2 && (
+              {addresses.length === 0 && (
                 <Button
                   onClick={() => setAddressModalOpen(true)}
                   variant="black"
@@ -565,50 +565,35 @@ export default function ProfilePage() {
             ) : addresses.length === 0 ? (
               <div className="text-center py-12">
                 <MapPin className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-                <h3 className="text-xl font-semibold text-gray-900 mb-2">No tienes direcciones guardadas</h3>
-                <p className="text-gray-600 mb-6">Agrega una dirección para facilitar tus compras</p>
+                <h3 className="text-xl font-semibold text-gray-900 mb-2">No tienes dirección guardada</h3>
+                <p className="text-gray-600 mb-6">Agrega tu dirección para facilitar tus compras</p>
                 <Button
                   onClick={() => setAddressModalOpen(true)}
                   variant="black"
                   className="flex items-center mx-auto"
                 >
                   <Plus className="w-4 h-4 mr-2" />
-                  Agregar Primera Dirección
+                  Agregar Dirección
                 </Button>
               </div>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {addresses.map((address) => (
+              <div className="max-w-2xl">
+                {addresses.slice(0, 1).map((address) => (
                   <div
                     key={address.id}
-                    className={`border rounded-md p-6 ${
-                      address.is_default 
-                        ? 'border-gray-900 bg-gray-50' 
-                        : 'border-gray-200 bg-white'
-                    }`}
+                    className="border border-gray-200 rounded-md p-6 bg-white"
                   >
                     <div className="flex items-start justify-between mb-4">
                       <div className="flex items-center">
                         <h3 className="text-lg font-semibold text-gray-900">
                           {address.title}
                         </h3>
-                        {address.is_default && (
-                          <div className="ml-2 flex items-center text-gray-900">
-                            <Star className="w-4 h-4 fill-current" />
-                            <span className="text-xs font-medium ml-1">Predeterminada</span>
-                          </div>
-                        )}
+                        <div className="ml-2 flex items-center text-gray-900">
+                          <Star className="w-4 h-4 fill-current" />
+                          <span className="text-xs font-medium ml-1">Mi Dirección</span>
+                        </div>
                       </div>
                       <div className="flex items-center space-x-2">
-                        {!address.is_default && (
-                          <button
-                            onClick={() => handleSetDefaultAddress(address.id)}
-                            className="p-1 text-gray-400 hover:text-gray-900 transition-colors"
-                            title="Marcar como predeterminada"
-                          >
-                            <Star className="w-4 h-4" />
-                          </button>
-                        )}
                         <button
                           onClick={() => handleEditAddress(address)}
                           className="p-1 text-gray-400 hover:text-gray-900 transition-colors"
@@ -638,16 +623,12 @@ export default function ProfilePage() {
                     </div>
 
                     <div className="mt-4 flex flex-wrap gap-2">
-                      {address.is_shipping && (
-                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                          Envío
-                        </span>
-                      )}
-                      {address.is_billing && (
-                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                          Facturación
-                        </span>
-                      )}
+                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                        Envío
+                      </span>
+                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                        Facturación
+                      </span>
                     </div>
                   </div>
                 ))}

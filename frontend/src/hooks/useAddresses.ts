@@ -73,34 +73,29 @@ export const useAddresses = () => {
     }
   }, [])
 
-  // Crear dirección
+  // Crear dirección (elimina las existentes primero)
   const createAddress = useCallback(async (data: CreateAddressData): Promise<UserAddress> => {
     try {
-      // Si es la primera dirección, marcarla como predeterminada automáticamente
-      const isFirstAddress = addresses.length === 0
+      // Eliminar todas las direcciones existentes primero
+      if (addresses.length > 0) {
+        await Promise.all(addresses.map(addr => 
+          apiClient.delete(`/users/simple-addresses/${addr.id}/`)
+        ))
+      }
+      
       const addressData = {
         ...data,
-        is_default: isFirstAddress || data.is_default
+        is_default: true,
+        is_billing: true,
+        is_shipping: true
       }
       
       const response = await apiClient.post('/users/simple-addresses/', addressData) as { address: UserAddress }
       
-      // Actualizar la lista local
-      setAddresses(prev => {
-        const newAddresses = [...prev, response.address]
-        
-        // Si se marcó como predeterminada, desmarcar las otras
-        if (response.address.is_default) {
-          return newAddresses.map(addr => ({
-            ...addr,
-            is_default: addr.id === response.address.id
-          }))
-        }
-        
-        return newAddresses
-      })
+      // Actualizar la lista local con solo la nueva dirección
+      setAddresses([response.address])
       
-      toast.success('Dirección creada exitosamente')
+      toast.success('Dirección actualizada exitosamente')
       
       return response.address
     } catch (err: any) {
@@ -116,7 +111,7 @@ export const useAddresses = () => {
       toast.error(errorMessage)
       throw new Error(errorMessage)
     }
-  }, [addresses.length])
+  }, [addresses])
 
   // Marcar como predeterminada
   const setDefaultAddress = useCallback(async (id: number): Promise<void> => {
@@ -142,39 +137,36 @@ export const useAddresses = () => {
     }
   }, [])
 
-  // Actualizar dirección
+  // Actualizar dirección (elimina las otras primero)
   const updateAddress = useCallback(async (data: UpdateAddressData): Promise<UserAddress> => {
     try {
-      // Actualizando dirección
-      
       const { id, ...updateData } = data
-      const response = await apiClient.patch(`/users/addresses/${id}/`, updateData) as UserAddress
       
-      // Actualizar la lista local
-      setAddresses(prev => {
-        const updatedAddresses = prev.map(addr => addr.id === id ? response : addr)
-        
-        // Si se marcó como predeterminada, desmarcar las otras
-        if (response.is_default) {
-          return updatedAddresses.map(addr => ({
-            ...addr,
-            is_default: addr.id === id
-          }))
-        }
-        
-        return updatedAddresses
-      })
+      // Eliminar todas las direcciones excepto la que se está actualizando
+      const otherAddresses = addresses.filter(addr => addr.id !== id)
+      if (otherAddresses.length > 0) {
+        await Promise.all(otherAddresses.map(addr => 
+          apiClient.delete(`/users/simple-addresses/${addr.id}/`)
+        ))
+      }
+      
+      // Actualizar la dirección existente
+      const response = await apiClient.patch(`/users/simple-addresses/${id}/`, {
+        ...updateData,
+        is_default: true,
+        is_billing: true,
+        is_shipping: true
+      }) as UserAddress
+      
+      // Actualizar la lista local con solo la dirección actualizada
+      setAddresses([response])
       
       toast.success('Dirección actualizada exitosamente')
-      // Dirección actualizada
       
       return response
     } catch (err: any) {
-      // Error al actualizar dirección
       const errorMessage = err.response?.data?.detail || 
                           err.response?.data?.title?.[0] ||
-                          err.response?.data?.first_name?.[0] ||
-                          err.response?.data?.last_name?.[0] ||
                           err.response?.data?.address_line_1?.[0] ||
                           err.response?.data?.city?.[0] ||
                           err.response?.data?.state?.[0] ||
@@ -185,7 +177,7 @@ export const useAddresses = () => {
       toast.error(errorMessage)
       throw new Error(errorMessage)
     }
-  }, [])
+  }, [addresses])
 
   // Eliminar dirección
   const deleteAddress = useCallback(async (id: number): Promise<void> => {

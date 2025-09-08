@@ -102,13 +102,13 @@ export const usePayments = () => {
       setIsLoading(true);
       setError(null);
 
-      console.log('🔍 usePayments - Enviando petición POST a /payments/create_payment_intent/');
-      const response = await apiClient.post('/payments/create_payment_intent/', data);
+      console.log('🔍 usePayments - Enviando petición POST a /payments/payments/create_payment_intent/');
+      const response = await apiClient.post('/payments/payments/create_payment_intent/', data);
       
-      console.log('🔍 usePayments - Respuesta del servidor:', response.data);
-      console.log('🔍 usePayments - Status code:', response.status);
+      console.log('🔍 usePayments - Respuesta del servidor:', response);
       
-      return response.data;
+      // apiClient ya devuelve response.data directamente, no el objeto response completo
+      return response;
     } catch (err: any) {
       console.error('🔍 usePayments - Error al crear intención de pago:', err);
       console.error('🔍 usePayments - Error response:', err.response?.data);
@@ -139,8 +139,8 @@ export const usePayments = () => {
       setIsLoading(true);
       setError(null);
 
-      console.log(`🔍 usePayments - Enviando petición POST a /payments/${paymentId}/verify_payment/`);
-      const response = await apiClient.post(`/payments/${paymentId}/verify_payment/`);
+      console.log(`🔍 usePayments - Enviando petición POST a /payments/payments/${paymentId}/verify_payment/`);
+      const response = await apiClient.post(`/payments/payments/${paymentId}/verify_payment/`);
       
       console.log('🔍 usePayments - Respuesta de verificación:', response.data);
       console.log('🔍 usePayments - Status code:', response.status);
@@ -177,8 +177,8 @@ export const usePayments = () => {
       setIsLoading(true);
       setError(null);
 
-      console.log(`🔍 usePayments - Enviando petición POST a /payments/${paymentId}/refund_payment/`);
-      const response = await apiClient.post(`/payments/${paymentId}/refund_payment/`, data);
+      console.log(`🔍 usePayments - Enviando petición POST a /payments/payments/${paymentId}/refund_payment/`);
+      const response = await apiClient.post(`/payments/payments/${paymentId}/refund_payment/`, data);
       
       console.log('🔍 usePayments - Respuesta de reembolso:', response.data);
       console.log('🔍 usePayments - Status code:', response.status);

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useOrders, OrderSummary } from '@/hooks/useOrders'
@@ -61,7 +61,7 @@ const getPaymentStatusColor = (status: string) => {
   switch (status) {
     case 'pending':
       return 'bg-yellow-100 text-yellow-800 border-yellow-200'
-    case 'completed':
+    case 'paid':
       return 'bg-primary-100 text-primary-800 border-primary-200'
     case 'failed':
       return 'bg-red-100 text-red-800 border-red-200'
@@ -87,21 +87,46 @@ export default function OrdersPage() {
   const [statusFilter, setStatusFilter] = useState('all')
   const [paymentStatusFilter, setPaymentStatusFilter] = useState('all')
 
+  // Cargar órdenes inicialmente
   useEffect(() => {
     loadOrders()
-  }, [loadOrders])
+  }, [])
 
-  // Filtrar órdenes
-  const filteredOrders = orders.filter(order => {
-    const matchesSearch = order.order_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         order.user_email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         order.user_name.toLowerCase().includes(searchTerm.toLowerCase())
+  // Los filtros ahora se manejan en el backend, no necesitamos filtrar en el frontend
+  const filteredOrders = orders || []
 
-    const matchesStatus = statusFilter === 'all' || order.status === statusFilter
-    const matchesPaymentStatus = paymentStatusFilter === 'all' || order.payment_status === paymentStatusFilter
+  // Aplicar filtros con debounce para la búsqueda
+  const applyFilters = useCallback(() => {
+    const filterParams: any = {
+      page: 1, // Resetear a la primera página
+    }
+    
+    if (searchTerm) {
+      filterParams.search = searchTerm
+    }
+    if (statusFilter !== 'all') {
+      filterParams.status = statusFilter
+    }
+    if (paymentStatusFilter !== 'all') {
+      filterParams.payment_status = paymentStatusFilter
+    }
+    
+    loadOrders(filterParams)
+  }, [searchTerm, statusFilter, paymentStatusFilter, loadOrders])
 
-    return matchesSearch && matchesStatus && matchesPaymentStatus
-  })
+  // Aplicar filtros cuando cambien (excepto búsqueda)
+  useEffect(() => {
+    applyFilters()
+  }, [statusFilter, paymentStatusFilter])
+
+  // Aplicar búsqueda con debounce
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      applyFilters()
+    }, 1000) // Debounce de 1000ms (1 segundo)
+
+    return () => clearTimeout(timeoutId)
+  }, [searchTerm])
 
   const handleViewOrder = (orderId: number) => {
     router.push(`/admin/orders/${orderId}`)
@@ -163,9 +188,9 @@ export default function OrdersPage() {
     return sum
   }, 0)
   const pendingOrders = apiStats?.pending_orders || orders.filter(order => order.status === 'pending').length
-  const paidOrders = apiStats?.paid_orders_completed || orders.filter(order => order.payment_status === 'completed').length
+  const paidOrders = apiStats?.paid_orders_completed || orders.filter(order => order.payment_status === 'paid').length
   const completedOrders = apiStats?.completed_orders || orders.filter(order => 
-    order.status === 'delivered' && order.payment_status === 'completed'
+    order.status === 'delivered' && order.payment_status === 'paid'
   ).length
 
   if (isLoading) {
@@ -274,35 +299,45 @@ export default function OrdersPage() {
 
           {/* Filter Row */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            <select
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-              className="px-4 py-2 bg-white border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-              title="Filtrar por estado"
-              aria-label="Filtrar pedidos por estado"
-            >
-              <option value="all">Todos los estados</option>
-              <option value="pending">Pendiente</option>
-              <option value="confirmed">Confirmado</option>
-              <option value="processing">Procesando</option>
-              <option value="shipped">Enviado</option>
-              <option value="delivered">Entregado</option>
-              <option value="cancelled">Cancelado</option>
-            </select>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Estado de Envío
+              </label>
+              <select
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+                className="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                title="Filtrar por estado de envío"
+                aria-label="Filtrar pedidos por estado de envío"
+              >
+                <option value="all">Todos los estados</option>
+                <option value="pending">Pendiente</option>
+                <option value="confirmed">Confirmado</option>
+                <option value="processing">Procesando</option>
+                <option value="shipped">Enviado</option>
+                <option value="delivered">Entregado</option>
+                <option value="cancelled">Cancelado</option>
+              </select>
+            </div>
 
-            <select
-              value={paymentStatusFilter}
-              onChange={(e) => setPaymentStatusFilter(e.target.value)}
-              className="px-4 py-2 bg-white border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-              title="Filtrar por estado de pago"
-              aria-label="Filtrar pedidos por estado de pago"
-            >
-              <option value="all">Todos los pagos</option>
-              <option value="pending">Pendiente</option>
-              <option value="completed">Completado</option>
-              <option value="failed">Fallido</option>
-              <option value="refunded">Reembolsado</option>
-            </select>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Estado de Pago
+              </label>
+              <select
+                value={paymentStatusFilter}
+                onChange={(e) => setPaymentStatusFilter(e.target.value)}
+                className="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                title="Filtrar por estado de pago"
+                aria-label="Filtrar pedidos por estado de pago"
+              >
+                <option value="all">Todos los pagos</option>
+                <option value="pending">Pendiente</option>
+                <option value="paid">Completado</option>
+                <option value="failed">Fallido</option>
+                <option value="refunded">Reembolsado</option>
+              </select>
+            </div>
           </div>
 
           {/* Clear Filters Button */}

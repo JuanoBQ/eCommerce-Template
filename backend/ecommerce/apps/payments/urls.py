@@ -7,6 +7,7 @@ router.register(r'payments', views.PaymentViewSet, basename='payment')
 
 urlpatterns = [
     path('', include(router.urls)),
-    path('wompi/', views.WompiPaymentView.as_view(), name='wompi-payment'),
-    path('mercadopago/', views.MercadoPagoPaymentView.as_view(), name='mercadopago-payment'),
+    path('providers/', views.PaymentProvidersView.as_view(), name='payment-providers'),
+    path('webhooks/wompi/', views.WompiWebhookView.as_view(), name='wompi-webhook'),
+    path('webhooks/mercadopago/', views.MercadoPagoWebhookView.as_view(), name='mercadopago-webhook'),
 ]

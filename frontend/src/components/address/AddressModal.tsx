@@ -25,15 +25,15 @@ export default function AddressModal({
   isLoading = false 
 }: AddressModalProps) {
   const [formData, setFormData] = useState<CreateAddressData>({
-    title: '',
+    title: 'Mi Dirección',
     address_line_1: '',
     address_line_2: '',
     city: '',
     state: '',
     postal_code: '',
     country: 'Colombia',
-    is_default: false,
-    is_billing: false,
+    is_default: true,
+    is_billing: true,
     is_shipping: true
   })
 
@@ -301,51 +301,14 @@ export default function AddressModal({
             {errors.country && <p className="text-red-500 text-sm mt-1">{errors.country}</p>}
           </div>
 
-          {/* Address Type Options */}
-          <div className="space-y-4 pt-6 border-t border-gray-200">
-            <h3 className="text-lg font-semibold text-gray-900">Tipo de Dirección</h3>
-            
-            <div className="space-y-3">
+          {/* Address Info */}
+          <div className="pt-6 border-t border-gray-200">
+            <div className="bg-blue-50 border border-blue-200 rounded-md p-4">
               <div className="flex items-center">
-                <input
-                  type="checkbox"
-                  id="is_default"
-                  name="is_default"
-                  checked={formData.is_default}
-                  onChange={handleChange}
-                  className="w-4 h-4 text-primary-500 bg-white border-gray-300 rounded focus:ring-primary-500 focus:ring-2"
-                />
-                <label htmlFor="is_default" className="ml-3 text-sm font-medium text-gray-900">
-                  Dirección predeterminada
-                </label>
-              </div>
-
-              <div className="flex items-center">
-                <input
-                  type="checkbox"
-                  id="is_shipping"
-                  name="is_shipping"
-                  checked={formData.is_shipping}
-                  onChange={handleChange}
-                  className="w-4 h-4 text-primary-500 bg-white border-gray-300 rounded focus:ring-primary-500 focus:ring-2"
-                />
-                <label htmlFor="is_shipping" className="ml-3 text-sm font-medium text-gray-900">
-                  Dirección de envío
-                </label>
-              </div>
-
-              <div className="flex items-center">
-                <input
-                  type="checkbox"
-                  id="is_billing"
-                  name="is_billing"
-                  checked={formData.is_billing}
-                  onChange={handleChange}
-                  className="w-4 h-4 text-primary-500 bg-white border-gray-300 rounded focus:ring-primary-500 focus:ring-2"
-                />
-                <label htmlFor="is_billing" className="ml-3 text-sm font-medium text-gray-900">
-                  Dirección de facturación
-                </label>
+                <MapPin className="w-5 h-5 text-blue-600 mr-2" />
+                <p className="text-sm text-blue-800">
+                  Esta será tu dirección principal para envíos y facturación
+                </p>
               </div>
             </div>
           </div>

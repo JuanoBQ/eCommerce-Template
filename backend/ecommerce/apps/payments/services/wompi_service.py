@@ -341,6 +341,7 @@ class WompiService(BasePaymentService):
             if payment_status == 'completed':
                 order = payment.order
                 order.status = 'confirmed'
+                order.payment_status = 'paid'  # Actualizar estado de pago
                 order.save()
             
             return {
@@ -461,16 +462,23 @@ class WompiService(BasePaymentService):
         Obtiene los datos de la dirección de envío.
         """
         try:
-            from ecommerce.apps.users.models import UserAddress
-            address = UserAddress.objects.get(id=order.shipping_address)
+            # order.shipping_address es un string completo, no un ID
+            # Usar valores por defecto para Wompi
             return {
-                'address_line_1': address.address_line_1,
-                'city': address.city,
-                'region': address.state,
+                'address_line_1': order.shipping_address or 'Dirección no especificada',
+                'city': 'Arauca',
+                'region': 'Arauca',
                 'country': 'CO',
-                'postal_code': address.postal_code,
+                'postal_code': '000000',
                 'phone_number': order.user.phone or '3001234567',  # Wompi requiere phone_number
             }
         except Exception as e:
             print(f'🔍 WompiService - Error obteniendo dirección: {e}')
-            return None
+            return {
+                'address_line_1': 'Dirección no especificada',
+                'city': 'Arauca',
+                'region': 'Arauca',
+                'country': 'CO',
+                'postal_code': '000000',
+                'phone_number': order.user.phone or '3001234567',
+            }

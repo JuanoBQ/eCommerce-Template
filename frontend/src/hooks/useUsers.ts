@@ -143,33 +143,50 @@ export const useUsers = () => {
     }
   }, [])
 
-  // Cargar usuarios
+  // Cargar usuarios con filtros avanzados
   const loadUsers = useCallback(async (params?: any) => {
     try {
       setIsLoading(true)
       setError(null)
-      // Cargando usuarios
+      
+      // Construir parámetros de consulta
+      const queryParams: any = {
+        page_size: params?.page_size || 20,
+        page: params?.page || 1,
+        ...params
+      }
 
-      const response = await apiClient.get('/users/', { params }) as { results: User[], count: number, next: string | null, previous: string | null }
-      // Respuesta completa
+      // Agregar filtros específicos
+      if (params?.search) {
+        queryParams.search = params.search
+      }
+      if (params?.is_active !== undefined && params?.is_active !== 'all') {
+        queryParams.is_active = params.is_active === 'active'
+      }
+      if (params?.is_staff !== undefined && params?.is_staff !== 'all') {
+        queryParams.is_staff = params.is_staff === 'staff'
+      }
+
+      const response = await apiClient.get('/users/', { params: queryParams }) as { 
+        results: User[], 
+        count: number, 
+        next: string | null, 
+        previous: string | null 
+      }
 
       // Manejar respuesta paginada
       if (response.results) {
-        // Respuesta paginada
         setUsers(response.results)
 
         // Calcular página actual desde la URL de next/previous
         let currentPage = 1
         if (response.previous) {
-          // Si hay previous, estamos en página > 1
           const url = new URL(response.previous)
           const prevPage = parseInt(url.searchParams.get('page') || '1')
           currentPage = prevPage + 1
         } else if (response.next && !response.previous) {
-          // Primera página
           currentPage = 1
         } else if (!response.next && response.previous) {
-          // Última página
           const url = new URL(response.previous)
           currentPage = parseInt(url.searchParams.get('page') || '1') + 1
         }
@@ -179,18 +196,8 @@ export const useUsers = () => {
           next: response.next,
           previous: response.previous,
           current_page: currentPage,
-          total_pages: Math.ceil(response.count / (params?.page_size || 20))
+          total_pages: Math.ceil(response.count / (queryParams.page_size || 20))
         })
-
-        const usersData = response.results
-        // Calcular estadísticas
-        const stats: UserStats = {
-          total_users: response.count, // Usar el total del servidor
-          active_users: usersData.filter((user: User) => user.is_active).length,
-          staff_users: usersData.filter((user: User) => user.is_staff).length,
-          regular_users: usersData.filter((user: User) => !user.is_staff).length
-        }
-        setUserStats(stats)
 
         // Cargar estadísticas de la API si no están disponibles
         if (!apiStats) {
