@@ -10,68 +10,38 @@ const api: AxiosInstance = axios.create({
   },
 })
 
-// Debug: Log the base URL
-console.log('🔍 API Client - Base URL:', api.defaults.baseURL);
-
-  // Request interceptor
-  api.interceptors.request.use(
-    (config) => {
-      console.log('🔍 API Client - Enviando petición:', {
-        method: config.method?.toUpperCase(),
-        url: config.url,
-        baseURL: config.baseURL,
-        fullURL: `${config.baseURL}${config.url}`
-      });
-      
-      // Add auth token if available
-      if (typeof window !== 'undefined') {
-        const token = localStorage.getItem('access_token')
-        if (token) {
-          config.headers.Authorization = `Bearer ${token}`
-          console.log('🔍 API Client - Token de autenticación agregado');
-        } else {
-          console.log('🔍 API Client - No hay token de autenticación');
-        }
+// Request interceptor
+api.interceptors.request.use(
+  (config) => {
+    // Add auth token if available
+    if (typeof window !== 'undefined') {
+      const token = localStorage.getItem('access_token')
+      if (token) {
+        config.headers.Authorization = `Bearer ${token}`
       }
-      return config
-    },
-    (error) => {
-      console.error('🔍 API Client - Error en request interceptor:', error);
-      return Promise.reject(error)
     }
-  )
+    return config
+  },
+  (error) => {
+    return Promise.reject(error)
+  }
+)
 
 // Response interceptor
 api.interceptors.response.use(
   (response: AxiosResponse) => {
-    console.log('🔍 API Client - Respuesta recibida:', {
-      status: response.status,
-      statusText: response.statusText,
-      url: response.config.url,
-      data: response.data
-    });
     return response
   },
   async (error) => {
-    console.error('🔍 API Client - Error en respuesta:', {
-      status: error.response?.status,
-      statusText: error.response?.statusText,
-      url: error.config?.url,
-      data: error.response?.data,
-      message: error.message
-    });
-    
     const originalRequest = error.config
 
     // Handle 401 errors (unauthorized)
     if (error.response?.status === 401 && !originalRequest._retry) {
-      console.log('🔍 API Client - Error 401, intentando refrescar token');
       originalRequest._retry = true
 
       try {
         const refreshToken = localStorage.getItem('refresh_token')
         if (refreshToken) {
-          console.log('🔍 API Client - Refrescando token...');
           const response = await axios.post(
             `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api'}/auth/token/refresh/`,
             { refresh: refreshToken }
@@ -82,17 +52,13 @@ api.interceptors.response.use(
           
           // Retry original request with new token
           originalRequest.headers.Authorization = `Bearer ${access}`
-          console.log('🔍 API Client - Token refrescado, reintentando petición');
           return api(originalRequest)
         }
       } catch (refreshError) {
-        console.error('🔍 API Client - Error al refrescar token:', refreshError);
         // Refresh failed, clear tokens and redirect to login
         localStorage.removeItem('access_token')
         localStorage.removeItem('refresh_token')
         if (typeof window !== 'undefined') {
-          // Mostrar mensaje de sesión expirada
-          console.warn('Sesión expirada. Redirigiendo al login...')
           window.location.href = '/auth/login'
         }
       }

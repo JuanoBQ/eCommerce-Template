@@ -3,6 +3,7 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from django.shortcuts import get_object_or_404
+from django.utils import timezone
 from decimal import Decimal
 from .models import Payment
 from .serializers import PaymentSerializer
@@ -38,7 +39,7 @@ class PaymentViewSet(viewsets.ModelViewSet):
         Crea una intención de pago.
         """
         try:
-            # Obtener datos de la solicitud
+            # Validar datos requeridos
             order_id = request.data.get('order_id')
             provider = request.data.get('provider')
             
@@ -48,7 +49,7 @@ class PaymentViewSet(viewsets.ModelViewSet):
                     status=status.HTTP_400_BAD_REQUEST
                 )
             
-            # Obtener la orden
+            # Obtener y validar la orden
             try:
                 order = Order.objects.get(id=order_id, user=request.user)
             except Order.DoesNotExist:
@@ -57,7 +58,7 @@ class PaymentViewSet(viewsets.ModelViewSet):
                     status=status.HTTP_404_NOT_FOUND
                 )
             
-            # Verificar que el proveedor esté disponible
+            # Validar proveedor
             if not PaymentServiceFactory.is_provider_available(provider):
                 return Response(
                     {'success': False, 'error': f'Proveedor {provider} no disponible'}, 
@@ -72,20 +73,17 @@ class PaymentViewSet(viewsets.ModelViewSet):
                     status=status.HTTP_500_INTERNAL_SERVER_ERROR
                 )
             
-            # Calcular el monto total de la orden
-            total_amount = order.total_amount
-            
-            # Crear intención de pago en la pasarela
-            result = payment_service.create_payment_intent(order, total_amount, 'COP')
+            # Crear intención de pago
+            result = payment_service.create_payment_intent(order, order.total_amount, 'COP')
             
             if result['success']:
-                # Crear registro de pago en la base de datos
+                # Crear registro de pago
                 payment = Payment.objects.create(
                     order=order,
                     user=request.user,
-                    amount=total_amount,
+                    amount=order.total_amount,
                     currency='COP',
-                    method='credit_card',  # Se actualizará según el método elegido
+                    method='credit_card',
                     provider=provider,
                     provider_payment_id=result.get('transaction_id', result.get('preference_id', '')),
                     status='pending',
@@ -96,7 +94,6 @@ class PaymentViewSet(viewsets.ModelViewSet):
                     'success': True,
                     'payment_id': payment.id,
                     'payment_url': result.get('payment_url'),
-                    'client_secret': result.get('client_secret'),
                     'expires_at': result.get('expires_at'),
                     'provider': provider
                 }, status=status.HTTP_201_CREATED)
@@ -129,17 +126,17 @@ class PaymentViewSet(viewsets.ModelViewSet):
                     status=status.HTTP_500_INTERNAL_SERVER_ERROR
                 )
             
-            # Verificar pago en la pasarela
+            # Verificar pago
             result = payment_service.verify_payment(payment.provider_payment_id)
             
             if result['success']:
-                # Actualizar el estado del pago si es necesario
+                # Actualizar estado si es necesario
                 mapped_status = self._map_provider_status(payment.provider, result['status'])
                 if payment.status != mapped_status:
                     payment.status = mapped_status
                     payment.save()
                     
-                    # Actualizar el estado de pago de la orden
+                    # Actualizar orden si el pago está completo
                     if mapped_status == 'completed':
                         order = payment.order
                         order.payment_status = 'paid'
@@ -180,7 +177,7 @@ class PaymentViewSet(viewsets.ModelViewSet):
                     status=status.HTTP_400_BAD_REQUEST
                 )
             
-            # Obtener el monto del reembolso (opcional)
+            # Obtener monto del reembolso
             amount = request.data.get('amount')
             if amount:
                 amount = Decimal(str(amount))
@@ -193,15 +190,15 @@ class PaymentViewSet(viewsets.ModelViewSet):
                     status=status.HTTP_500_INTERNAL_SERVER_ERROR
                 )
             
-            # Procesar reembolso en la pasarela
+            # Procesar reembolso
             result = payment_service.refund_payment(payment.provider_payment_id, amount)
             
             if result['success']:
-                # Actualizar el estado del pago
+                # Actualizar estado del pago
                 payment.status = 'refunded' if amount is None or amount == payment.amount else 'partially_refunded'
                 payment.save()
                 
-                # Actualizar el estado de pago de la orden
+                # Actualizar estado de la orden
                 order = payment.order
                 order.payment_status = 'refunded' if amount is None or amount == payment.amount else 'partially_refunded'
                 order.save()
@@ -222,6 +219,88 @@ class PaymentViewSet(viewsets.ModelViewSet):
         except Exception as e:
             return Response(
                 {'success': False, 'error': f'Error interno: {str(e)}'}, 
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+    
+    @action(detail=False, methods=['get'])
+    def check_status(self, request):
+        """
+        Verifica el estado de un pago por número de orden.
+        """
+        try:
+            order_number = request.query_params.get('order')
+            if not order_number:
+                return Response(
+                    {'success': False, 'error': 'Número de orden es requerido'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+            # Buscar orden
+            try:
+                order = Order.objects.get(order_number=order_number, user=request.user)
+            except Order.DoesNotExist:
+                return Response(
+                    {'success': False, 'error': 'Orden no encontrada'},
+                    status=status.HTTP_404_NOT_FOUND
+                )
+
+            # Buscar pago
+            try:
+                payment = Payment.objects.get(order=order)
+            except Payment.DoesNotExist:
+                return Response(
+                    {'success': False, 'error': 'Pago no encontrado para esta orden'},
+                    status=status.HTTP_404_NOT_FOUND
+                )
+
+            # Si ya está completo, retornar estado actual
+            if payment.status == 'completed':
+                return Response({
+                    'success': True,
+                    'status': 'completed',
+                    'payment_id': payment.id,
+                    'order_number': order_number
+                })
+
+            # Si está pendiente, verificar con el proveedor
+            if payment.status == 'pending' and payment.provider in ['wompi', 'mercadopago']:
+                try:
+                    payment_service = PaymentServiceFactory.create_service(payment.provider)
+                    if payment_service:
+                        verify_result = payment_service.verify_payment(payment.provider_payment_id)
+
+                        if verify_result.get('success'):
+                            new_status = self._map_provider_status(payment.provider, verify_result.get('status', 'pending'))
+                            
+                            if new_status != payment.status:
+                                payment.status = new_status
+                                if new_status == 'completed':
+                                    payment.processed_at = timezone.now()
+                                    order.status = 'confirmed'
+                                    order.payment_status = 'paid'
+                                    order.save()
+                                payment.save()
+
+                            return Response({
+                                'success': True,
+                                'status': new_status,
+                                'payment_id': payment.id,
+                                'order_number': order_number
+                            })
+                except Exception:
+                    pass
+
+            # Retornar estado actual
+            return Response({
+                'success': True,
+                'status': payment.status,
+                'payment_id': payment.id,
+                'order_number': order_number
+            })
+
+        except Exception as e:
+            return Response(
+                {'success': False, 'error': f'Error interno: {str(e)}'},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
     
@@ -269,10 +348,10 @@ class PaymentProvidersView(APIView):
             country = request.GET.get('country', 'CO')
             currency = request.GET.get('currency', 'COP')
             
-            # Obtener todos los proveedores y sus configuraciones
+            # Obtener configuraciones de proveedores
             all_configs = PaymentServiceFactory.get_all_configs()
             
-            # Filtrar proveedores que soportan el país y moneda
+            # Filtrar proveedores disponibles
             available_providers = []
             filtered_configs = {}
             
@@ -282,13 +361,13 @@ class PaymentProvidersView(APIView):
                     available_providers.append(provider)
                     filtered_configs[provider] = config
             
-            # Si no hay proveedores específicos, usar el por defecto
+            # Usar proveedor por defecto si no hay específicos
             if not available_providers:
                 default_provider = PaymentServiceFactory.get_default_provider()
                 available_providers = [default_provider]
                 filtered_configs = {default_provider: all_configs[default_provider]}
             
-            # Obtener proveedor por defecto
+            # Obtener proveedor por defecto para el país
             default_provider = PaymentServiceFactory.get_provider_for_country(country)
             
             return Response({
@@ -304,75 +383,74 @@ class PaymentProvidersView(APIView):
             )
 
 
-class WompiWebhookView(APIView):
+class WebhookView(APIView):
+    """
+    Vista base para manejar webhooks de proveedores de pago.
+    """
+    permission_classes = []
+    
+    def _process_webhook(self, request, provider):
+        """
+        Procesa un webhook de forma genérica.
+        """
+        try:
+            # Obtener firma y payload
+            signature = request.META.get('HTTP_SIGNATURE', '')
+            payload = request.body.decode('utf-8')
+            
+            # Crear servicio
+            service = PaymentServiceFactory.create_service(provider)
+            if not service:
+                return Response(
+                    {'error': 'Error creando servicio'}, 
+                    status=status.HTTP_500_INTERNAL_SERVER_ERROR
+                )
+            
+            # Verificar firma si está configurada
+            if service.webhook_secret and signature:
+                if not service.verify_webhook(payload, signature):
+                    return Response(
+                        {'error': 'Firma inválida'}, 
+                        status=status.HTTP_400_BAD_REQUEST
+                    )
+            
+            # Procesar webhook
+            result = service.process_webhook(request.data)
+            
+            if result['success']:
+                return Response({'status': 'success'}, status=status.HTTP_200_OK)
+            else:
+                return Response(
+                    {'error': result['error']}, 
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+                
+        except Exception as e:
+            return Response(
+                {'error': f'Error procesando webhook: {str(e)}'}, 
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+
+class WompiWebhookView(WebhookView):
     """
     Vista para manejar webhooks de Wompi.
     """
-    permission_classes = []  # Los webhooks no requieren autenticación de usuario
     
     def post(self, request):
         """
         Procesa un webhook de Wompi.
         """
-        try:
-            # Verificar la firma del webhook (si está configurada)
-            signature = request.META.get('HTTP_SIGNATURE', '')
-            payload = request.body.decode('utf-8')
-            
-            # Crear servicio de Wompi
-            wompi_service = PaymentServiceFactory.create_service('wompi')
-            if not wompi_service:
-                return Response({'error': 'Error creando servicio'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-            
-            # Verificar la firma si está configurada
-            if wompi_service.webhook_secret and signature:
-                if not wompi_service.verify_webhook(payload, signature):
-                    return Response({'error': 'Firma inválida'}, status=status.HTTP_400_BAD_REQUEST)
-            
-            # Procesar el webhook
-            result = wompi_service.process_webhook(request.data)
-            
-            if result['success']:
-                return Response({'status': 'success'}, status=status.HTTP_200_OK)
-            else:
-                return Response({'error': result['error']}, status=status.HTTP_400_BAD_REQUEST)
-                
-        except Exception as e:
-            return Response({'error': f'Error procesando webhook: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        return self._process_webhook(request, 'wompi')
 
 
-class MercadoPagoWebhookView(APIView):
+class MercadoPagoWebhookView(WebhookView):
     """
     Vista para manejar webhooks de MercadoPago.
     """
-    permission_classes = []  # Los webhooks no requieren autenticación de usuario
     
     def post(self, request):
         """
         Procesa un webhook de MercadoPago.
         """
-        try:
-            # Verificar la firma del webhook (si está configurada)
-            signature = request.META.get('HTTP_SIGNATURE', '')
-            payload = request.body.decode('utf-8')
-            
-            # Crear servicio de MercadoPago
-            mercadopago_service = PaymentServiceFactory.create_service('mercadopago')
-            if not mercadopago_service:
-                return Response({'error': 'Error creando servicio'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-            
-            # Verificar la firma si está configurada
-            if mercadopago_service.webhook_secret and signature:
-                if not mercadopago_service.verify_webhook(payload, signature):
-                    return Response({'error': 'Firma inválida'}, status=status.HTTP_400_BAD_REQUEST)
-            
-            # Procesar el webhook
-            result = mercadopago_service.process_webhook(request.data)
-            
-            if result['success']:
-                return Response({'status': 'success'}, status=status.HTTP_200_OK)
-            else:
-                return Response({'error': result['error']}, status=status.HTTP_400_BAD_REQUEST)
-                
-        except Exception as e:
-            return Response({'error': f'Error procesando webhook: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        return self._process_webhook(request, 'mercadopago')

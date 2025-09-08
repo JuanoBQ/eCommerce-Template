@@ -58,6 +58,10 @@ class OrderViewSet(viewsets.ModelViewSet):
         """
         order = self.get_object()
         if order.status in ['pending', 'confirmed']:
+            # Devolver stock si la orden estaba confirmada
+            if order.status == 'confirmed':
+                order.cancel_stock()
+            
             order.status = 'cancelled'
             order.save()
             return Response({'status': 'Order cancelled'})
@@ -75,6 +79,10 @@ class OrderViewSet(viewsets.ModelViewSet):
         if order.status == 'pending':
             order.status = 'confirmed'
             order.save()
+            
+            # Procesar stock al confirmar la orden
+            order.process_stock()
+            
             return Response({'status': 'Order confirmed'})
         return Response(
             {'error': 'Order cannot be confirmed'}, 

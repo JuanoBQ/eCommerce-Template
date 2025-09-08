@@ -34,12 +34,7 @@ const PaymentMethodSelector: React.FC<PaymentMethodSelectorProps> = ({
   orderId,
   className = ''
 }) => {
-  useEffect(() => {
-    console.log('🔍 PaymentMethodSelector - Método seleccionado:', {
-      selectedMethod,
-      orderId
-    });
-  }, [selectedMethod, orderId]);
+  // El componente padre maneja el cambio a través de onMethodChange
 
   const handleMethodSelect = (methodId: string) => {
     onMethodChange(methodId);

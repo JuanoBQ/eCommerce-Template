@@ -2,7 +2,6 @@
 Servicio de integración con MercadoPago.
 """
 import requests
-import json
 import hmac
 import hashlib
 from typing import Dict, Any, Optional
@@ -30,26 +29,16 @@ class MercadoPagoService(BasePaymentService):
         return getattr(settings, 'MERCADOPAGO_ENVIRONMENT', 'sandbox')
     
     def get_public_key(self) -> str:
-        key = getattr(settings, 'MERCADOPAGO_PUBLIC_KEY', '')
-        if not key:
-            # Clave de prueba para sandbox
-            return 'TEST_1234567890abcdef'
-        return key
+        return getattr(settings, 'MERCADOPAGO_PUBLIC_KEY', '')
     
     def get_private_key(self) -> str:
-        key = getattr(settings, 'MERCADOPAGO_ACCESS_TOKEN', '')
-        if not key:
-            # Clave de prueba para sandbox
-            return 'TEST_1234567890abcdef'
-        return key
+        return getattr(settings, 'MERCADOPAGO_ACCESS_TOKEN', '')
     
     def get_webhook_secret(self) -> str:
         return getattr(settings, 'MERCADOPAGO_WEBHOOK_SECRET', '')
     
     def _get_base_url(self) -> str:
         """Obtiene la URL base según el entorno."""
-        if self.is_sandbox():
-            return 'https://api.mercadopago.com'
         return 'https://api.mercadopago.com'
     
     def create_payment_intent(self, order, amount: Decimal, currency: str = 'COP') -> Dict[str, Any]:
@@ -57,10 +46,18 @@ class MercadoPagoService(BasePaymentService):
         Crea una intención de pago en MercadoPago.
         """
         try:
-            # Formatear monto para MercadoPago (en centavos)
-            amount_cents = self.format_amount(amount, currency)
+            # Verificar credenciales
+            if not self.public_key or not self.private_key:
+                return {
+                    'success': False,
+                    'error': 'Credenciales de MercadoPago no configuradas',
+                    'error_code': 'MISSING_CREDENTIALS'
+                }
+
+            # Formatear monto para MercadoPago
+            amount_cents = int(amount)
             
-            # Datos para la preferencia de pago
+            # Crear preferencia de pago
             preference_data = {
                 'items': [
                     {
@@ -85,9 +82,9 @@ class MercadoPagoService(BasePaymentService):
                     'failure': f"{settings.FRONTEND_URL}/checkout/failure?order={order.order_number}",
                     'pending': f"{settings.FRONTEND_URL}/checkout/pending?order={order.order_number}"
                 },
-                'auto_return': 'approved',
                 'external_reference': order.order_number,
                 'notification_url': f"{settings.BACKEND_URL}/api/payments/webhooks/mercadopago/",
+                'auto_return': 'approved',
                 'payment_methods': {
                     'excluded_payment_methods': [],
                     'excluded_payment_types': [],
@@ -111,12 +108,14 @@ class MercadoPagoService(BasePaymentService):
             
             if response.status_code == 201:
                 data = response.json()
+                payment_url = data.get('sandbox_init_point') if self.is_sandbox() else data.get('init_point')
+                
                 return {
                     'success': True,
-                    'preference_id': data['id'],
+                    'transaction_id': data['id'],
                     'reference': order.order_number,
-                    'payment_url': data['init_point'],
-                    'sandbox_init_point': data.get('sandbox_init_point'),
+                    'status': 'PENDING',
+                    'payment_url': payment_url,
                     'raw_response': data
                 }
             else:
@@ -146,8 +145,6 @@ class MercadoPagoService(BasePaymentService):
         Procesa un pago en MercadoPago.
         """
         try:
-            # Para MercadoPago, el procesamiento se hace a través del init_point
-            # El usuario es redirigido a MercadoPago para completar el pago
             return {
                 'success': True,
                 'message': 'Redirigir al usuario a MercadoPago para completar el pago',
@@ -212,19 +209,18 @@ class MercadoPagoService(BasePaymentService):
         Reembolsa un pago en MercadoPago.
         """
         try:
-            # Primero obtener el pago para verificar el monto
+            # Verificar el pago
             verify_result = self.verify_payment(payment_id)
             if not verify_result['success']:
                 return verify_result
             
-            # Determinar el monto del reembolso
+            # Determinar monto del reembolso
             if amount is None:
                 amount = verify_result['amount']
             
-            # Formatear monto para MercadoPago
-            amount_cents = self.format_amount(amount, verify_result['currency'])
+            amount_cents = int(amount)
             
-            # Crear el reembolso
+            # Crear reembolso
             refund_data = {
                 'amount': amount_cents
             }
@@ -272,7 +268,6 @@ class MercadoPagoService(BasePaymentService):
         Verifica la autenticidad de un webhook de MercadoPago.
         """
         try:
-            # MercadoPago usa HMAC SHA256 para verificar webhooks
             expected_signature = hmac.new(
                 self.webhook_secret.encode('utf-8'),
                 payload.encode('utf-8'),
@@ -288,7 +283,7 @@ class MercadoPagoService(BasePaymentService):
         Procesa un webhook de MercadoPago.
         """
         try:
-            # MercadoPago envía el ID del pago en el webhook
+            # Obtener ID del pago del webhook
             payment_id = payload.get('data', {}).get('id')
             if not payment_id:
                 return {
@@ -296,7 +291,7 @@ class MercadoPagoService(BasePaymentService):
                     'error': 'No se encontró ID de pago en el webhook'
                 }
             
-            # Obtener información del pago
+            # Verificar información del pago
             verify_result = self.verify_payment(payment_id)
             if not verify_result['success']:
                 return verify_result
@@ -312,7 +307,7 @@ class MercadoPagoService(BasePaymentService):
             try:
                 payment = Payment.objects.get(provider_payment_id=payment_id)
             except Payment.DoesNotExist:
-                # Si no existe, buscar por referencia de orden
+                # Crear pago si no existe
                 try:
                     from ecommerce.apps.orders.models import Order
                     order = Order.objects.get(order_number=reference)
@@ -332,7 +327,7 @@ class MercadoPagoService(BasePaymentService):
                         'error': f'No se encontró orden con referencia {reference}'
                     }
             
-            # Actualizar el estado del pago
+            # Actualizar estado del pago
             mercadopago_status = verify_result['status']
             payment_status = self._map_mercadopago_status(mercadopago_status)
             
@@ -341,11 +336,11 @@ class MercadoPagoService(BasePaymentService):
             payment.processed_at = timezone.now()
             payment.save()
             
-            # Si el pago fue exitoso, actualizar la orden
+            # Actualizar orden si el pago fue exitoso
             if payment_status == 'completed':
                 order = payment.order
                 order.status = 'confirmed'
-                order.payment_status = 'paid'  # Actualizar estado de pago
+                order.payment_status = 'paid'
                 order.save()
             
             return {
@@ -411,7 +406,7 @@ class MercadoPagoService(BasePaymentService):
     
     def get_supported_countries(self) -> list:
         """Obtiene los países soportados por MercadoPago."""
-        return ['CO', 'AR', 'MX', 'BR', 'CL', 'UY', 'PE']  # Países de Latinoamérica
+        return ['CO', 'AR', 'MX', 'BR', 'CL', 'UY', 'PE']
     
     def get_supported_currencies(self) -> list:
         """Obtiene las monedas soportadas por MercadoPago."""
@@ -433,24 +428,21 @@ class MercadoPagoService(BasePaymentService):
     
     def _get_shipping_address_data(self, order):
         """
-        Obtiene los datos de la dirección de envío para MercadoPago.
+        Obtiene los datos de la dirección de envío para MercadoPago desde la orden.
         """
         try:
-            # order.shipping_address es un string completo, no un ID
-            # Usar valores por defecto para MercadoPago
             return {
-                'zip_code': '000000',
-                'state_name': 'Arauca',
-                'city_name': 'Arauca',
+                'zip_code': order.shipping_postal_code or '000000',
+                'state_name': order.shipping_state or 'Departamento no especificado',
+                'city_name': order.shipping_city or 'Ciudad no especificada',
                 'address_line_1': order.shipping_address or 'Dirección no especificada',
                 'address_line_2': ''
             }
-        except Exception as e:
-            print(f'🔍 MercadoPagoService - Error obteniendo dirección: {e}')
+        except Exception:
             return {
                 'zip_code': '000000',
-                'state_name': 'Arauca',
-                'city_name': 'Arauca',
+                'state_name': 'Departamento no especificado',
+                'city_name': 'Ciudad no especificada',
                 'address_line_1': 'Dirección no especificada',
                 'address_line_2': ''
             }

@@ -32,21 +32,15 @@ const PaymentProviderSelector: React.FC<PaymentProviderSelectorProps> = ({
 
   useEffect(() => {
     const loadProviders = async () => {
-      console.log('🔍 PaymentProviderSelector - Cargando proveedores...', { country, currency });
       const response = await getProviders(country, currency);
-      console.log('🔍 PaymentProviderSelector - Respuesta del API:', response);
       if (response) {
         setProviders(response.configs);
         setAvailableProviders(response.providers);
-        console.log('🔍 PaymentProviderSelector - Proveedores configurados:', response.providers);
-        console.log('🔍 PaymentProviderSelector - Configuraciones:', response.configs);
         
         // Seleccionar el proveedor por defecto si no hay uno seleccionado
         if (!selectedProvider && response.default_provider) {
           onProviderSelect(response.default_provider);
         }
-      } else {
-        console.log('🔍 PaymentProviderSelector - No se recibió respuesta del API');
       }
     };
 

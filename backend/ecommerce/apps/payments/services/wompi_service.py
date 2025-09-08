@@ -2,10 +2,8 @@
 Servicio de integración con Wompi.
 """
 import requests
-import json
 import hmac
 import hashlib
-import time
 from typing import Dict, Any, Optional
 from decimal import Decimal
 from django.conf import settings
@@ -26,23 +24,16 @@ class WompiService(BasePaymentService):
             'Content-Type': 'application/json',
             'Authorization': f'Bearer {self.private_key}'
         }
+        self.integrity_key = getattr(settings, 'WOMPI_INTEGRITY_KEY', '')
     
     def get_environment(self) -> str:
         return getattr(settings, 'WOMPI_ENVIRONMENT', 'sandbox')
     
     def get_public_key(self) -> str:
-        key = getattr(settings, 'WOMPI_PUBLIC_KEY', '')
-        if not key:
-            # Clave de prueba para sandbox
-            return 'pub_test_1234567890abcdef'
-        return key
+        return getattr(settings, 'WOMPI_PUBLIC_KEY', '')
     
     def get_private_key(self) -> str:
-        key = getattr(settings, 'WOMPI_PRIVATE_KEY', '')
-        if not key:
-            # Clave de prueba para sandbox
-            return 'prv_test_1234567890abcdef'
-        return key
+        return getattr(settings, 'WOMPI_PRIVATE_KEY', '')
     
     def get_webhook_secret(self) -> str:
         return getattr(settings, 'WOMPI_WEBHOOK_SECRET', '')
@@ -55,28 +46,15 @@ class WompiService(BasePaymentService):
     
     def create_payment_intent(self, order, amount: Decimal, currency: str = 'COP') -> Dict[str, Any]:
         """
-        Crea una intención de pago en Wompi.
+        Crea una intención de pago en Wompi usando payment links.
         """
         try:
-            # En modo sandbox con claves de prueba, simular respuesta exitosa
-            if self.is_sandbox() and 'test' in self.public_key.lower():
-                print('🔍 WompiService - Modo sandbox detectado, simulando respuesta exitosa')
+            # Verificar credenciales
+            if not self.public_key or not self.private_key or not self.integrity_key:
                 return {
-                    'success': True,
-                    'transaction_id': f'test_txn_{order.id}_{int(time.time())}',
-                    'reference': order.order_number,
-                    'status': 'PENDING',
-                    'payment_url': f"{settings.FRONTEND_URL}/checkout/payment?order={order.order_number}&provider=wompi",
-                    'expires_at': (timezone.now() + timezone.timedelta(minutes=15)).isoformat(),
-                    'raw_response': {
-                        'data': {
-                            'id': f'test_txn_{order.id}_{int(time.time())}',
-                            'reference': order.order_number,
-                            'status': 'PENDING',
-                            'payment_link_url': f"{settings.FRONTEND_URL}/checkout/payment?order={order.order_number}&provider=wompi",
-                            'expires_at': (timezone.now() + timezone.timedelta(minutes=15)).isoformat()
-                        }
-                    }
+                    'success': False,
+                    'error': 'Credenciales de Wompi no configuradas completamente',
+                    'error_code': 'MISSING_CREDENTIALS'
                 }
             
             # Obtener token de aceptación
@@ -84,15 +62,19 @@ class WompiService(BasePaymentService):
             if not acceptance_token:
                 return {
                     'success': False,
-                    'error': 'No se pudo obtener el token de aceptación de Wompi',
+                    'error': 'No se pudo obtener el token de aceptación',
                     'error_code': 'ACCEPTANCE_TOKEN_ERROR'
                 }
             
             # Formatear monto para Wompi (en centavos)
             amount_cents = self.format_amount(amount, currency)
             
-            # Datos para la transacción - estructura simplificada para Wompi
-            transaction_data = {
+            # Crear payment link
+            payment_link_data = {
+                'name': f'Pago Orden {order.order_number}',
+                'description': f'Compra de {order.items.count()} productos - Total: ${amount}',
+                'single_use': True,
+                'collect_shipping': False,
                 'amount_in_cents': amount_cents,
                 'currency': currency,
                 'customer_email': order.user.email,
@@ -105,37 +87,42 @@ class WompiService(BasePaymentService):
                 'shipping_address': self._get_shipping_address_data(order) if order.shipping_address else None,
                 'redirect_url': f"{settings.FRONTEND_URL}/checkout/success?order={order.order_number}",
                 'acceptance_token': acceptance_token,
-                # Wompi requiere especificar el método de pago de manera diferente
-                'payment_method': {
-                    'type': 'CARD',
-                    'installments': 1
-                }
+                'expires_at': (timezone.now() + timezone.timedelta(minutes=15)).isoformat()
             }
+
+            # Agregar firma de integridad
+            signature_raw = f"{order.order_number}{amount_cents}{currency}{self.integrity_key}"
+            signature_hash = hashlib.sha256(signature_raw.encode('utf-8')).hexdigest()
+            payment_link_data['signature'] = signature_hash
             
-            # Crear la transacción en Wompi
-            print(f'🔍 WompiService - Datos de transacción a enviar: {transaction_data}')
-            print(f'🔍 WompiService - URL: {self.base_url}/transactions')
-            print(f'🔍 WompiService - Headers: {self.headers}')
-            
+            # Crear payment link en Wompi
             response = requests.post(
-                f"{self.base_url}/transactions",
+                f"{self.base_url}/payment_links",
                 headers=self.headers,
-                json=transaction_data,
+                json=payment_link_data,
                 timeout=30
             )
             
-            print(f'🔍 WompiService - Respuesta de Wompi: {response.status_code}')
-            print(f'🔍 WompiService - Contenido de respuesta: {response.text}')
-            
             if response.status_code == 201:
                 data = response.json()
+                transaction_id = data['data']['id']
+                
+                # Obtener URL de checkout
+                payment_url = (
+                    data['data'].get('checkout_url') or 
+                    data['data'].get('url') or 
+                    data['data'].get('link_url') or
+                    data['data'].get('payment_url') or
+                    f"https://checkout.wompi.co/l/{transaction_id}"
+                )
+                
                 return {
                     'success': True,
-                    'transaction_id': data['data']['id'],
-                    'reference': data['data']['reference'],
-                    'status': data['data']['status'],
-                    'payment_url': data['data']['payment_link_url'],
-                    'expires_at': data['data']['expires_at'],
+                    'transaction_id': transaction_id,
+                    'reference': order.order_number,
+                    'status': 'PENDING',
+                    'payment_url': payment_url,
+                    'expires_at': data['data'].get('expires_at'),
                     'raw_response': data
                 }
             else:
@@ -165,8 +152,6 @@ class WompiService(BasePaymentService):
         Procesa un pago en Wompi.
         """
         try:
-            # Para Wompi, el procesamiento se hace a través del payment_link_url
-            # El usuario es redirigido a Wompi para completar el pago
             return {
                 'success': True,
                 'message': 'Redirigir al usuario a Wompi para completar el pago',
@@ -185,34 +170,91 @@ class WompiService(BasePaymentService):
         Verifica el estado de un pago en Wompi.
         """
         try:
-            response = requests.get(
-                f"{self.base_url}/transactions/{payment_id}",
-                headers=self.headers,
-                timeout=30
-            )
-            
-            if response.status_code == 200:
-                data = response.json()
-                transaction = data['data']
+            # Determinar si es payment link o transacción directa
+            if payment_id.startswith('test_') or len(payment_id) < 20:
+                # Es un payment link
+                response = requests.get(
+                    f"{self.base_url}/payment_links/{payment_id}",
+                    headers=self.headers,
+                    timeout=30
+                )
                 
-                return {
-                    'success': True,
-                    'status': transaction['status'],
-                    'amount': self.parse_amount(transaction['amount_in_cents'], transaction['currency']),
-                    'currency': transaction['currency'],
-                    'reference': transaction['reference'],
-                    'payment_method': transaction.get('payment_method_type'),
-                    'processed_at': transaction.get('finalized_at'),
-                    'raw_response': data
-                }
+                if response.status_code == 200:
+                    data = response.json()
+                    payment_link_data = data.get('data', {})
+                    
+                    # Intentar obtener transacciones asociadas
+                    try:
+                        transactions_response = requests.get(
+                            f"{self.base_url}/payment_links/{payment_id}/transactions",
+                            headers=self.headers,
+                            timeout=30
+                        )
+                        
+                        if transactions_response.status_code == 200:
+                            transactions_data = transactions_response.json()
+                            transactions = transactions_data.get('data', [])
+                            
+                            if transactions:
+                                # Usar la transacción más reciente
+                                latest_transaction = transactions[0]
+                                status = latest_transaction.get('status', 'PENDING')
+                                
+                                return {
+                                    'success': True,
+                                    'status': status,
+                                    'amount': self.parse_amount(latest_transaction.get('amount_in_cents', 0), latest_transaction.get('currency', 'COP')),
+                                    'currency': latest_transaction.get('currency', 'COP'),
+                                    'reference': latest_transaction.get('reference'),
+                                    'payment_method': latest_transaction.get('payment_method_type'),
+                                    'processed_at': latest_transaction.get('finalized_at'),
+                                    'raw_response': data
+                                }
+                    except Exception:
+                        pass
+                    
+                    # Si no hay transacciones, el pago sigue pendiente
+                    return {
+                        'success': True,
+                        'status': 'PENDING',
+                        'amount': self.parse_amount(payment_link_data.get('amount_in_cents', 0), payment_link_data.get('currency', 'COP')),
+                        'currency': payment_link_data.get('currency', 'COP'),
+                        'reference': payment_link_data.get('reference'),
+                        'payment_method': None,
+                        'processed_at': None,
+                        'raw_response': data
+                    }
             else:
-                error_data = response.json()
-                return {
-                    'success': False,
-                    'error': error_data.get('error', {}).get('message', 'Error al verificar pago'),
-                    'error_code': error_data.get('error', {}).get('type', 'VERIFICATION_ERROR'),
-                    'raw_response': error_data
-                }
+                # Es una transacción directa
+                response = requests.get(
+                    f"{self.base_url}/transactions/{payment_id}",
+                    headers=self.headers,
+                    timeout=30
+                )
+                
+                if response.status_code == 200:
+                    data = response.json()
+                    transaction = data['data']
+                    
+                    return {
+                        'success': True,
+                        'status': transaction['status'],
+                        'amount': self.parse_amount(transaction['amount_in_cents'], transaction['currency']),
+                        'currency': transaction['currency'],
+                        'reference': transaction['reference'],
+                        'payment_method': transaction.get('payment_method_type'),
+                        'processed_at': transaction.get('finalized_at'),
+                        'raw_response': data
+                    }
+            
+            # Error en la respuesta
+            error_data = response.json() if response.content else {}
+            return {
+                'success': False,
+                'error': error_data.get('error', {}).get('message', 'Error al verificar pago'),
+                'error_code': error_data.get('error', {}).get('type', 'VERIFICATION_ERROR'),
+                'raw_response': error_data
+            }
                 
         except requests.exceptions.RequestException as e:
             return {
@@ -232,19 +274,18 @@ class WompiService(BasePaymentService):
         Reembolsa un pago en Wompi.
         """
         try:
-            # Primero obtener la transacción para verificar el monto
+            # Verificar la transacción
             verify_result = self.verify_payment(payment_id)
             if not verify_result['success']:
                 return verify_result
             
-            # Determinar el monto del reembolso
+            # Determinar monto del reembolso
             if amount is None:
                 amount = verify_result['amount']
             
-            # Formatear monto para Wompi
             amount_cents = self.format_amount(amount, verify_result['currency'])
             
-            # Crear el reembolso
+            # Crear reembolso
             refund_data = {
                 'amount_in_cents': amount_cents,
                 'reason': 'requested_by_customer'
@@ -293,7 +334,6 @@ class WompiService(BasePaymentService):
         Verifica la autenticidad de un webhook de Wompi.
         """
         try:
-            # Wompi usa HMAC SHA256 para verificar webhooks
             expected_signature = hmac.new(
                 self.webhook_secret.encode('utf-8'),
                 payload.encode('utf-8'),
@@ -328,7 +368,7 @@ class WompiService(BasePaymentService):
                     'error': f'No se encontró pago con ID {transaction["id"]}'
                 }
             
-            # Actualizar el estado del pago
+            # Actualizar estado del pago
             wompi_status = transaction.get('status')
             payment_status = self._map_wompi_status(wompi_status)
             
@@ -337,11 +377,11 @@ class WompiService(BasePaymentService):
             payment.processed_at = timezone.now()
             payment.save()
             
-            # Si el pago fue exitoso, actualizar la orden
+            # Actualizar orden si el pago fue exitoso
             if payment_status == 'completed':
                 order = payment.order
                 order.status = 'confirmed'
-                order.payment_status = 'paid'  # Actualizar estado de pago
+                order.payment_status = 'paid'
                 order.save()
             
             return {
@@ -403,11 +443,11 @@ class WompiService(BasePaymentService):
     
     def get_supported_countries(self) -> list:
         """Obtiene los países soportados por Wompi."""
-        return ['CO']  # Solo Colombia
+        return ['CO']
     
     def get_supported_currencies(self) -> list:
         """Obtiene las monedas soportadas por Wompi."""
-        return ['COP']  # Solo peso colombiano
+        return ['COP']
     
     def get_provider_config(self) -> Dict[str, Any]:
         """Obtiene la configuración del proveedor Wompi."""
@@ -428,12 +468,6 @@ class WompiService(BasePaymentService):
         Obtiene el token de aceptación de Wompi.
         """
         try:
-            # Si estamos en modo sandbox con claves de prueba, usar un token mock
-            if self.is_sandbox() and 'test' in self.public_key.lower():
-                print('🔍 WompiService - Usando token de aceptación mock para sandbox')
-                return 'acceptance_token_mock_for_testing'
-            
-            # Obtener información del merchant para obtener el acceptance_token
             response = requests.get(
                 f"{self.base_url}/merchants/{self.public_key}",
                 headers=self.headers,
@@ -442,43 +476,31 @@ class WompiService(BasePaymentService):
             
             if response.status_code == 200:
                 data = response.json()
-                acceptance_token = data['data'].get('presigned_acceptance', {}).get('acceptance_token')
-                print(f'🔍 WompiService - Token de aceptación obtenido: {acceptance_token}')
-                return acceptance_token
-            else:
-                print(f'🔍 WompiService - Error obteniendo token de aceptación: {response.status_code} - {response.text}')
-                # En caso de error, usar token mock para desarrollo
-                print('🔍 WompiService - Usando token de aceptación mock como fallback')
-                return 'acceptance_token_mock_for_testing'
+                return data['data'].get('presigned_acceptance', {}).get('acceptance_token')
+            return None
                 
-        except Exception as e:
-            print(f'🔍 WompiService - Error obteniendo token de aceptación: {e}')
-            # En caso de excepción, usar token mock para desarrollo
-            print('🔍 WompiService - Usando token de aceptación mock como fallback')
-            return 'acceptance_token_mock_for_testing'
+        except Exception:
+            return None
     
     def _get_shipping_address_data(self, order):
         """
-        Obtiene los datos de la dirección de envío.
+        Obtiene los datos de la dirección de envío desde la orden.
         """
         try:
-            # order.shipping_address es un string completo, no un ID
-            # Usar valores por defecto para Wompi
             return {
                 'address_line_1': order.shipping_address or 'Dirección no especificada',
-                'city': 'Arauca',
-                'region': 'Arauca',
-                'country': 'CO',
-                'postal_code': '000000',
-                'phone_number': order.user.phone or '3001234567',  # Wompi requiere phone_number
+                'city': order.shipping_city or 'Ciudad no especificada',
+                'region': order.shipping_state or 'Departamento no especificado',
+                'country': order.shipping_country or 'CO',
+                'postal_code': order.shipping_postal_code or '000000',
+                'phone_number': order.phone or order.user.phone or '3001234567',
             }
-        except Exception as e:
-            print(f'🔍 WompiService - Error obteniendo dirección: {e}')
+        except Exception:
             return {
                 'address_line_1': 'Dirección no especificada',
-                'city': 'Arauca',
-                'region': 'Arauca',
+                'city': 'Ciudad no especificada',
+                'region': 'Departamento no especificado',
                 'country': 'CO',
                 'postal_code': '000000',
-                'phone_number': order.user.phone or '3001234567',
+                'phone_number': '3001234567',
             }

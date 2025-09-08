@@ -136,6 +136,28 @@ class Order(models.Model):
         """Verifica si el pedido puede ser cancelado."""
         return self.status in ['pending', 'confirmed', 'processing']
     
+    def process_stock(self):
+        """
+        Procesa el stock cuando se confirma una orden.
+        """
+        try:
+            from ecommerce.apps.inventory.services import InventoryService
+            InventoryService.process_order_stock(self)
+        except ImportError:
+            # Si el servicio de inventario no está disponible, no hacer nada
+            pass
+    
+    def cancel_stock(self):
+        """
+        Devuelve el stock cuando se cancela una orden.
+        """
+        try:
+            from ecommerce.apps.inventory.services import InventoryService
+            InventoryService.process_order_cancellation(self)
+        except ImportError:
+            # Si el servicio de inventario no está disponible, no hacer nada
+            pass
+    
     @property
     def total_items(self):
         """Retorna el total de items en el pedido."""

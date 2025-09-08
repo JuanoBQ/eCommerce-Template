@@ -22,6 +22,19 @@ ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='localhost,127.0.0.1').split(','
 FRONTEND_URL = config('FRONTEND_URL', default='http://localhost:3000')
 BACKEND_URL = config('BACKEND_URL', default='http://localhost:8000')
 
+# Configuración de Wompi
+WOMPI_PUBLIC_KEY = config('WOMPI_PUBLIC_KEY', default='')
+WOMPI_PRIVATE_KEY = config('WOMPI_PRIVATE_KEY', default='')
+WOMPI_WEBHOOK_SECRET = config('WOMPI_WEBHOOK_SECRET', default='')
+WOMPI_ENVIRONMENT = config('WOMPI_ENVIRONMENT', default='sandbox')
+WOMPI_INTEGRITY_KEY = config('WOMPI_INTEGRITY_KEY', default='')
+
+# Configuración de MercadoPago
+MERCADOPAGO_PUBLIC_KEY = config('MERCADOPAGO_PUBLIC_KEY', default='')
+MERCADOPAGO_ACCESS_TOKEN = config('MERCADOPAGO_ACCESS_TOKEN', default='')
+MERCADOPAGO_WEBHOOK_SECRET = config('MERCADOPAGO_WEBHOOK_SECRET', default='')
+MERCADOPAGO_ENVIRONMENT = config('MERCADOPAGO_ENVIRONMENT', default='sandbox')
+
 # Application definition
 DJANGO_APPS = [
     'django.contrib.admin',
@@ -55,6 +68,7 @@ LOCAL_APPS = [
     'ecommerce.apps.cart',
     'ecommerce.apps.orders',
     'ecommerce.apps.payments',
+    'ecommerce.apps.inventory',
     'ecommerce.apps.reports',
     'ecommerce.apps.system_config',
 ]
@@ -72,6 +86,7 @@ MIDDLEWARE = [
     'allauth.account.middleware.AccountMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'ecommerce.apps.inventory.middleware.InventoryMiddleware',
 ]
 
 ROOT_URLCONF = 'ecommerce.urls'

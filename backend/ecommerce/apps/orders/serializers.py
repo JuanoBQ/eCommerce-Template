@@ -77,11 +77,25 @@ class OrderCreateSerializer(serializers.ModelSerializer):
     """
     items = OrderItemSerializer(many=True, write_only=True)
     
+    # Campos opcionales para dirección de envío detallada
+    shipping_city = serializers.CharField(required=False, allow_blank=True)
+    shipping_state = serializers.CharField(required=False, allow_blank=True)
+    shipping_country = serializers.CharField(required=False, allow_blank=True)
+    shipping_postal_code = serializers.CharField(required=False, allow_blank=True)
+    
+    # Campos opcionales para dirección de facturación detallada
+    billing_city = serializers.CharField(required=False, allow_blank=True)
+    billing_state = serializers.CharField(required=False, allow_blank=True)
+    billing_country = serializers.CharField(required=False, allow_blank=True)
+    billing_postal_code = serializers.CharField(required=False, allow_blank=True)
+    
     class Meta:
         model = Order
         fields = [
             'id', 'order_number', 'first_name', 'last_name', 'document_id',
             'email', 'phone', 'shipping_address', 'billing_address',
+            'shipping_city', 'shipping_state', 'shipping_country', 'shipping_postal_code',
+            'billing_city', 'billing_state', 'billing_country', 'billing_postal_code',
             'shipping_amount', 'total_amount', 'notes', 'items', 'status'
         ]
         read_only_fields = ['id', 'order_number', 'total_amount', 'status']
@@ -94,11 +108,69 @@ class OrderCreateSerializer(serializers.ModelSerializer):
     
 
     
+    def _parse_address_info(self, address_string):
+        """
+        Intenta extraer información de ciudad, estado y código postal de una dirección.
+        Formato esperado: "Dirección, Ciudad, Estado Código_postal, País"
+        """
+        if not address_string:
+            return {}, {}, {}, {}
+            
+        try:
+            # Intentar parsear formato: "Dirección, Ciudad, Estado Código_postal, País"
+            parts = [part.strip() for part in address_string.split(',')]
+            
+            if len(parts) >= 3:
+                # Último elemento podría ser país
+                country = parts[-1] if len(parts) >= 4 else 'Colombia'
+                
+                # Penúltimo elemento podría contener estado y código postal
+                state_postal = parts[-2] if len(parts) >= 3 else ''
+                state_parts = state_postal.split()
+                
+                if len(state_parts) >= 2:
+                    state = ' '.join(state_parts[:-1])
+                    postal_code = state_parts[-1]
+                else:
+                    state = state_postal
+                    postal_code = ''
+                
+                # Antepenúltimo elemento sería la ciudad
+                city = parts[-3] if len(parts) >= 3 else ''
+                
+                return city, state, country, postal_code
+        except Exception:
+            pass
+            
+        return '', '', '', ''
+
     def create(self, validated_data):
         """
         Crea una nueva orden con sus items.
         """
         items_data = validated_data.pop('items', [])
+        
+        # Extraer campos de dirección de envío
+        shipping_city = validated_data.pop('shipping_city', '')
+        shipping_state = validated_data.pop('shipping_state', '')
+        shipping_country = validated_data.pop('shipping_country', '')
+        shipping_postal_code = validated_data.pop('shipping_postal_code', '')
+        
+        # Extraer campos de dirección de facturación
+        billing_city = validated_data.pop('billing_city', '')
+        billing_state = validated_data.pop('billing_state', '')
+        billing_country = validated_data.pop('billing_country', '')
+        billing_postal_code = validated_data.pop('billing_postal_code', '')
+        
+        # Si no se proporcionaron campos individuales, intentar parsear desde la dirección
+        if not shipping_city and not shipping_state:
+            parsed_city, parsed_state, parsed_country, parsed_postal = self._parse_address_info(
+                validated_data.get('shipping_address', '')
+            )
+            shipping_city = shipping_city or parsed_city
+            shipping_state = shipping_state or parsed_state
+            shipping_country = shipping_country or parsed_country
+            shipping_postal_code = shipping_postal_code or parsed_postal
         
         # Calcular totales
         total_amount = sum(item['quantity'] * item['price'] for item in items_data)
@@ -111,17 +183,28 @@ class OrderCreateSerializer(serializers.ModelSerializer):
             email=validated_data['email'],
             phone=validated_data['phone'],
             shipping_address=validated_data['shipping_address'],
-            billing_address=validated_data.get('billing_address', validated_data['shipping_address']),  # Usar billing_address si existe, sino shipping_address
+            billing_address=validated_data.get('billing_address', validated_data['shipping_address']),
             notes=validated_data.get('notes', ''),
             subtotal=total_amount,
             shipping_amount=validated_data.get('shipping_amount', 0),
             total_amount=total_amount + validated_data.get('shipping_amount', 0),
+            
+            # Campos de dirección de envío - usar los enviados o valores por defecto
             shipping_first_name=validated_data['first_name'],
             shipping_last_name=validated_data['last_name'],
-            shipping_city='Bogotá',
-            shipping_state='Cundinamarca',
-            shipping_country='Colombia',
-            shipping_postal_code='110111',
+            shipping_city=shipping_city or 'Bogotá',
+            shipping_state=shipping_state or 'Cundinamarca',
+            shipping_country=shipping_country or 'Colombia',
+            shipping_postal_code=shipping_postal_code or '110111',
+            
+            # Campos de dirección de facturación
+            billing_first_name=validated_data['first_name'],
+            billing_last_name=validated_data['last_name'],
+            billing_city=billing_city or shipping_city or 'Bogotá',
+            billing_state=billing_state or shipping_state or 'Cundinamarca',
+            billing_country=billing_country or shipping_country or 'Colombia',
+            billing_postal_code=billing_postal_code or shipping_postal_code or '110111',
+            
             user=self.context['request'].user
         )
         

@@ -23,8 +23,6 @@ const Header = () => {
   const { count: wishlistCount } = useWishlist()
   const router = useRouter()
 
-  // Debug: Log auth state in header
-  console.log('🔍 Header - Auth state:', { isAuthenticated, user: user?.first_name, isLoading })
 
   useEffect(() => {
     const handleScroll = () => {

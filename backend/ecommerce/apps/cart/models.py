@@ -105,15 +105,28 @@ class CartItem(models.Model):
         if self.variant and self.variant.product != self.product:
             raise ValidationError(_('La variante debe pertenecer al producto seleccionado.'))
         
-        # Verificar stock disponible
+        # Verificar stock disponible (considerando reservas)
         if self.product.track_inventory:
-            available_quantity = self.variant.inventory_quantity if self.variant else self.product.inventory_quantity
-            if self.quantity > available_quantity and not self.product.allow_backorder:
+            from ecommerce.apps.inventory.services import InventoryService
+            if not InventoryService.is_available(self.product, self.variant, self.quantity):
                 raise ValidationError(_('No hay suficiente stock disponible.'))
     
     def save(self, *args, **kwargs):
         self.clean()
         super().save(*args, **kwargs)
+        
+        # Sincronizar reservas de stock
+        if self.cart.user:
+            from ecommerce.apps.inventory.services import InventoryService
+            InventoryService.sync_cart_reservations(self.cart.user)
+    
+    def delete(self, *args, **kwargs):
+        # Sincronizar reservas antes de eliminar
+        if self.cart.user:
+            from ecommerce.apps.inventory.services import InventoryService
+            InventoryService.sync_cart_reservations(self.cart.user)
+        
+        super().delete(*args, **kwargs)
 
 
 class Wishlist(models.Model):

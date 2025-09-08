@@ -201,12 +201,7 @@ export const useOrders = () => {
         queryParams.payment_status = params.payment_status
       }
 
-      console.log('🔍 useOrders - Parámetros de consulta:', queryParams)
-      console.log('🔍 useOrders - URL completa:', `/orders/?${new URLSearchParams(queryParams).toString()}`)
-
       const response = await apiClient.get('/orders/', { params: queryParams })
-      
-      console.log('🔍 useOrders - Respuesta del servidor:', response)
 
       if (!response) {
         throw new Error('No se recibieron datos del servidor')

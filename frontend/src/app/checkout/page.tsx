@@ -262,53 +262,45 @@ export default function CheckoutPage() {
       
       // Crear la orden
       const order = await createOrder(orderData)
-      console.log('🔍 Checkout - Orden creada:', order)
       setCreatedOrder(order)
       
       // Procesar pago con pasarela seleccionada
-      console.log('🔍 Checkout - Método de pago seleccionado:', {
-        method: formData.payment_method,
-        orderId: (order as any).id
-      })
-      
-      console.log('🔍 Checkout - Procesando pago automáticamente...')
       setPaymentStatus('processing')
       
       try {
-        console.log('🔍 Checkout - Creando intención de pago directamente...')
-        
         // Usar apiClient directamente para crear la intención de pago
         const { apiClient } = await import('@/lib/api')
         const paymentData = await apiClient.post('/payments/payments/create_payment_intent/', {
           order_id: (order as any).id,
           provider: formData.payment_method
-        })
-        
-        console.log('🔍 Checkout - Respuesta de pago:', paymentData)
+        }) as any
         
         if (paymentData.success && paymentData.payment_url) {
-          console.log('🔍 Checkout - Redirigiendo directamente a:', paymentData.payment_url)
-          
-          // Redirigir inmediatamente a la pasarela de pagos
-          window.open(paymentData.payment_url, '_blank')
           
           // Limpiar carrito y mostrar mensaje
           clearCart()
-          toast.success('¡Redirigiendo a la pasarela de pago!')
+          toast.success('¡Abriendo pasarela de pago en nueva pestaña!')
+          
+          // Abrir en nueva pestaña inmediatamente (para evitar bloqueo del navegador)
+          const paymentWindow = window.open(paymentData.payment_url, '_blank', 'noopener,noreferrer')
+          
+          // Verificar si se pudo abrir la ventana
+          if (!paymentWindow) {
+            toast.error('Por favor permite ventanas emergentes y haz clic en "Ir a Pagar"')
+          }
           
           // Redirigir a página de seguimiento
           router.push(`/checkout/pending?order=${(order as any).order_number}&payment=${paymentData.payment_id}`)
+          
         } else {
           throw new Error(paymentData.error || 'Error al procesar el pago')
         }
       } catch (error) {
-        console.error('🔍 Checkout - Error procesando pago:', error)
         toast.error('Error al procesar el pago. Por favor intenta de nuevo.')
         setPaymentStatus('error')
       }
       
     } catch (error) {
-      console.error('Error creating order:', error)
       toast.error('Error al crear la orden. Por favor intenta de nuevo.')
     } finally {
       setIsSubmitting(false)

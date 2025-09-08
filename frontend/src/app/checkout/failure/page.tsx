@@ -1,11 +1,11 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { XCircle, RefreshCw, Home, ShoppingBag, ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 
-const CheckoutFailurePage: React.FC = () => {
+const CheckoutFailurePageContent: React.FC = () => {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [orderId, setOrderId] = useState<string | null>(null);
@@ -174,6 +174,21 @@ const CheckoutFailurePage: React.FC = () => {
         </div>
       </div>
     </div>
+  );
+};
+
+const CheckoutFailurePage: React.FC = () => {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <XCircle className="h-8 w-8 animate-pulse mx-auto mb-4 text-red-500" />
+          <p>Cargando información del error...</p>
+        </div>
+      </div>
+    }>
+      <CheckoutFailurePageContent />
+    </Suspense>
   );
 };
 

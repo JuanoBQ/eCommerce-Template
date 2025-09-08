@@ -69,14 +69,13 @@ def get_logging_config(debug=False, base_dir=None):
     # Agregar handler de archivo solo si es posible
     try:
         if is_windows:
-            # En Windows, usar TimedRotatingFileHandler que es más estable
+            # En Windows, usar un handler más simple que no requiera rotación automática
+            # para evitar problemas de permisos con archivos en uso
             file_handler = {
                 'level': 'INFO',
-                'class': 'logging.handlers.TimedRotatingFileHandler',
+                'class': 'logging.FileHandler',
                 'filename': str(logs_dir / 'django.log'),
-                'when': 'midnight',
-                'interval': 1,
-                'backupCount': 7,
+                'mode': 'a',
                 'formatter': 'verbose',
                 'encoding': 'utf-8',
             }
