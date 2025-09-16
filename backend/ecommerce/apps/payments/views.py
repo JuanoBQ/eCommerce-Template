@@ -39,9 +39,14 @@ class PaymentViewSet(viewsets.ModelViewSet):
         Crea una intención de pago.
         """
         try:
+            # Usar request.body en lugar de request.data para evitar el problema del parser
+            import json
+            body = request.body.decode('utf-8')
+            data = json.loads(body) if body else {}
+            
             # Validar datos requeridos
-            order_id = request.data.get('order_id')
-            provider = request.data.get('provider')
+            order_id = data.get('order_id')
+            provider = data.get('provider')
             
             if not order_id or not provider:
                 return Response(
