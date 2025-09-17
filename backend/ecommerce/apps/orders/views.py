@@ -39,7 +39,15 @@ class OrderViewSet(viewsets.ModelViewSet):
         """
         Filtra las órdenes según el usuario.
         """
-        queryset = Order.objects.select_related('user').prefetch_related('items__product')
+        queryset = Order.objects.select_related(
+            'user'
+        ).prefetch_related(
+            'items__product__category',
+            'items__product__brand',
+            'items__product__images',
+            'payments',  # Para evitar N+1 en pagos
+            'items__product__reviews'  # Para evitar N+1 en reviews de productos
+        )
         
         if self.request.user.is_staff:
             return queryset.all()

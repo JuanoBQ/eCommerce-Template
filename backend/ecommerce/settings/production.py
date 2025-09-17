@@ -1,79 +1,97 @@
 """
-Configuración de producción para Django.
-Optimizada para deployment en Hostinger.
+Configuración de Django para producción.
 """
 
 from .base import *
-from decouple import config
+from .sentry import init_sentry
 import os
+import logging
 
-# SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = config('DEBUG', default=False, cast=bool)
+# ===========================================
+# CONFIGURACIÓN BÁSICA
+# ===========================================
 
-# Hosts permitidos en producción
-ALLOWED_HOSTS = config(
-    'ALLOWED_HOSTS', 
-    default='yourdomain.com,www.yourdomain.com'
-).split(',')
+DEBUG = False
+ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='localhost').split(',')
 
-# Agregar WhiteNoise para servir archivos estáticos en producción
-MIDDLEWARE.insert(2, 'whitenoise.middleware.WhiteNoiseMiddleware')
+# ===========================================
+# BASE DE DATOS
+# ===========================================
 
-# Base de datos para producción - MySQL (recomendado para Hostinger)
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.mysql',
-        'NAME': config('DB_NAME'),
-        'USER': config('DB_USER'),
-        'PASSWORD': config('DB_PASSWORD'),
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': config('DB_NAME', default='ecommerce_prod'),
+        'USER': config('DB_USER', default='ecommerce_user'),
+        'PASSWORD': config('DB_PASSWORD', default=''),
         'HOST': config('DB_HOST', default='localhost'),
-        'PORT': config('DB_PORT', default='3306'),
+        'PORT': config('DB_PORT', default='5432'),
         'OPTIONS': {
-            'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
-            'charset': 'utf8mb4',
+            'client_encoding': 'UTF8',
         },
+        'CONN_MAX_AGE': config('DB_CONN_MAX_AGE', default=60, cast=int),
+        'CONN_HEALTH_CHECKS': config('DB_CONN_HEALTH_CHECKS', default=True, cast=bool),
     }
 }
 
-# Configuración de seguridad para producción
-SECURE_BROWSER_XSS_FILTER = True
-SECURE_CONTENT_TYPE_NOSNIFF = True
-X_FRAME_OPTIONS = 'DENY'
+# ===========================================
+# CACHE CONFIGURATION
+# ===========================================
 
-# HTTPS settings (configurar cuando tengas SSL)
-if config('USE_SSL', default=False, cast=bool):
-    SECURE_SSL_REDIRECT = True
-    SESSION_COOKIE_SECURE = True
-    CSRF_COOKIE_SECURE = True
-    SECURE_HSTS_SECONDS = 31536000
-    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
-    SECURE_HSTS_PRELOAD = True
+# Usar configuración de cache con fallback automático
+from .cache import CACHES, CACHE_TIMEOUTS, CACHE_MIDDLEWARE_ALIAS, CACHE_MIDDLEWARE_SECONDS, CACHE_MIDDLEWARE_KEY_PREFIX
 
-# Cache ligero para Hostinger (file-based)
-CACHES = {
-    'default': {
-        'BACKEND': 'django.core.cache.backends.filebased.FileBasedCache',
-        'LOCATION': config('CACHE_LOCATION', default='/tmp/django_cache'),
-        'TIMEOUT': 300,
-        'OPTIONS': {
-            'MAX_ENTRIES': 1000,
-            'CULL_FREQUENCY': 3,
-        }
-    }
-}
+# ===========================================
+# SEGURIDAD
+# ===========================================
 
-# Celery simplificado para producción
-CELERY_BROKER_URL = config('CELERY_BROKER_URL', default='django://')
-CELERY_RESULT_BACKEND = config('CELERY_RESULT_BACKEND', default='django-db')
-CELERY_TASK_ALWAYS_EAGER = config('CELERY_TASK_ALWAYS_EAGER', default=False, cast=bool)
+# HTTPS Settings
+SECURE_SSL_REDIRECT = config('SECURE_SSL_REDIRECT', default=True, cast=bool)
+SECURE_HSTS_SECONDS = config('SECURE_HSTS_SECONDS', default=31536000, cast=int)
+SECURE_HSTS_INCLUDE_SUBDOMAINS = config('SECURE_HSTS_INCLUDE_SUBDOMAINS', default=True, cast=bool)
+SECURE_HSTS_PRELOAD = config('SECURE_HSTS_PRELOAD', default=True, cast=bool)
+SECURE_CONTENT_TYPE_NOSNIFF = config('SECURE_CONTENT_TYPE_NOSNIFF', default=True, cast=bool)
+SECURE_BROWSER_XSS_FILTER = config('SECURE_BROWSER_XSS_FILTER', default=True, cast=bool)
+X_FRAME_OPTIONS = config('X_FRAME_OPTIONS', default='DENY')
 
-# Logging para producción
+# Session Security
+SESSION_COOKIE_SECURE = config('SESSION_COOKIE_SECURE', default=True, cast=bool)
+SESSION_COOKIE_HTTPONLY = config('SESSION_COOKIE_HTTPONLY', default=True, cast=bool)
+CSRF_COOKIE_SECURE = config('CSRF_COOKIE_SECURE', default=True, cast=bool)
+CSRF_COOKIE_HTTPONLY = config('CSRF_COOKIE_HTTPONLY', default=True, cast=bool)
+
+# ===========================================
+# CORS CONFIGURATION
+# ===========================================
+
+CORS_ALLOWED_ORIGINS = config('CORS_ALLOWED_ORIGINS', default='').split(',') if config('CORS_ALLOWED_ORIGINS', default='') else []
+CORS_ALLOW_CREDENTIALS = config('CORS_ALLOW_CREDENTIALS', default=True, cast=bool)
+
+# ===========================================
+# EMAIL CONFIGURATION
+# ===========================================
+
+EMAIL_BACKEND = config('EMAIL_BACKEND', default='django.core.mail.backends.smtp.EmailBackend')
+EMAIL_HOST = config('EMAIL_HOST', default='')
+EMAIL_PORT = config('EMAIL_PORT', default=587, cast=int)
+EMAIL_USE_TLS = config('EMAIL_USE_TLS', default=True, cast=bool)
+EMAIL_HOST_USER = config('EMAIL_HOST_USER', default='')
+EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD', default='')
+DEFAULT_FROM_EMAIL = config('DEFAULT_FROM_EMAIL', default='noreply@yourdomain.com')
+
+# ===========================================
+# LOGGING CONFIGURATION
+# ===========================================
+
+LOG_LEVEL = config('LOG_LEVEL', default='INFO')
+LOG_FILE = config('LOG_FILE', default='/var/log/ecommerce/django.log')
+
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
     'formatters': {
         'verbose': {
-            'format': '{levelname} {asctime} {name} {message}',
+            'format': '{levelname} {asctime} {module} {process:d} {thread:d} {message}',
             'style': '{',
         },
         'simple': {
@@ -83,103 +101,111 @@ LOGGING = {
     },
     'handlers': {
         'file': {
-            'level': 'INFO',
-            'class': 'logging.FileHandler',
-            'filename': config('LOG_FILE', default='/tmp/django_production.log'),
+            'level': LOG_LEVEL,
+            'class': 'logging.handlers.RotatingFileHandler',
+            'filename': LOG_FILE,
+            'maxBytes': 1024*1024*15,  # 15MB
+            'backupCount': 10,
             'formatter': 'verbose',
         },
-        'error_file': {
-            'level': 'ERROR',
-            'class': 'logging.FileHandler', 
-            'filename': config('ERROR_LOG_FILE', default='/tmp/django_errors.log'),
-            'formatter': 'verbose',
+        'console': {
+            'level': LOG_LEVEL,
+            'class': 'logging.StreamHandler',
+            'formatter': 'simple',
         },
     },
     'root': {
-        'handlers': ['file'],
-        'level': 'WARNING',
+        'handlers': ['console', 'file'],
+        'level': LOG_LEVEL,
     },
     'loggers': {
         'django': {
-            'handlers': ['file', 'error_file'],
-            'level': 'INFO',
+            'handlers': ['console', 'file'],
+            'level': LOG_LEVEL,
             'propagate': False,
         },
         'ecommerce': {
-            'handlers': ['file', 'error_file'],
-            'level': 'INFO',
+            'handlers': ['console', 'file'],
+            'level': LOG_LEVEL,
             'propagate': False,
         },
     },
 }
 
-# Email configuration para producción
-EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-EMAIL_HOST = config('EMAIL_HOST')
-EMAIL_PORT = config('EMAIL_PORT', default=587, cast=int)
-EMAIL_USE_TLS = config('EMAIL_USE_TLS', default=True, cast=bool)
-EMAIL_HOST_USER = config('EMAIL_HOST_USER')
-EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD')
-DEFAULT_FROM_EMAIL = config('DEFAULT_FROM_EMAIL', default=EMAIL_HOST_USER)
+# ===========================================
+# STATIC FILES
+# ===========================================
 
-# Static files para producción
 STATIC_URL = '/static/'
-STATIC_ROOT = config('STATIC_ROOT', default='/path/to/staticfiles/')
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 
-# Media files para producción en Hostinger
 MEDIA_URL = '/media/'
-MEDIA_ROOT = config('MEDIA_ROOT', default='/path/to/media/')
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
-# Configuración de archivos estáticos con WhiteNoise
-STORAGES = {
-    'default': {
-        'BACKEND': 'django.core.files.storage.FileSystemStorage',
-    },
-    'staticfiles': {
-        'BACKEND': 'whitenoise.storage.CompressedManifestStaticFilesStorage',
-    },
-}
+# ===========================================
+# CELERY CONFIGURATION
+# ===========================================
 
-# CORS restrictivo para producción
-CORS_ALLOWED_ORIGINS = config('CORS_ALLOWED_ORIGINS').split(',')
-CORS_ALLOW_CREDENTIALS = True
+CELERY_BROKER_URL = config('CELERY_BROKER_URL', default='redis://localhost:6379/4')
+CELERY_RESULT_BACKEND = config('CELERY_RESULT_BACKEND', default='redis://localhost:6379/5')
+CELERY_ACCEPT_CONTENT = ['json']
+CELERY_TASK_SERIALIZER = 'json'
+CELERY_RESULT_SERIALIZER = 'json'
+CELERY_TIMEZONE = 'America/Bogota'
 
-# Configuración JWT más estricta para producción
-REST_AUTH['JWT_AUTH_SECURE'] = True
-REST_AUTH['JWT_AUTH_HTTPONLY'] = True
+# ===========================================
+# PERFORMANCE SETTINGS
+# ===========================================
 
-# Session configuration para producción
-SESSION_COOKIE_AGE = 86400  # 24 horas
-SESSION_EXPIRE_AT_BROWSER_CLOSE = True
-SESSION_COOKIE_HTTPONLY = True
-SESSION_COOKIE_SAMESITE = 'Lax'
+# Cache Performance
+CACHE_MIDDLEWARE_SECONDS = config('CACHE_MIDDLEWARE_SECONDS', default=300, cast=int)
+CACHE_MIDDLEWARE_KEY_PREFIX = config('CACHE_MIDDLEWARE_KEY_PREFIX', default='ecommerce')
 
-# Configuración de upload de archivos optimizada para Hostinger
-FILE_UPLOAD_MAX_MEMORY_SIZE = 5242880  # 5MB
-DATA_UPLOAD_MAX_MEMORY_SIZE = 5242880  # 5MB
-FILE_UPLOAD_PERMISSIONS = 0o644
+# Database Performance
+CONN_MAX_AGE = config('DB_CONN_MAX_AGE', default=60, cast=int)
 
-# Configuración específica para pagos en producción
-WOMPI_ENVIRONMENT = config('WOMPI_ENVIRONMENT', default='production')
-MERCADOPAGO_ENVIRONMENT = config('MERCADOPAGO_ENVIRONMENT', default='production')
+# ===========================================
+# SENTRY CONFIGURATION
+# ===========================================
 
-# Compresión de archivos estáticos
-STATICFILES_FINDERS = [
-    'django.contrib.staticfiles.finders.FileSystemFinder',
-    'django.contrib.staticfiles.finders.AppDirectoriesFinder',
+# Inicializar Sentry si está configurado
+if config('SENTRY_DSN', default=''):
+    init_sentry(
+        dsn=config('SENTRY_DSN'),
+        environment=config('SENTRY_ENVIRONMENT', default='production'),
+        release=config('SENTRY_RELEASE', default='1.0.0'),
+    )
+
+# ===========================================
+# MIDDLEWARE ADICIONAL PARA PRODUCCIÓN
+# ===========================================
+
+MIDDLEWARE = MIDDLEWARE + [
+    'ecommerce.middleware.cache_middleware.SmartCacheMiddleware',
+    'ecommerce.middleware.cache_middleware.CacheStatsMiddleware',
 ]
 
-# Optimizaciones de base de datos
-DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+# ===========================================
+# CONFIGURACIÓN DE SESIONES
+# ===========================================
 
-# Configuración específica de Hostinger
-# Ajustar según las limitaciones de tu plan
-MAX_UPLOAD_SIZE = 10 * 1024 * 1024  # 10MB
+# Habilitar cache de sesiones en producción
+SESSION_ENGINE = 'django.contrib.sessions.backends.cache'
+SESSION_CACHE_ALIAS = 'sessions'
 
-# Timeout configurations
-CONN_MAX_AGE = 60
+# ===========================================
+# CONFIGURACIÓN DE BACKUP
+# ===========================================
 
-# Database connection pooling (si está disponible)
-if config('DB_POOL', default=False, cast=bool):
-    DATABASES['default']['CONN_MAX_AGE'] = 60
-    DATABASES['default']['OPTIONS']['MAX_CONNS'] = 20
+BACKUP_ENABLED = config('BACKUP_ENABLED', default=True, cast=bool)
+BACKUP_SCHEDULE = config('BACKUP_SCHEDULE', default='0 2 * * *')  # Daily at 2 AM
+BACKUP_RETENTION_DAYS = config('BACKUP_RETENTION_DAYS', default=30, cast=int)
+
+# ===========================================
+# CONFIGURACIÓN DE MONITOREO
+# ===========================================
+
+HEALTH_CHECK_ENABLED = config('HEALTH_CHECK_ENABLED', default=True, cast=bool)
+HEALTH_CHECK_TIMEOUT = config('HEALTH_CHECK_TIMEOUT', default=30, cast=int)
+PERFORMANCE_MONITORING = config('PERFORMANCE_MONITORING', default=True, cast=bool)
+SLOW_QUERY_THRESHOLD = config('SLOW_QUERY_THRESHOLD', default=1.0, cast=float)

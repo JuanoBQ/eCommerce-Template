@@ -24,6 +24,7 @@ function CheckoutPendingContent() {
   const [paymentWindowOpened, setPaymentWindowOpened] = useState(false)
   const [statusInterval, setStatusInterval] = useState<NodeJS.Timeout | null>(null)
   const [verificationStopped, setVerificationStopped] = useState(false)
+  const [isMounted, setIsMounted] = useState(true)
 
   const orderNumber = searchParams.get('order')
   const paymentId = searchParams.get('payment')
@@ -62,11 +63,13 @@ function CheckoutPendingContent() {
   // Limpiar intervalo cuando el componente se desmonte
   useEffect(() => {
     return () => {
+      setIsMounted(false)
       if (statusInterval) {
         clearInterval(statusInterval)
+        setStatusInterval(null)
       }
     }
-  }, [statusInterval])
+  }, [])
 
   const loadPaymentInfo = async () => {
     try {
@@ -87,12 +90,17 @@ function CheckoutPendingContent() {
 
       // Verificar estado del pago periódicamente
       const checkStatus = async () => {
+        // Verificar si el componente sigue montado
+        if (!isMounted) {
+          return
+        }
+
         try {
           const statusResponse = await apiClient.get(`/payments/payments/check_status/?order=${orderNumber}`) as any
           if (statusResponse.success && statusResponse.status === 'completed') {
             // Detener verificación cuando el pago se complete
-            if (intervalRef) {
-              clearInterval(intervalRef)
+            if (statusInterval) {
+              clearInterval(statusInterval)
               setStatusInterval(null)
               setVerificationStopped(true)
             }
@@ -102,19 +110,16 @@ function CheckoutPendingContent() {
           }
         } catch (error) {
           // Error silencioso en verificación
+          console.warn('Error verificando estado del pago:', error)
         }
       }
 
-      // Verificar cada 10 segundos
-      const intervalRef = setInterval(checkStatus, 10000)
-      setStatusInterval(intervalRef)
-
-      // Limpiar intervalo cuando el componente se desmonte
-      return () => {
-        if (intervalRef) {
-          clearInterval(intervalRef)
-        }
-      }
+      // TEMPORALMENTE DESHABILITADO: Verificar cada 10 segundos
+      // const intervalRef = setInterval(checkStatus, 10000)
+      // setStatusInterval(intervalRef)
+      
+      // Por ahora, solo verificar una vez
+      console.log('Polling automático deshabilitado temporalmente')
     } catch (error) {
       toast.error('Error al cargar información del pago')
     } finally {

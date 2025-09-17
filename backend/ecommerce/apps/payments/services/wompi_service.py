@@ -441,6 +441,42 @@ class WompiService(BasePaymentService):
                 'error': f'Error al obtener métodos de pago: {str(e)}'
             }
     
+    def verify_payment(self, payment_id: str) -> Dict[str, Any]:
+        """
+        Verifica el estado de un pago en Wompi.
+        """
+        try:
+            response = requests.get(
+                f"{self.base_url}/transactions/{payment_id}",
+                headers=self.headers,
+                timeout=30
+            )
+            
+            if response.status_code == 200:
+                data = response.json()
+                transaction = data.get('data', {})
+                
+                return {
+                    'success': True,
+                    'status': transaction.get('status', 'PENDING'),
+                    'transaction_id': transaction.get('id'),
+                    'amount': transaction.get('amount_in_cents', 0),
+                    'currency': transaction.get('currency', 'COP'),
+                    'raw_response': data
+                }
+            else:
+                return {
+                    'success': False,
+                    'error': 'Error al verificar pago',
+                    'raw_response': response.json()
+                }
+                
+        except Exception as e:
+            return {
+                'success': False,
+                'error': f'Error al verificar pago: {str(e)}'
+            }
+    
     def get_supported_countries(self) -> list:
         """Obtiene los países soportados por Wompi."""
         return ['CO']

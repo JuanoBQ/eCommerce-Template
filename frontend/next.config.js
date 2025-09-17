@@ -1,3 +1,5 @@
+const { withSentryConfig } = require('@sentry/nextjs')
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   images: {
@@ -31,4 +33,45 @@ const nextConfig = {
   },
 };
 
-module.exports = nextConfig;
+// Configuración de Sentry
+const sentryWebpackPluginOptions = {
+  // Configuración del plugin de webpack
+  org: process.env.SENTRY_ORG,
+  project: process.env.SENTRY_PROJECT,
+  
+  // Configuración de source maps
+  silent: true,
+  widenClientFileUpload: true,
+  
+  // Configuración de release
+  release: process.env.NEXT_PUBLIC_SENTRY_RELEASE,
+  
+  // Configuración de debugging
+  debug: process.env.NODE_ENV === 'development',
+  
+  // Configuración de archivos
+  include: ['./src'],
+  ignore: ['node_modules'],
+  
+  // Configuración de source maps
+  sourcemaps: {
+    disable: true,
+  },
+}
+
+// Configuración de Sentry para runtime
+const sentryOptions = {
+  // Configuración de performance
+  tracesSampleRate: process.env.NODE_ENV === 'production' ? 0.1 : 1.0,
+  
+  // Configuración de debugging
+  debug: process.env.NODE_ENV === 'development',
+  
+  // Configuración de release
+  release: process.env.NEXT_PUBLIC_SENTRY_RELEASE,
+  
+  // Configuración de environment
+  environment: process.env.NEXT_PUBLIC_SENTRY_ENVIRONMENT || 'development',
+}
+
+module.exports = withSentryConfig(nextConfig, sentryWebpackPluginOptions, sentryOptions);

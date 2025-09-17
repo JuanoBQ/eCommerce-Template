@@ -1,440 +1,248 @@
-# Guía de Despliegue - Ecommerce de Ropa
+# Guía de Despliegue - eCommerce Template
 
-Esta guía te ayudará a desplegar el ecommerce en diferentes plataformas de hosting.
+Esta guía describe cómo desplegar el proyecto eCommerce en diferentes entornos.
 
-## 🐳 Despliegue con Docker
+## 📋 Requisitos Previos
 
-### Prerrequisitos
-- Docker
-- Docker Compose
+### Software Requerido
+- **Docker** (versión 20.10 o superior)
+- **Docker Compose** (versión 2.0 o superior)
+- **Git** (para clonar el repositorio)
 
-### 1. Configurar Variables de Entorno
+### Variables de Entorno
+Antes del despliegue, asegúrate de configurar las variables de entorno necesarias:
 
 ```bash
-# Backend
-cp backend/env.example backend/.env
-# Editar backend/.env con configuraciones de producción
-
-# Frontend
-cp frontend/env.example frontend/.env
-# Editar frontend/.env con configuraciones de producción
+# Copiar archivo de ejemplo
+cp backend/env.development.example backend/.env
+cp frontend/env.example frontend/.env.local
 ```
 
-### 2. Ejecutar con Docker Compose
+## 🚀 Despliegue Rápido
+
+### 1. Clonar el Repositorio
+```bash
+git clone <repository-url>
+cd eCommerce-Template
+```
+
+### 2. Configurar Variables de Entorno
+```bash
+# Backend
+cp backend/env.development.example backend/.env
+
+# Frontend
+cp frontend/env.example frontend/.env.local
+```
+
+### 3. Desplegar con Docker Compose
+```bash
+# Despliegue completo
+docker-compose up -d
+
+# O usar el script de despliegue
+./scripts/deploy.sh staging
+```
+
+## 🔧 Despliegue por Entornos
+
+### Desarrollo Local
 
 ```bash
-# Construir y ejecutar todos los servicios
-docker-compose up -d
+# 1. Configurar variables de entorno
+export DB_HOST=localhost
+export REDIS_URL=redis://localhost:6379/0
+
+# 2. Iniciar servicios de base de datos
+docker-compose up -d db redis
+
+# 3. Ejecutar migraciones
+cd backend
+python manage.py migrate
+
+# 4. Crear superusuario
+python manage.py createsuperuser
+
+# 5. Iniciar servidor de desarrollo
+python manage.py runserver
+
+# 6. En otra terminal, iniciar frontend
+cd frontend
+npm run dev
+```
+
+### Staging
+
+```bash
+# Usar script de despliegue
+./scripts/deploy.sh staging
+
+# O manualmente
+docker-compose -f docker-compose.staging.yml up -d
+```
+
+### Producción
+
+```bash
+# Usar script de despliegue
+./scripts/deploy.sh production
+
+# O manualmente
+docker-compose -f docker-compose.prod.yml up -d
+```
+
+## 📊 Monitoreo y Health Checks
+
+### Health Checks Disponibles
+
+- **Básico**: `GET /health/`
+- **Detallado**: `GET /health/detailed/`
+- **Readiness**: `GET /health/ready/`
+- **Liveness**: `GET /health/live/`
+
+### Verificar Estado del Sistema
+
+```bash
+# Verificar estado de contenedores
+docker-compose ps
 
 # Ver logs
 docker-compose logs -f
 
-# Detener servicios
-docker-compose down
+# Verificar health checks
+curl http://localhost:8000/health/detailed/
 ```
 
-### 3. Comandos Útiles
+## 🔒 Seguridad
 
+### Rate Limiting
+El sistema incluye rate limiting configurado para:
+- **Login**: 5 intentos por 5 minutos
+- **Registro**: 3 registros por 5 minutos
+- **Pagos**: 10 pagos por minuto
+- **General**: 100 requests por minuto
+
+### Headers de Seguridad
+- X-Content-Type-Options: nosniff
+- X-Frame-Options: DENY
+- X-XSS-Protection: 1; mode=block
+- Content-Security-Policy configurado
+
+## 🗄️ Base de Datos
+
+### Migraciones
 ```bash
-# Ejecutar migraciones
+# Crear migraciones
+docker-compose exec backend python manage.py makemigrations
+
+# Aplicar migraciones
 docker-compose exec backend python manage.py migrate
 
-# Crear superusuario
-docker-compose exec backend python manage.py createsuperuser
-
-# Recopilar archivos estáticos
-docker-compose exec backend python manage.py collectstatic
-
-# Acceder al shell de Django
-docker-compose exec backend python manage.py shell
+# Verificar estado
+docker-compose exec backend python manage.py showmigrations
 ```
 
-## ☁️ Despliegue en Vercel (Frontend)
-
-### 1. Preparar el Proyecto
-
-```bash
-cd frontend
-
-# Instalar Vercel CLI
-npm install -g vercel
-
-# Login en Vercel
-vercel login
-```
-
-### 2. Configurar Variables de Entorno
-
-En el dashboard de Vercel, agregar las siguientes variables:
-
-```env
-NEXT_PUBLIC_API_URL=https://tu-backend.railway.app/api
-NEXT_PUBLIC_APP_URL=https://tu-app.vercel.app
-NEXT_PUBLIC_WOMPI_PUBLIC_KEY=tu_wompi_public_key
-NEXT_PUBLIC_MERCADOPAGO_PUBLIC_KEY=tu_mercadopago_public_key
-```
-
-### 3. Desplegar
-
-```bash
-# Desplegar
-vercel --prod
-
-# O conectar repositorio en Vercel Dashboard
-```
-
-## 🚂 Despliegue en Railway (Backend)
-
-### 1. Preparar el Proyecto
-
-```bash
-cd backend
-
-# Instalar Railway CLI
-npm install -g @railway/cli
-
-# Login en Railway
-railway login
-```
-
-### 2. Crear Proyecto
-
-```bash
-# Inicializar proyecto
-railway init
-
-# Agregar base de datos PostgreSQL
-railway add postgresql
-
-# Agregar Redis
-railway add redis
-```
-
-### 3. Configurar Variables de Entorno
-
-```bash
-# Configurar variables
-railway variables set SECRET_KEY=tu-secret-key-muy-seguro
-railway variables set DEBUG=False
-railway variables set ALLOWED_HOSTS=tu-backend.railway.app
-railway variables set CORS_ALLOWED_ORIGINS=https://tu-app.vercel.app
-```
-
-### 4. Desplegar
-
-```bash
-# Desplegar
-railway up
-```
-
-## 🌊 Despliegue en Render
-
-### 1. Backend (Web Service)
-
-1. Conectar repositorio en Render Dashboard
-2. Configurar:
-   - **Build Command**: `pip install -r requirements.txt`
-   - **Start Command**: `gunicorn ecommerce.wsgi:application`
-   - **Environment**: Python 3.11
-
-3. Variables de entorno:
-```env
-SECRET_KEY=tu-secret-key-muy-seguro
-DEBUG=False
-ALLOWED_HOSTS=tu-backend.onrender.com
-DATABASE_URL=postgresql://user:pass@host:port/db
-REDIS_URL=redis://user:pass@host:port
-```
-
-### 2. Frontend (Static Site)
-
-1. Conectar repositorio en Render Dashboard
-2. Configurar:
-   - **Build Command**: `cd frontend && npm install && npm run build`
-   - **Publish Directory**: `frontend/out`
-   - **Environment**: Node.js 18
-
-3. Variables de entorno:
-```env
-NEXT_PUBLIC_API_URL=https://tu-backend.onrender.com/api
-NEXT_PUBLIC_APP_URL=https://tu-frontend.onrender.com
-```
-
-## 🐘 Despliegue en DigitalOcean
-
-### 1. Crear Droplet
-
-```bash
-# Crear droplet Ubuntu 22.04
-# Tamaño mínimo: 2GB RAM, 1 CPU
-```
-
-### 2. Configurar Servidor
-
-```bash
-# Conectar al servidor
-ssh root@tu-servidor-ip
-
-# Actualizar sistema
-apt update && apt upgrade -y
-
-# Instalar Docker
-curl -fsSL https://get.docker.com -o get-docker.sh
-sh get-docker.sh
-
-# Instalar Docker Compose
-apt install docker-compose -y
-```
-
-### 3. Desplegar Aplicación
-
-```bash
-# Clonar repositorio
-git clone <tu-repositorio>
-cd ecommerce-template
-
-# Configurar variables de entorno
-cp backend/env.example backend/.env
-cp frontend/env.example frontend/.env
-
-# Editar archivos .env con configuraciones de producción
-
-# Ejecutar con Docker Compose
-docker-compose up -d
-```
-
-### 4. Configurar Nginx (Opcional)
-
-```bash
-# Instalar Nginx
-apt install nginx -y
-
-# Configurar proxy reverso
-cat > /etc/nginx/sites-available/ecommerce << EOF
-server {
-    listen 80;
-    server_name tu-dominio.com;
-
-    location / {
-        proxy_pass http://localhost:3000;
-        proxy_set_header Host \$host;
-        proxy_set_header X-Real-IP \$remote_addr;
-    }
-
-    location /api/ {
-        proxy_pass http://localhost:8000;
-        proxy_set_header Host \$host;
-        proxy_set_header X-Real-IP \$remote_addr;
-    }
-}
-EOF
-
-# Habilitar sitio
-ln -s /etc/nginx/sites-available/ecommerce /etc/nginx/sites-enabled/
-nginx -t
-systemctl restart nginx
-```
-
-## 🔒 Configuración de SSL
-
-### Con Let's Encrypt
-
-```bash
-# Instalar Certbot
-apt install certbot python3-certbot-nginx -y
-
-# Obtener certificado
-certbot --nginx -d tu-dominio.com
-
-# Renovación automática
-crontab -e
-# Agregar: 0 12 * * * /usr/bin/certbot renew --quiet
-```
-
-## 📊 Monitoreo y Logs
-
-### 1. Configurar Logs
-
-```bash
-# En el archivo settings.py del backend
-LOGGING = {
-    'version': 1,
-    'disable_existing_loggers': False,
-    'handlers': {
-        'file': {
-            'level': 'INFO',
-            'class': 'logging.FileHandler',
-            'filename': '/var/log/django.log',
-        },
-    },
-    'loggers': {
-        'django': {
-            'handlers': ['file'],
-            'level': 'INFO',
-            'propagate': True,
-        },
-    },
-}
-```
-
-### 2. Monitoreo con Sentry
-
-```bash
-# Instalar Sentry
-pip install sentry-sdk[django]
-
-# Configurar en settings.py
-import sentry_sdk
-from sentry_sdk.integrations.django import DjangoIntegration
-
-sentry_sdk.init(
-    dsn="tu-sentry-dsn",
-    integrations=[DjangoIntegration()],
-    traces_sample_rate=1.0,
-    send_default_pii=True
-)
-```
-
-## 🔄 CI/CD con GitHub Actions
-
-### 1. Configurar Workflow
-
-```yaml
-# .github/workflows/deploy.yml
-name: Deploy to Production
-
-on:
-  push:
-    branches: [main]
-
-jobs:
-  deploy:
-    runs-on: ubuntu-latest
-    
-    steps:
-    - uses: actions/checkout@v2
-    
-    - name: Deploy to Railway
-      run: |
-        npm install -g @railway/cli
-        railway login --token ${{ secrets.RAILWAY_TOKEN }}
-        railway up
-```
-
-### 2. Configurar Secrets
-
-En GitHub Settings > Secrets, agregar:
-- `RAILWAY_TOKEN`
-- `VERCEL_TOKEN`
-- `DATABASE_URL`
-- `SECRET_KEY`
-
-## 🗄️ Backup y Restauración
-
-### 1. Backup de Base de Datos
-
+### Backup y Restore
 ```bash
 # Backup
-pg_dump -h localhost -U ecommerce_user ecommerce_db > backup.sql
+docker-compose exec db pg_dump -U ecommerce_user ecommerce_prod > backup.sql
 
-# Restaurar
-psql -h localhost -U ecommerce_user ecommerce_db < backup.sql
+# Restore
+docker-compose exec -T db psql -U ecommerce_user ecommerce_prod < backup.sql
 ```
 
-### 2. Backup Automático
+## 🔄 CI/CD
+
+### GitHub Actions
+El proyecto incluye workflows de CI/CD que:
+- Ejecutan tests automáticamente
+- Hacen build de imágenes Docker
+- Despliegan en staging/producción
+- Escanean vulnerabilidades
+
+### Configurar Secrets
+En GitHub, configurar los siguientes secrets:
+- `DOCKER_USERNAME`: Usuario de Docker Hub
+- `DOCKER_PASSWORD`: Contraseña de Docker Hub
+- `SENTRY_DSN`: DSN de Sentry para monitoreo
+
+## 🐛 Troubleshooting
+
+### Problemas Comunes
+
+#### 1. Error de Conexión a Base de Datos
+```bash
+# Verificar que PostgreSQL esté funcionando
+docker-compose ps db
+
+# Ver logs de la base de datos
+docker-compose logs db
+
+# Reiniciar base de datos
+docker-compose restart db
+```
+
+#### 2. Error de Conexión a Redis
+```bash
+# Verificar que Redis esté funcionando
+docker-compose ps redis
+
+# Ver logs de Redis
+docker-compose logs redis
+
+# Reiniciar Redis
+docker-compose restart redis
+```
+
+#### 3. Error de Migraciones
+```bash
+# Verificar estado de migraciones
+docker-compose exec backend python manage.py showmigrations
+
+# Aplicar migraciones pendientes
+docker-compose exec backend python manage.py migrate
+
+# Si hay conflictos, hacer reset
+docker-compose exec backend python manage.py migrate --fake-initial
+```
+
+#### 4. Error de Permisos
+```bash
+# En Linux/Mac, dar permisos de ejecución
+chmod +x scripts/deploy.sh
+
+# En Windows, usar PowerShell
+.\scripts\deploy.ps1
+```
+
+### Logs y Debugging
 
 ```bash
-# Script de backup
-cat > /usr/local/bin/backup-db.sh << EOF
-#!/bin/bash
-DATE=$(date +%Y%m%d_%H%M%S)
-pg_dump -h localhost -U ecommerce_user ecommerce_db > /backups/backup_$DATE.sql
-find /backups -name "backup_*.sql" -mtime +7 -delete
-EOF
+# Ver todos los logs
+docker-compose logs
 
-chmod +x /usr/local/bin/backup-db.sh
+# Ver logs de un servicio específico
+docker-compose logs backend
+docker-compose logs frontend
+docker-compose logs db
 
-# Programar en crontab
-crontab -e
-# Agregar: 0 2 * * * /usr/local/bin/backup-db.sh
-```
-
-## 🚀 Optimizaciones de Producción
-
-### 1. Backend
-
-```python
-# settings.py
-DEBUG = False
-ALLOWED_HOSTS = ['tu-dominio.com']
-
-# Cache
-CACHES = {
-    'default': {
-        'BACKEND': 'django_redis.cache.RedisCache',
-        'LOCATION': 'redis://localhost:6379/1',
-        'OPTIONS': {
-            'CLIENT_CLASS': 'django_redis.client.DefaultClient',
-        }
-    }
-}
-
-# Static files
-STATIC_ROOT = '/var/www/static/'
-MEDIA_ROOT = '/var/www/media/'
-```
-
-### 2. Frontend
-
-```javascript
-// next.config.js
-module.exports = {
-  output: 'export',
-  images: {
-    unoptimized: true
-  },
-  trailingSlash: true,
-  generateBuildId: async () => {
-    return 'build-' + Date.now()
-  }
-}
-```
-
-## 🔧 Solución de Problemas
-
-### Error de Conexión a Base de Datos
-
-```bash
-# Verificar conexión
-psql -h localhost -U ecommerce_user -d ecommerce_db
-
-# Verificar variables de entorno
-echo $DATABASE_URL
-```
-
-### Error de CORS
-
-```python
-# Verificar configuración
-CORS_ALLOWED_ORIGINS = [
-    "https://tu-frontend.vercel.app",
-    "https://tu-dominio.com",
-]
-```
-
-### Error de Archivos Estáticos
-
-```bash
-# Recopilar archivos estáticos
-python manage.py collectstatic --noinput
-
-# Verificar permisos
-chmod -R 755 /var/www/static/
+# Seguir logs en tiempo real
+docker-compose logs -f backend
 ```
 
 ## 📈 Escalabilidad
 
-### 1. Load Balancer
+### Escalar Servicios
+```bash
+# Escalar backend
+docker-compose up -d --scale backend=3
+
+# Escalar frontend
+docker-compose up -d --scale frontend=2
+```
+
+### Configuración de Load Balancer
+Para producción, se recomienda usar un load balancer como Nginx:
 
 ```nginx
 upstream backend {
@@ -443,32 +251,61 @@ upstream backend {
     server backend3:8000;
 }
 
+upstream frontend {
+    server frontend1:3000;
+    server frontend2:3000;
+}
+
 server {
+    listen 80;
+    
     location /api/ {
         proxy_pass http://backend;
+    }
+    
+    location / {
+        proxy_pass http://frontend;
     }
 }
 ```
 
-### 2. CDN
+## 🔧 Mantenimiento
 
-```python
-# Configurar CDN para archivos estáticos
-STATIC_URL = 'https://cdn.tu-dominio.com/static/'
-MEDIA_URL = 'https://cdn.tu-dominio.com/media/'
+### Actualizaciones
+```bash
+# Actualizar código
+git pull origin main
+
+# Reconstruir imágenes
+docker-compose build --no-cache
+
+# Reiniciar servicios
+docker-compose up -d
 ```
 
-### 3. Cache
+### Limpieza
+```bash
+# Limpiar imágenes no utilizadas
+docker image prune -f
 
-```python
-# Cache de vistas
-from django.views.decorators.cache import cache_page
+# Limpiar contenedores detenidos
+docker container prune -f
 
-@cache_page(60 * 15)  # 15 minutos
-def product_list(request):
-    # Vista
+# Limpiar volúmenes no utilizados
+docker volume prune -f
 ```
 
----
+## 📞 Soporte
 
-¡Felicitaciones! 🎉 Has desplegado exitosamente tu ecommerce. Recuerda monitorear el rendimiento y hacer backups regulares.
+Para problemas o preguntas:
+1. Revisar los logs del sistema
+2. Verificar la documentación
+3. Crear un issue en el repositorio
+4. Contactar al equipo de desarrollo
+
+## 📚 Recursos Adicionales
+
+- [Documentación de Docker](https://docs.docker.com/)
+- [Documentación de Django](https://docs.djangoproject.com/)
+- [Documentación de Next.js](https://nextjs.org/docs)
+- [Guía de Sentry](https://docs.sentry.io/)

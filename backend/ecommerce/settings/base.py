@@ -18,6 +18,9 @@ SECRET_KEY = config('SECRET_KEY', default='django-insecure-change-this-in-produc
 FRONTEND_URL = config('FRONTEND_URL', default='http://localhost:3000')
 BACKEND_URL = config('BACKEND_URL', default='http://localhost:8000')
 
+# Cache Configuration
+from .cache import CACHES, CACHE_TIMEOUTS, CACHE_MIDDLEWARE_ALIAS, CACHE_MIDDLEWARE_SECONDS, CACHE_MIDDLEWARE_KEY_PREFIX
+
 # Configuración de Wompi
 WOMPI_PUBLIC_KEY = config('WOMPI_PUBLIC_KEY', default='')
 WOMPI_PRIVATE_KEY = config('WOMPI_PRIVATE_KEY', default='')
@@ -67,6 +70,7 @@ LOCAL_APPS = [
     'ecommerce.apps.inventory',
     'ecommerce.apps.reports',
     'ecommerce.apps.system_config',
+    'ecommerce.apps.health',
 ]
 
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
@@ -74,6 +78,8 @@ INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
 MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
+    'ecommerce.middleware.sentry.PerformanceMiddleware',
+    'ecommerce.middleware.sentry.SentryMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -83,6 +89,9 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'ecommerce.apps.inventory.middleware.InventoryMiddleware',
+    'ecommerce.middleware.sentry.SecurityHeadersMiddleware',
+    # 'ecommerce.middleware.cache_middleware.SmartCacheMiddleware',  # Deshabilitado temporalmente
+    # 'ecommerce.middleware.cache_middleware.CacheStatsMiddleware',  # Deshabilitado temporalmente
 ]
 
 ROOT_URLCONF = 'ecommerce.urls'

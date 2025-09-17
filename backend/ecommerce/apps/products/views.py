@@ -1,11 +1,16 @@
+# Django imports
+from django.db import transaction
+from django.db.models import Q, Avg, Count, Sum, F
+
+# DRF imports
 from rest_framework import generics, status, permissions, filters
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.pagination import PageNumberPagination
 from django_filters.rest_framework import DjangoFilterBackend
-from django.db.models import Q, Avg, Count, Sum, F
-from django.db import transaction
+
+# Local imports
 from .models import Product, ProductImage, ProductVariant, ProductReview
 from .serializers import (
     ProductListSerializer, ProductDetailSerializer, ProductCreateUpdateSerializer,
@@ -49,9 +54,9 @@ class ProductListView(generics.ListCreateAPIView):
             # Para usuarios no autenticados, solo productos publicados
             queryset = queryset.filter(status='published')
         
-
-        
         return queryset
+    
+    
     
     def get_serializer_class(self):
         if self.request.method == 'POST':
@@ -98,7 +103,11 @@ class ProductDetailView(generics.RetrieveUpdateDestroyAPIView):
     Vista para obtener, actualizar y eliminar un producto específico.
     """
     queryset = Product.objects.select_related('category', 'brand').prefetch_related(
-        'images', 'variants__size', 'variants__color', 'reviews'
+        'images',
+        'variants__size',
+        'variants__color',
+        'reviews__user',  # Para evitar N+1 en reviews
+        'reviews__product'  # Para evitar N+1 en reviews
     )
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
     

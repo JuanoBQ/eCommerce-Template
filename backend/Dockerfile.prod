@@ -1,0 +1,45 @@
+# Dockerfile optimizado para producción
+FROM python:3.11-slim
+
+# Variables de entorno
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1
+ENV DEBIAN_FRONTEND=noninteractive
+
+# Instalar dependencias del sistema
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
+        build-essential \
+        libpq-dev \
+        curl \
+        gettext \
+        && rm -rf /var/lib/apt/lists/*
+
+# Crear usuario no-root
+RUN groupadd -r django && useradd -r -g django django
+
+# Establecer directorio de trabajo
+WORKDIR /app
+
+# Copiar requirements
+COPY requirements.txt .
+
+# Instalar dependencias de Python
+RUN pip install --no-cache-dir --upgrade pip \
+    && pip install --no-cache-dir -r requirements.txt
+
+# Copiar código de la aplicación
+COPY . .
+
+# Crear directorios necesarios
+RUN mkdir -p /app/staticfiles /app/media /app/logs \
+    && chown -R django:django /app
+
+# Cambiar a usuario no-root
+USER django
+
+# Exponer puerto
+EXPOSE 8000
+
+# Comando por defecto
+CMD ["gunicorn", "ecommerce.wsgi:application", "--bind", "0.0.0.0:8000"]

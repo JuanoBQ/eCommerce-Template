@@ -41,17 +41,15 @@ function CheckoutSuccessContent() {
         toast.success('¡Pago completado exitosamente!')
         // Redirigir a página de órdenes después de 3 segundos
         setTimeout(() => {
-          router.push('/orders')
+          router.push('/account/orders')
         }, 3000)
       } else if (response.success && response.status === 'pending') {
         toast('El pago está siendo procesado...', {
           icon: 'ℹ️',
           duration: 3000
         })
-        // Verificar nuevamente en 5 segundos
-        setTimeout(() => {
-          checkPaymentStatus()
-        }, 5000)
+        // NO verificar automáticamente para evitar bucle infinito
+        // El usuario puede hacer clic en "Verificar Estado" manualmente
       } else {
         toast.error('El pago no se completó correctamente')
       }

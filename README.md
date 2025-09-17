@@ -1,6 +1,6 @@
-# Ecommerce de Ropa - Template Completo
+# 🛍️ eCommerce Template - Solución Completa
 
-Un ecommerce completo de ropa construido con Django REST Framework (backend) y Next.js 14 (frontend), diseñado para ser escalable, moderno y fácil de desplegar.
+Un ecommerce moderno y escalable construido con **Django 4.2 + DRF** (backend) y **Next.js 14** (frontend), optimizado para múltiples segmentos (retail e industrial) con integración de pagos, panel administrativo avanzado y arquitectura preparada para producción.
 
 ## 🚀 Características
 

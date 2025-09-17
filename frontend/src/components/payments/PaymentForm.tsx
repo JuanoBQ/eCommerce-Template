@@ -135,15 +135,18 @@ const PaymentForm: React.FC<PaymentFormProps> = ({
     }
   };
 
-  // Verificar el estado del pago periódicamente
+  // TEMPORALMENTE DESHABILITADO: Verificar el estado del pago periódicamente
   useEffect(() => {
     if (paymentIntent?.payment_id && paymentStatus === 'processing') {
-      const interval = setInterval(handleVerifyPayment, 5000); // Verificar cada 5 segundos
-      setVerificationInterval(interval);
+      // const interval = setInterval(handleVerifyPayment, 5000); // Verificar cada 5 segundos
+      // setVerificationInterval(interval);
 
-      return () => {
-        clearInterval(interval);
-      };
+      // return () => {
+      //   clearInterval(interval);
+      //   setVerificationInterval(null);
+      // };
+      
+      console.log('Polling automático deshabilitado temporalmente en PaymentForm')
     }
   }, [paymentIntent?.payment_id, paymentStatus]);
 
@@ -152,9 +155,10 @@ const PaymentForm: React.FC<PaymentFormProps> = ({
     return () => {
       if (verificationInterval) {
         clearInterval(verificationInterval);
+        setVerificationInterval(null);
       }
     };
-  }, [verificationInterval]);
+  }, []);
 
   return (
     <div className={`space-y-6 ${className}`}>

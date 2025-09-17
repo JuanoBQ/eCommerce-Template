@@ -1,0 +1,55 @@
+# Dockerfile optimizado para producción
+FROM node:18-alpine AS base
+
+# Instalar dependencias necesarias
+RUN apk add --no-cache libc6-compat
+
+# Establecer directorio de trabajo
+WORKDIR /app
+
+# Copiar archivos de dependencias
+COPY package*.json ./
+
+# Instalar dependencias
+RUN npm ci --only=production && npm cache clean --force
+
+# Etapa de build
+FROM base AS builder
+
+# Copiar código fuente
+COPY . .
+
+# Build de la aplicación
+RUN npm run build
+
+# Etapa de producción
+FROM node:18-alpine AS runner
+
+# Instalar dependencias del sistema
+RUN apk add --no-cache curl
+
+# Crear usuario no-root
+RUN addgroup --system --gid 1001 nodejs
+RUN adduser --system --uid 1001 nextjs
+
+# Establecer directorio de trabajo
+WORKDIR /app
+
+# Copiar archivos necesarios
+COPY --from=builder /app/public ./public
+COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
+COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
+
+# Cambiar a usuario no-root
+USER nextjs
+
+# Exponer puerto
+EXPOSE 3000
+
+# Variables de entorno
+ENV NODE_ENV=production
+ENV PORT=3000
+ENV HOSTNAME="0.0.0.0"
+
+# Comando por defecto
+CMD ["node", "server.js"]

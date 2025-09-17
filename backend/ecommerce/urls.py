@@ -65,6 +65,9 @@ urlpatterns = [
     ])),
     path('api/auth/social/', include('allauth.socialaccount.urls')),
     
+    # Health checks
+    path('health/', include('ecommerce.apps.health.urls')),
+    
     # Apps
     path('api/products/', include('ecommerce.apps.products.urls')),
     path('api/categories/', include('ecommerce.apps.categories.urls')),

@@ -84,7 +84,8 @@ class MercadoPagoService(BasePaymentService):
                 },
                 'external_reference': order.order_number,
                 'notification_url': f"{settings.BACKEND_URL}/api/payments/webhooks/mercadopago/",
-                'auto_return': 'approved',
+                # Remover auto_return para evitar problemas con URLs locales
+                # 'auto_return': 'approved',
                 'payment_methods': {
                     'excluded_payment_methods': [],
                     'excluded_payment_types': [],

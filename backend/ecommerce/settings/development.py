@@ -4,19 +4,37 @@ Configuración de desarrollo para Django.
 
 from .base import *
 from decouple import config
+from .sentry import init_sentry
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
 ALLOWED_HOSTS = ['localhost', '127.0.0.1', '0.0.0.0']
 
-# Database para desarrollo (SQLite por defecto)
+# Database para desarrollo (SQLite temporalmente)
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
         'NAME': BASE_DIR / 'db.sqlite3',
     }
 }
+
+# Configuración PostgreSQL (comentada temporalmente)
+# DATABASES = {
+#     'default': {
+#         'ENGINE': 'django.db.backends.postgresql',
+#         'NAME': config('DB_NAME', default='ecommerce_dev'),
+#         'USER': config('DB_USER', default='ecommerce_user'),
+#         'PASSWORD': config('DB_PASSWORD', default='ecommerce_password'),
+#         'HOST': config('DB_HOST', default='localhost'),
+#         'PORT': config('DB_PORT', default='5432'),
+#         'OPTIONS': {
+#             'client_encoding': 'UTF8',
+#         },
+#         'CONN_MAX_AGE': 60,
+#         'CONN_HEALTH_CHECKS': True,
+#     }
+# }
 
 # Cache Configuration para desarrollo
 # Try to use Redis if available, fallback to local memory cache
@@ -132,3 +150,15 @@ try:
     INTERNAL_IPS = ['127.0.0.1']
 except ImportError:
     pass
+
+# Configuración de Sentry
+SENTRY_DSN = config('SENTRY_DSN', default='')
+SENTRY_ENVIRONMENT = config('SENTRY_ENVIRONMENT', default='development')
+SENTRY_RELEASE = config('SENTRY_RELEASE', default=None)
+
+# Inicializar Sentry si está configurado
+if SENTRY_DSN:
+    try:
+        init_sentry()
+    except Exception as e:
+        print(f"Warning: Could not initialize Sentry: {e}")

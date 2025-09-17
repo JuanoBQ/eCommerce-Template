@@ -4,6 +4,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
+from django.core.cache import cache
 from decimal import Decimal
 from .models import Payment
 from .serializers import PaymentSerializer
@@ -23,9 +24,19 @@ class PaymentViewSet(viewsets.ModelViewSet):
         """
         Filtra los pagos según el usuario.
         """
+        queryset = Payment.objects.select_related(
+            'user',
+            'order',
+            'order__user'  # Para evitar N+1 en órdenes
+        ).prefetch_related(
+            'order__items__product__category',
+            'order__items__product__brand',
+            'refunds'  # Para evitar N+1 en reembolsos
+        )
+        
         if self.request.user.is_staff:
-            return Payment.objects.all().select_related('user', 'order')
-        return Payment.objects.filter(user=self.request.user).select_related('user', 'order')
+            return queryset.all()
+        return queryset.filter(user=self.request.user)
     
     def perform_create(self, serializer):
         """
@@ -231,83 +242,106 @@ class PaymentViewSet(viewsets.ModelViewSet):
     def check_status(self, request):
         """
         Verifica el estado de un pago por número de orden.
+        TEMPORALMENTE DESHABILITADO para detener bucle infinito.
         """
-        try:
-            order_number = request.query_params.get('order')
-            if not order_number:
-                return Response(
-                    {'success': False, 'error': 'Número de orden es requerido'},
-                    status=status.HTTP_400_BAD_REQUEST
-                )
+        # TEMPORALMENTE DESHABILITADO - Retornar respuesta simple
+        return Response({
+            'success': True,
+            'status': 'pending',
+            'message': 'Verificación temporalmente deshabilitada',
+            'order_number': request.query_params.get('order', 'unknown')
+        })
+        
+        # CÓDIGO ORIGINAL COMENTADO TEMPORALMENTE
+        # try:
+        #     order_number = request.query_params.get('order')
+        #     if not order_number:
+        #         return Response(
+        #             {'success': False, 'error': 'Número de orden es requerido'},
+        #             status=status.HTTP_400_BAD_REQUEST
+        #         )
 
-            # Buscar orden
-            try:
-                order = Order.objects.get(order_number=order_number, user=request.user)
-            except Order.DoesNotExist:
-                return Response(
-                    {'success': False, 'error': 'Orden no encontrada'},
-                    status=status.HTTP_404_NOT_FOUND
-                )
+        #     # Rate limiting: máximo 1 consulta por segundo por usuario
+        #     cache_key = f"check_status_rate_limit_{request.user.id}_{order_number}"
+        #     if cache.get(cache_key):
+        #         return Response(
+        #             {'success': False, 'error': 'Demasiadas consultas. Intenta en un momento.'},
+        #             status=status.HTTP_429_TOO_MANY_REQUESTS
+        #         )
+            
+        #     # Establecer rate limit por 1 segundo
+        #     cache.set(cache_key, True, 1)
 
-            # Buscar pago
-            try:
-                payment = Payment.objects.get(order=order)
-            except Payment.DoesNotExist:
-                return Response(
-                    {'success': False, 'error': 'Pago no encontrado para esta orden'},
-                    status=status.HTTP_404_NOT_FOUND
-                )
+        #     # Buscar orden
+        #     try:
+        #         order = Order.objects.get(order_number=order_number, user=request.user)
+        #     except Order.DoesNotExist:
+        #         return Response(
+        #             {'success': False, 'error': 'Orden no encontrada'},
+        #             status=status.HTTP_404_NOT_FOUND
+        #         )
 
-            # Si ya está completo, retornar estado actual
-            if payment.status == 'completed':
-                return Response({
-                    'success': True,
-                    'status': 'completed',
-                    'payment_id': payment.id,
-                    'order_number': order_number
-                })
+        #     # Buscar pago
+        #     try:
+        #         payment = Payment.objects.get(order=order)
+        #     except Payment.DoesNotExist:
+        #         return Response(
+        #             {'success': False, 'error': 'Pago no encontrado para esta orden'},
+        #             status=status.HTTP_404_NOT_FOUND
+        #         )
 
-            # Si está pendiente, verificar con el proveedor
-            if payment.status == 'pending' and payment.provider in ['wompi', 'mercadopago']:
-                try:
-                    payment_service = PaymentServiceFactory.create_service(payment.provider)
-                    if payment_service:
-                        verify_result = payment_service.verify_payment(payment.provider_payment_id)
+        #     # Si ya está completo, retornar estado actual
+        #     if payment.status == 'completed':
+        #         return Response({
+        #             'success': True,
+        #             'status': 'completed',
+        #             'payment_id': payment.id,
+        #             'order_number': order_number
+        #         })
 
-                        if verify_result.get('success'):
-                            new_status = self._map_provider_status(payment.provider, verify_result.get('status', 'pending'))
-                            
-                            if new_status != payment.status:
-                                payment.status = new_status
-                                if new_status == 'completed':
-                                    payment.processed_at = timezone.now()
-                                    order.status = 'confirmed'
-                                    order.payment_status = 'paid'
-                                    order.save()
-                                payment.save()
+        #     # Si está pendiente, verificar con el proveedor (simplificado para evitar errores)
+        #     if payment.status == 'pending' and payment.provider in ['wompi', 'mercadopago']:
+        #         try:
+        #             payment_service = PaymentServiceFactory.create_service(payment.provider)
+        #             if payment_service and payment.provider_payment_id:
+        #                 verify_result = payment_service.verify_payment(payment.provider_payment_id)
 
-                            return Response({
-                                'success': True,
-                                'status': new_status,
-                                'payment_id': payment.id,
-                                'order_number': order_number
-                            })
-                except Exception:
-                    pass
+        #                 if verify_result.get('success'):
+        #                     new_status = self._map_provider_status(payment.provider, verify_result.get('status', 'pending'))
+                        
+        #                     if new_status != payment.status:
+        #                         payment.status = new_status
+        #                         if new_status == 'completed':
+        #                             payment.processed_at = timezone.now()
+        #                             order.status = 'confirmed'
+        #                             order.payment_status = 'paid'
+        #                             order.save()
+        #                         payment.save()
 
-            # Retornar estado actual
-            return Response({
-                'success': True,
-                'status': payment.status,
-                'payment_id': payment.id,
-                'order_number': order_number
-            })
+        #                     return Response({
+        #                         'success': True,
+        #                         'status': new_status,
+        #                         'payment_id': payment.id,
+        #                         'order_number': order_number
+        #                     })
+        #         except Exception as e:
+        #             # Log del error pero no fallar
+        #             print(f"Error verificando pago: {e}")
+        #             pass
 
-        except Exception as e:
-            return Response(
-                {'success': False, 'error': f'Error interno: {str(e)}'},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR
-            )
+        #     # Retornar estado actual
+        #     return Response({
+        #         'success': True,
+        #         'status': payment.status,
+        #         'payment_id': payment.id,
+        #         'order_number': order_number
+        #     })
+
+        # except Exception as e:
+        #     return Response(
+        #         {'success': False, 'error': f'Error interno: {str(e)}'}, 
+        #         status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        #     )
     
     def _map_provider_status(self, provider, provider_status):
         """
