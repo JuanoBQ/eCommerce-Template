@@ -9,6 +9,7 @@ from decimal import Decimal
 from .models import Payment
 from .serializers import PaymentSerializer
 from .services.payment_factory import PaymentServiceFactory
+from .services.payment_confirmation_service import PaymentConfirmationService
 from ecommerce.apps.users.permissions import IsOwnerOrAdmin
 from ecommerce.apps.orders.models import Order
 
@@ -418,6 +419,106 @@ class PaymentProvidersView(APIView):
         except Exception as e:
             return Response(
                 {'error': f'Error obteniendo proveedores: {str(e)}'}, 
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+    
+    @action(detail=False, methods=['post'])
+    def confirm_payment(self, request):
+        """
+        Confirma un pago exitoso y procesa el stock.
+        """
+        try:
+            order_number = request.data.get('order_number')
+            payment_provider = request.data.get('payment_provider')
+            provider_payment_id = request.data.get('provider_payment_id')
+            
+            if not order_number:
+                return Response(
+                    {'success': False, 'error': 'Número de orden es requerido'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            if not payment_provider:
+                return Response(
+                    {'success': False, 'error': 'Proveedor de pago es requerido'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            # Confirmar pago
+            result = PaymentConfirmationService.confirm_payment(
+                order_number=order_number,
+                payment_provider=payment_provider,
+                provider_payment_id=provider_payment_id
+            )
+            
+            if result['success']:
+                return Response(result, status=status.HTTP_200_OK)
+            else:
+                return Response(result, status=status.HTTP_400_BAD_REQUEST)
+                
+        except Exception as e:
+            return Response(
+                {'success': False, 'error': f'Error interno: {str(e)}'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+    
+    @action(detail=False, methods=['post'])
+    def fail_payment(self, request):
+        """
+        Marca un pago como fallido y libera el stock.
+        """
+        try:
+            order_number = request.data.get('order_number')
+            reason = request.data.get('reason', 'Pago fallido')
+            
+            if not order_number:
+                return Response(
+                    {'success': False, 'error': 'Número de orden es requerido'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            # Marcar pago como fallido
+            result = PaymentConfirmationService.fail_payment(
+                order_number=order_number,
+                reason=reason
+            )
+            
+            if result['success']:
+                return Response(result, status=status.HTTP_200_OK)
+            else:
+                return Response(result, status=status.HTTP_400_BAD_REQUEST)
+                
+        except Exception as e:
+            return Response(
+                {'success': False, 'error': f'Error interno: {str(e)}'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+    
+    @action(detail=False, methods=['get'])
+    def payment_status(self, request):
+        """
+        Obtiene el estado actual del pago de una orden.
+        """
+        try:
+            order_number = request.query_params.get('order_number')
+            
+            if not order_number:
+                return Response(
+                    {'success': False, 'error': 'Número de orden es requerido'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            # Obtener estado del pago
+            result = PaymentConfirmationService.get_payment_status(order_number)
+            
+            if result['success']:
+                return Response(result, status=status.HTTP_200_OK)
+            else:
+                return Response(result, status=status.HTTP_404_NOT_FOUND)
+                
+        except Exception as e:
+            return Response(
+                {'success': False, 'error': f'Error interno: {str(e)}'},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 

@@ -81,17 +81,45 @@ class OrderViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=['post'])
     def confirm(self, request, pk=None):
         """
-        Confirma una orden.
+        Confirma una orden y reserva stock (sin procesar definitivamente).
+        El stock se procesará cuando el pago esté confirmado.
         """
         order = self.get_object()
         if order.status == 'pending':
+            # Validar stock antes de confirmar
+            from ecommerce.apps.inventory.stock_validator import StockValidator
+            validation_result = StockValidator.validate_order_stock(order)
+            
+            if not validation_result['valid']:
+                return Response({
+                    'error': 'No hay stock suficiente para confirmar la orden',
+                    'details': validation_result['errors'],
+                    'warnings': validation_result.get('warnings', [])
+                }, status=status.HTTP_400_BAD_REQUEST)
+            
+            # Confirmar orden
             order.status = 'confirmed'
             order.save()
             
-            # Procesar stock al confirmar la orden
-            order.process_stock()
+            # Reservar stock (no procesar definitivamente)
+            from ecommerce.apps.inventory.autostock_service import AutoStockService
+            stock_result = AutoStockService.reserve_order_stock(order)
             
-            return Response({'status': 'Order confirmed'})
+            if not stock_result['success']:
+                # Si hay error en la reserva de stock, revertir orden
+                order.status = 'pending'
+                order.save()
+                return Response({
+                    'error': 'Error reservando stock',
+                    'details': stock_result['errors']
+                }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            
+            return Response({
+                'status': 'Order confirmed and stock reserved',
+                'stock_reserved': stock_result['reserved_items'],
+                'warnings': validation_result.get('warnings', []),
+                'message': 'Orden confirmada. El stock se procesará cuando el pago esté confirmado.'
+            })
         return Response(
             {'error': 'Order cannot be confirmed'}, 
             status=status.HTTP_400_BAD_REQUEST

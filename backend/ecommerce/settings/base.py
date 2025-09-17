@@ -12,7 +12,12 @@ from datetime import timedelta
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = config('SECRET_KEY', default='django-insecure-change-this-in-production')
+# Generar SECRET_KEY segura si no está configurada
+try:
+    from ecommerce.security.key_generator import generate_django_secret_key
+    SECRET_KEY = config('SECRET_KEY', default=generate_django_secret_key())
+except ImportError:
+    SECRET_KEY = config('SECRET_KEY', default='django-insecure-change-this-in-production')
 
 # URLs para integración con frontend y APIs externas
 FRONTEND_URL = config('FRONTEND_URL', default='http://localhost:3000')
@@ -71,6 +76,7 @@ LOCAL_APPS = [
     'ecommerce.apps.reports',
     'ecommerce.apps.system_config',
     'ecommerce.apps.health',
+    'ecommerce.security',
 ]
 
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
@@ -78,6 +84,7 @@ INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
 MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
+    'ecommerce.security.csp_middleware.CSPMiddleware',
     'ecommerce.middleware.sentry.PerformanceMiddleware',
     'ecommerce.middleware.sentry.SentryMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',

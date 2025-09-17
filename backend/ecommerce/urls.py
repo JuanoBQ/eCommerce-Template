@@ -68,6 +68,9 @@ urlpatterns = [
     # Health checks
     path('health/', include('ecommerce.apps.health.urls')),
     
+    # Security
+    path('api/security/', include('ecommerce.security.urls')),
+    
     # Apps
     path('api/products/', include('ecommerce.apps.products.urls')),
     path('api/categories/', include('ecommerce.apps.categories.urls')),
@@ -75,6 +78,7 @@ urlpatterns = [
     path('api/cart/', include('ecommerce.apps.cart.urls')),
     path('api/orders/', include('ecommerce.apps.orders.urls')),
     path('api/payments/', include('ecommerce.apps.payments.urls')),
+    path('api/inventory/', include('ecommerce.apps.inventory.urls')),
     path('api/reports/', include('ecommerce.apps.reports.urls')),
     path('api/admin/', include('ecommerce.apps.system_config.urls')),
 ]

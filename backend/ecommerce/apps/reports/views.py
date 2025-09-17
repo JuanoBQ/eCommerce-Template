@@ -26,24 +26,24 @@ def dashboard_report(request):
         
         # Estadísticas generales
         total_orders = Order.objects.count()  # Total de órdenes (todos los estados)
-        total_revenue = Order.objects.filter(payment_status='completed').aggregate(
+        total_revenue = Order.objects.filter(payment_status='paid').aggregate(
             total=Sum('total_amount')
         )['total'] or Decimal('0.00')
         
         total_customers = User.objects.filter(is_active=True).count()
-        total_products = Order.objects.filter(payment_status='completed').count()  # Órdenes con pago aprobado/confirmado
+        total_products = Order.objects.filter(payment_status='paid').count()  # Órdenes con pago aprobado/confirmado
         
         # Estadísticas del período seleccionado (solo pedidos con pago completado)
         period_orders = Order.objects.filter(
             created_at__gte=start_date,
             created_at__lte=end_date,
-            payment_status='completed'
+            payment_status='paid'
         ).count()
         
         period_revenue = Order.objects.filter(
             created_at__gte=start_date,
             created_at__lte=end_date,
-            payment_status='completed'
+            payment_status='paid'
         ).aggregate(
             total=Sum('total_amount')
         )['total'] or Decimal('0.00')
@@ -58,13 +58,13 @@ def dashboard_report(request):
         prev_orders = Order.objects.filter(
             created_at__gte=prev_start_date,
             created_at__lt=start_date,
-            payment_status='completed'
+            payment_status='paid'
         ).count()
         
         prev_revenue = Order.objects.filter(
             created_at__gte=prev_start_date,
             created_at__lt=start_date,
-            payment_status='completed'
+            payment_status='paid'
         ).aggregate(
             total=Sum('total_amount')
         )['total'] or Decimal('0.00')
@@ -178,7 +178,7 @@ def get_monthly_data(days):
     
     monthly_data = Order.objects.filter(
         created_at__gte=months_ago,
-        payment_status='completed'  # Solo pedidos con pago completado
+        payment_status='paid'  # Solo pedidos con pago completado
     ).annotate(
         month=TruncMonth('created_at')
     ).values('month').annotate(
@@ -209,7 +209,7 @@ def get_top_products(start_date, end_date):
     top_products = OrderItem.objects.filter(
         order__created_at__gte=start_date,
         order__created_at__lte=end_date,
-        order__payment_status='completed'  # Solo pedidos con pago completado
+        order__payment_status='paid'  # Solo pedidos con pago completado
     ).values(
         'product__id',
         'product__name'
@@ -235,7 +235,7 @@ def get_top_customers(start_date, end_date):
     top_customers = Order.objects.filter(
         created_at__gte=start_date,
         created_at__lte=end_date,
-        payment_status='completed'  # Solo pedidos con pago completado
+        payment_status='paid'  # Solo pedidos con pago completado
     ).values(
         'user',
         'first_name',
