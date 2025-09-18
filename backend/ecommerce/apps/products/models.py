@@ -3,11 +3,13 @@ from django.utils.translation import gettext_lazy as _
 from django.utils.text import slugify
 from django.core.validators import MinValueValidator, MaxValueValidator
 from decimal import Decimal
+from ecommerce.apps.common.models import BaseModel, SoftDeleteModel
 
 
-class Product(models.Model):
+class Product(SoftDeleteModel):
     """
     Modelo principal para productos.
+    Hereda de SoftDeleteModel para timestamps y soft delete.
     """
     PRODUCT_STATUS = [
         ('draft', _('Draft')),
@@ -100,9 +102,7 @@ class Product(models.Model):
     meta_title = models.CharField(_('meta title'), max_length=200, blank=True)
     meta_description = models.TextField(_('meta description'), blank=True)
     
-    # Timestamps
-    created_at = models.DateTimeField(_('created at'), auto_now_add=True)
-    updated_at = models.DateTimeField(_('updated at'), auto_now=True)
+    # Timestamps (created_at y updated_at heredados de SoftDeleteModel)
     published_at = models.DateTimeField(_('published at'), null=True, blank=True)
     
     class Meta:
@@ -111,9 +111,19 @@ class Product(models.Model):
         db_table = 'products'
         ordering = ['-created_at']
         indexes = [
-            models.Index(fields=['status', 'is_featured']),
-            models.Index(fields=['category', 'status']),
-            models.Index(fields=['brand', 'status']),
+            # Índices para consultas de tienda pública
+            models.Index(fields=['status', 'is_featured', 'created_at']),
+            models.Index(fields=['category', 'status', 'is_featured']),
+            models.Index(fields=['brand', 'status', 'is_featured']),
+            models.Index(fields=['price', 'status']),
+            models.Index(fields=['gender', 'status']),
+            models.Index(fields=['is_deleted', 'status']),
+            # Índices para búsqueda
+            models.Index(fields=['name', 'status']),
+            models.Index(fields=['sku']),
+            # Índices para admin
+            models.Index(fields=['created_at', 'status']),
+            models.Index(fields=['updated_at', 'status']),
         ]
     
     def __str__(self):

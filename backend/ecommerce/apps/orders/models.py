@@ -3,11 +3,13 @@ from django.utils.translation import gettext_lazy as _
 from django.core.validators import MinValueValidator
 from decimal import Decimal
 import uuid
+from ecommerce.apps.common.models import BaseModel, SoftDeleteModel
 
 
-class Order(models.Model):
+class Order(SoftDeleteModel):
     """
     Modelo principal para pedidos.
+    Hereda de SoftDeleteModel para timestamps y soft delete.
     """
     ORDER_STATUS = [
         ('pending', _('Pending')),
@@ -79,9 +81,7 @@ class Order(models.Model):
     notes = models.TextField(_('notes'), blank=True)
     tracking_number = models.CharField(_('tracking number'), max_length=100, blank=True)
     
-    # Timestamps
-    created_at = models.DateTimeField(_('created at'), auto_now_add=True)
-    updated_at = models.DateTimeField(_('updated at'), auto_now=True)
+    # Timestamps (created_at y updated_at heredados de SoftDeleteModel)
     shipped_at = models.DateTimeField(_('shipped at'), null=True, blank=True)
     delivered_at = models.DateTimeField(_('delivered at'), null=True, blank=True)
     
@@ -91,9 +91,19 @@ class Order(models.Model):
         db_table = 'orders'
         ordering = ['-created_at']
         indexes = [
-            models.Index(fields=['status', 'payment_status']),
-            models.Index(fields=['user', 'status']),
+            # Índices para consultas de usuario
+            models.Index(fields=['user', 'status', 'created_at']),
+            models.Index(fields=['user', 'payment_status', 'created_at']),
+            # Índices para admin
+            models.Index(fields=['status', 'payment_status', 'created_at']),
+            models.Index(fields=['created_at', 'status']),
+            # Índices para búsqueda
             models.Index(fields=['order_number']),
+            models.Index(fields=['email', 'status']),
+            # Índices para soft delete
+            models.Index(fields=['is_deleted', 'status']),
+            # Índices para reportes
+            models.Index(fields=['created_at', 'status', 'payment_status']),
         ]
     
     def __str__(self):
@@ -141,11 +151,16 @@ class Order(models.Model):
         Procesa el stock cuando se confirma una orden.
         """
         try:
-            from ecommerce.apps.inventory.services import InventoryService
-            InventoryService.process_order_stock(self)
-        except ImportError:
-            # Si el servicio de inventario no está disponible, no hacer nada
-            pass
+            # Procesar stock directamente
+            for item in self.items.all():
+                product = item.product
+                if product.track_inventory:
+                    # Reducir stock
+                    product.inventory_quantity = max(0, product.inventory_quantity - item.quantity)
+                    product.save()
+                    print(f"DEBUG: Stock procesado para {product.name}: -{item.quantity} unidades")
+        except Exception as e:
+            print(f"DEBUG: Error procesando stock: {e}")
     
     def cancel_stock(self):
         """
@@ -157,6 +172,98 @@ class Order(models.Model):
         except ImportError:
             # Si el servicio de inventario no está disponible, no hacer nada
             pass
+    
+    def sync_payment_status(self):
+        """
+        Sincroniza el estado del pago con la pasarela de pagos.
+        """
+        try:
+            from ecommerce.apps.payments.models import Payment
+            from ecommerce.apps.payments.services import PaymentServiceFactory
+            
+            # Obtener el pago asociado
+            try:
+                payment = Payment.objects.get(order=self)
+            except Payment.DoesNotExist:
+                return False
+            
+            # Solo sincronizar si el pago está pendiente
+            if payment.status != 'pending':
+                return False
+            
+            # Verificar si el proveedor soporta verificación
+            if payment.provider not in ['wompi', 'mercadopago']:
+                return False
+            
+            # Crear servicio de pago
+            payment_service = PaymentServiceFactory.create_service(payment.provider)
+            if not payment_service or not payment.provider_payment_id:
+                return False
+            
+            # Verificar con la pasarela
+            verify_result = payment_service.verify_payment(payment.provider_payment_id)
+            
+            if not verify_result.get('success'):
+                return False
+            
+            # Mapear estado de la pasarela
+            provider_status = verify_result.get('status', 'pending')
+            new_status = self._map_provider_status(payment.provider, provider_status)
+            
+            if new_status != payment.status:
+                payment.status = new_status
+                
+                if new_status == 'completed':
+                    payment.processed_at = timezone.now()
+                    payment.save()
+                    
+                    # Actualizar orden
+                    self.status = 'confirmed'
+                    self.payment_status = 'paid'
+                    self.save()
+                    
+                    # Procesar stock
+                    self.process_stock()
+                    return True
+                    
+                elif new_status == 'failed':
+                    payment.save()
+                    
+                    # Actualizar orden
+                    self.status = 'cancelled'
+                    self.payment_status = 'failed'
+                    self.save()
+                    return True
+                else:
+                    payment.save()
+                    return True
+            
+            return False
+            
+        except Exception as e:
+            print(f"DEBUG: Error sincronizando estado de pago para orden {self.order_number}: {e}")
+            return False
+    
+    def _map_provider_status(self, provider, provider_status):
+        """Mapea el estado de la pasarela al estado interno"""
+        status_mapping = {
+            'wompi': {
+                'APPROVED': 'completed',
+                'PENDING': 'pending',
+                'DECLINED': 'failed',
+                'REJECTED': 'failed',
+                'VOIDED': 'failed',
+            },
+            'mercadopago': {
+                'approved': 'completed',
+                'pending': 'pending',
+                'rejected': 'failed',
+                'cancelled': 'failed',
+                'refunded': 'refunded',
+            }
+        }
+        
+        return status_mapping.get(provider, {}).get(provider_status.lower(), 'pending')
     
     @property
     def total_items(self):

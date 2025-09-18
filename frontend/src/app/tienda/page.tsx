@@ -68,8 +68,6 @@ const StoreLoadingOverlay: React.FC<{ isLoading: boolean }> = ({ isLoading }) =>
   </AnimatePresence>
 )
 
-
-
 interface Filters {
   search: string
   category: number | null
@@ -166,6 +164,10 @@ function TiendaContent() {
     // Aplicar filtro de búsqueda si existe
     if (searchParam) {
       setSearch(searchParam)
+      hasFilters = true
+    } else {
+      // Si no hay parámetro de búsqueda, limpiar la búsqueda
+      setSearch('')
     }
     
     // Aplicar filtro de género si existe
@@ -229,8 +231,11 @@ function TiendaContent() {
     if (hasFilters) {
       setFilters(newFilters)
       applyFiltersToAPI(searchParam || '', newFilters, 1)
+    } else if (searchParam === null && genderParam === null && categoryParam === null && !saleParam && !featuredParam && !newParam && !trendingParam) {
+      // Si no hay parámetros de filtro, cargar todos los productos
+      loadProducts({ page: 1, page_size: 20 }, true)
     }
-  }, [searchParams.get('category'), searchParams.get('gender'), searchParams.get('from_nav'), searchParams.get('clear_filters'), categories])
+  }, [searchParams, categories, loadProducts, applyFiltersToAPI, setSearch, setFilters])
 
   // Los productos ya vienen filtrados de la API, solo aplicamos ordenamiento local si es necesario
   const filteredProducts = useMemo(() => {
@@ -306,7 +311,7 @@ function TiendaContent() {
   return (
     <div className="min-h-screen bg-white">
       {/* Header de la tienda */}
-      <div className="bg-gray-50 border-b border-gray-200">
+      <div className="bg-gray-50 border-b border-gray-200 pt-20">
         <div className="max-w-full mx-auto px-4 sm:px-6 lg:px-8 py-12">
           <div className="text-center">
             <h1 className="text-4xl font-bold text-gray-900 mb-4">
@@ -328,11 +333,7 @@ function TiendaContent() {
               activeFilters={filters}
               onFilterChange={handleFilterChange}
               onClearAll={handleClearAll}
-              searchValue={search}
-              onSearchChange={handleSearchChange}
-              searchPlaceholder="Buscar productos..."
               isMobile={isMobile}
-              showSearch={true}
               isLoading={filtersLoading}
             />
           </div>
@@ -474,8 +475,8 @@ export default function TiendaPage() {
             {/* Progress Steps */}
             <div className="flex justify-center space-x-2 mt-6">
               <div className="w-2 h-2 bg-primary-500 rounded-full animate-pulse"></div>
-              <div className="w-2 h-2 bg-gray-300 rounded-full animate-pulse" style={{ animationDelay: '0.2s' }}></div>
-              <div className="w-2 h-2 bg-gray-300 rounded-full animate-pulse" style={{ animationDelay: '0.4s' }}></div>
+              <div className="w-2 h-2 bg-gray-300 rounded-full animate-pulse [animation-delay:0.2s]"></div>
+              <div className="w-2 h-2 bg-gray-300 rounded-full animate-pulse [animation-delay:0.4s]"></div>
             </div>
           </div>
 
@@ -483,8 +484,8 @@ export default function TiendaPage() {
           <div className="mt-8">
             <div className="flex justify-center space-x-1">
               <div className="w-2 h-2 bg-primary-500 rounded-full animate-bounce"></div>
-              <div className="w-2 h-2 bg-primary-500 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
-              <div className="w-2 h-2 bg-primary-500 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+              <div className="w-2 h-2 bg-primary-500 rounded-full animate-bounce [animation-delay:0.1s]"></div>
+              <div className="w-2 h-2 bg-primary-500 rounded-full animate-bounce [animation-delay:0.2s]"></div>
             </div>
           </div>
         </div>

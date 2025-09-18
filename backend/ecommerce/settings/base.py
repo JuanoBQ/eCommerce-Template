@@ -66,6 +66,7 @@ THIRD_PARTY_APPS = [
 ]
 
 LOCAL_APPS = [
+    'ecommerce.apps.common',  # Modelos base abstractos
     'ecommerce.apps.products',
     'ecommerce.apps.categories',
     'ecommerce.apps.users',

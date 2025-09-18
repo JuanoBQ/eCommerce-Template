@@ -25,6 +25,9 @@ function CheckoutPendingContent() {
   const [statusInterval, setStatusInterval] = useState<NodeJS.Timeout | null>(null)
   const [verificationStopped, setVerificationStopped] = useState(false)
   const [isMounted, setIsMounted] = useState(true)
+  const [verificationAttempts, setVerificationAttempts] = useState(0)
+  const [maxVerificationAttempts] = useState(30) // Máximo 30 intentos (5 minutos / 10 segundos)
+  const [lastVerificationTime, setLastVerificationTime] = useState<number | null>(null)
 
   const orderNumber = searchParams.get('order')
   const paymentId = searchParams.get('payment')
@@ -45,20 +48,31 @@ function CheckoutPendingContent() {
       return () => clearTimeout(timer)
     } else {
       // Detener verificación de estado cuando se agote el tiempo
-      if (statusInterval) {
-        clearInterval(statusInterval)
-        setStatusInterval(null)
-        setVerificationStopped(true)
-        toast('Se detuvo la verificación automática. Puedes verificar manualmente en "Mis Pedidos".', {
-          icon: 'ℹ️',
-          duration: 4000
-        })
-      }
+      stopVerification('Tiempo agotado')
       
       // Redirigir a página de pedidos después de 5 minutos
       router.push('/account/orders')
     }
-  }, [timeLeft, router, statusInterval])
+  }, [timeLeft, router])
+
+  // Detener verificación cuando se alcance el límite de intentos
+  useEffect(() => {
+    if (verificationAttempts >= maxVerificationAttempts) {
+      stopVerification('Límite de intentos alcanzado')
+    }
+  }, [verificationAttempts, maxVerificationAttempts])
+
+  const stopVerification = (reason: string) => {
+    if (statusInterval) {
+      clearInterval(statusInterval)
+      setStatusInterval(null)
+      setVerificationStopped(true)
+      toast(`Se detuvo la verificación automática (${reason}). Puedes verificar manualmente en "Mis Pedidos".`, {
+        icon: 'ℹ️',
+        duration: 4000
+      })
+    }
+  }
 
   // Limpiar intervalo cuando el componente se desmonte
   useEffect(() => {
@@ -95,31 +109,47 @@ function CheckoutPendingContent() {
           return
         }
 
+        // Verificar límite de intentos
+        if (verificationAttempts >= maxVerificationAttempts) {
+          stopVerification('Límite de intentos alcanzado')
+          return
+        }
+
+        // Verificar tiempo transcurrido desde la última verificación
+        const now = Date.now()
+        if (lastVerificationTime && (now - lastVerificationTime) < 10000) {
+          // No verificar si han pasado menos de 10 segundos
+          return
+        }
+
         try {
+          setLastVerificationTime(now)
+          setVerificationAttempts(prev => prev + 1)
+          
           const statusResponse = await apiClient.get(`/payments/payments/check_status/?order=${orderNumber}`) as any
+          
           if (statusResponse.success && statusResponse.status === 'completed') {
             // Detener verificación cuando el pago se complete
-            if (statusInterval) {
-              clearInterval(statusInterval)
-              setStatusInterval(null)
-              setVerificationStopped(true)
-            }
+            stopVerification('Pago completado')
             
             toast.success('¡Pago completado!')
             router.push('/account/orders')
+          } else if (statusResponse.success && statusResponse.status === 'failed') {
+            // Detener verificación si el pago falló
+            stopVerification('Pago fallido')
+            
+            toast.error('El pago no pudo ser procesado. Intenta nuevamente.')
+            router.push('/checkout')
           }
         } catch (error) {
-          // Error silencioso en verificación
+          // Error silencioso en verificación, pero contar como intento
           console.warn('Error verificando estado del pago:', error)
         }
       }
 
-      // TEMPORALMENTE DESHABILITADO: Verificar cada 10 segundos
-      // const intervalRef = setInterval(checkStatus, 10000)
-      // setStatusInterval(intervalRef)
-      
-      // Por ahora, solo verificar una vez
-      console.log('Polling automático deshabilitado temporalmente')
+      // Verificar cada 10 segundos
+      const intervalRef = setInterval(checkStatus, 10000)
+      setStatusInterval(intervalRef)
     } catch (error) {
       toast.error('Error al cargar información del pago')
     } finally {
@@ -197,6 +227,16 @@ function CheckoutPendingContent() {
                     <p className="text-xs text-gray-500 mt-1">⏸️ Verificación automática detenida</p>
                   )}
                 </div>
+
+                <div className="text-left">
+                  <p className="text-sm font-medium text-gray-500">Verificaciones</p>
+                  <p className="text-lg font-semibold text-blue-600">
+                    {verificationAttempts}/{maxVerificationAttempts}
+                  </p>
+                  <p className="text-xs text-gray-500 mt-1">
+                    {verificationStopped ? 'Detenida' : 'Verificando cada 10 segundos'}
+                  </p>
+                </div>
               </div>
             </div>
           )}
@@ -235,6 +275,15 @@ function CheckoutPendingContent() {
                 >
                   ✅ Ya Completé el Pago
                 </button>
+
+                {!verificationStopped && (
+                  <button
+                    onClick={() => stopVerification('Detenido manualmente')}
+                    className="w-full bg-gray-500 text-white px-6 py-3 rounded-lg hover:bg-gray-600 transition-colors"
+                  >
+                    ⏸️ Detener Verificación Automática
+                  </button>
+                )}
               </>
             ) : (
               // Si no se abrió automáticamente, mostrar botón principal
@@ -254,6 +303,15 @@ function CheckoutPendingContent() {
                 >
                   Ya Completé el Pago
                 </button>
+
+                {!verificationStopped && (
+                  <button
+                    onClick={() => stopVerification('Detenido manualmente')}
+                    className="w-full bg-gray-500 text-white px-6 py-3 rounded-lg hover:bg-gray-600 transition-colors"
+                  >
+                    ⏸️ Detener Verificación Automática
+                  </button>
+                )}
               </>
             )}
           </div>
@@ -263,11 +321,17 @@ function CheckoutPendingContent() {
               <>
                 <p>Completa el pago en la pestaña de {paymentInfo?.provider === 'wompi' ? 'Wompi' : 'MercadoPago'} que se abrió.</p>
                 <p className="mt-2">Una vez completado, regresa aquí o ve a "Mis Pedidos" para ver el estado.</p>
+                <p className="mt-2 text-xs">
+                  🔄 Verificamos automáticamente cada 10 segundos (máximo {maxVerificationAttempts} intentos en 5 minutos).
+                </p>
               </>
             ) : (
               <>
                 <p>Si no completas el pago en 5 minutos, serás redirigido automáticamente.</p>
                 <p className="mt-2">Puedes cerrar esta ventana y volver más tarde desde "Mis Pedidos".</p>
+                <p className="mt-2 text-xs">
+                  🔄 Verificamos automáticamente cada 10 segundos (máximo {maxVerificationAttempts} intentos en 5 minutos).
+                </p>
               </>
             )}
           </div>

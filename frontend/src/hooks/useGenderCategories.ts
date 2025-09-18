@@ -17,22 +17,18 @@ export const useGenderCategories = (gender: 'men' | 'women' | 'unisex') => {
     setIsLoading(true)
     setError(null)
     try {
-      // Cargar categorías desde la API de categorías
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api'}/categories/categories/`)
+      // Cargar categorías filtradas por género desde el nuevo endpoint
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api'}/categories/categories/by_gender/?gender=${gender}`)
       const data = await response.json()
       
-      if (response.ok && data.results) {
-        // Mapear product_count a productCount y filtrar categorías que tienen productos
-        const mappedCategories = data.results.map((category: any) => ({
+      if (response.ok && Array.isArray(data)) {
+        // Mapear product_count a productCount
+        const mappedCategories = data.map((category: any) => ({
           ...category,
           productCount: category.product_count || 0
         }))
         
-        const categoriesWithProducts = mappedCategories.filter((category: any) => 
-          (category.productCount || 0) > 0
-        )
-        
-        setCategories(categoriesWithProducts)
+        setCategories(mappedCategories)
       } else {
         throw new Error('Error al cargar categorías')
       }

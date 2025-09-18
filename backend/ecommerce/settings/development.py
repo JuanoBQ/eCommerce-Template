@@ -11,30 +11,48 @@ DEBUG = True
 
 ALLOWED_HOSTS = ['localhost', '127.0.0.1', '0.0.0.0']
 
-# Database para desarrollo (SQLite temporalmente)
+# Database para desarrollo - PostgreSQL optimizado
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': config('DB_NAME', default='ecommerce_dev'),
+        'USER': config('DB_USER', default='ecommerce_user'),
+        'PASSWORD': config('DB_PASSWORD', default='ecommerce_password'),
+        'HOST': config('DB_HOST', default='localhost'),
+        'PORT': config('DB_PORT', default='5432'),
+        'OPTIONS': {
+            'client_encoding': 'UTF8',
+            'connect_timeout': 10,
+            'options': '-c default_transaction_isolation=read_committed'
+        },
+        'CONN_MAX_AGE': 60,
+        'CONN_HEALTH_CHECKS': True,
+        'ATOMIC_REQUESTS': True,
     }
 }
 
-# Configuración PostgreSQL (comentada temporalmente)
-# DATABASES = {
-#     'default': {
-#         'ENGINE': 'django.db.backends.postgresql',
-#         'NAME': config('DB_NAME', default='ecommerce_dev'),
-#         'USER': config('DB_USER', default='ecommerce_user'),
-#         'PASSWORD': config('DB_PASSWORD', default='ecommerce_password'),
-#         'HOST': config('DB_HOST', default='localhost'),
-#         'PORT': config('DB_PORT', default='5432'),
-#         'OPTIONS': {
-#             'client_encoding': 'UTF8',
-#         },
-#         'CONN_MAX_AGE': 60,
-#         'CONN_HEALTH_CHECKS': True,
-#     }
-# }
+# Fallback a SQLite si PostgreSQL no está disponible
+try:
+    import psycopg2
+    # Verificar conexión a PostgreSQL
+    import psycopg2
+    conn = psycopg2.connect(
+        host=config('DB_HOST', default='localhost'),
+        port=config('DB_PORT', default='5432'),
+        user=config('DB_USER', default='ecommerce_user'),
+        password=config('DB_PASSWORD', default='ecommerce_password'),
+        database=config('DB_NAME', default='ecommerce_dev')
+    )
+    conn.close()
+    print("✅ PostgreSQL connection successful")
+except Exception as e:
+    print(f"⚠️ PostgreSQL not available, falling back to SQLite: {e}")
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'db.sqlite3',
+        }
+    }
 
 # Cache Configuration para desarrollo
 # Try to use Redis if available, fallback to local memory cache

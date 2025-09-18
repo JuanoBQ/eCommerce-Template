@@ -45,7 +45,6 @@ class OrderViewSet(viewsets.ModelViewSet):
             'items__product__category',
             'items__product__brand',
             'items__product__images',
-            'payments',  # Para evitar N+1 en pagos
             'items__product__reviews'  # Para evitar N+1 en reviews de productos
         )
         
@@ -58,6 +57,35 @@ class OrderViewSet(viewsets.ModelViewSet):
         Asigna el usuario actual a la orden.
         """
         serializer.save(user=self.request.user)
+    
+    @action(detail=True, methods=['post'])
+    def sync_payment(self, request, pk=None):
+        """
+        Sincroniza el estado del pago con la pasarela de pagos.
+        """
+        order = self.get_object()
+        
+        try:
+            synced = order.sync_payment_status()
+            if synced:
+                # Recargar la instancia para obtener los datos actualizados
+                order.refresh_from_db()
+                serializer = self.get_serializer(order)
+                return Response({
+                    'success': True,
+                    'message': 'Estado del pago sincronizado',
+                    'order': serializer.data
+                })
+            else:
+                return Response({
+                    'success': False,
+                    'message': 'No se pudo sincronizar el estado del pago o no había cambios'
+                })
+        except Exception as e:
+            return Response({
+                'success': False,
+                'error': f'Error sincronizando estado del pago: {str(e)}'
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     
     @action(detail=True, methods=['post'])
     def cancel(self, request, pk=None):

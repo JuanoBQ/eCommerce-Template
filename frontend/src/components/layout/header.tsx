@@ -1,26 +1,31 @@
 "use client"
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { ShoppingCart, User, Search, Menu, X, Heart } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
 import { useCartGlobal as useCart } from '@/hooks/useCartGlobal'
 import { useWishlist } from '@/hooks/useWishlist'
+import { useProductSearch } from '@/hooks/useProductSearch'
 import CartSidebar from '@/components/cart/CartSidebar'
 import WishlistDropdown from '@/components/layout/WishlistDropdown'
 import NavigationDropdown from '@/components/layout/NavigationDropdown'
+import SearchDropdown from '@/components/layout/SearchDropdown'
 import { Button } from '@/components/ui/button'
 
 const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [isCartOpen, setIsCartOpen] = useState(false)
   const [isWishlistOpen, setIsWishlistOpen] = useState(false)
+  const [isSearchOpen, setIsSearchOpen] = useState(false)
   const [isScrolled, setIsScrolled] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
+  const searchRef = useRef<HTMLDivElement>(null)
   const { user, isAuthenticated, isLoading, logout } = useAuth()
   const { totalItems } = useCart()
   const { count: wishlistCount } = useWishlist()
+  const { results: searchResults, isLoading: isSearchLoading } = useProductSearch(searchQuery)
   const router = useRouter()
 
 
@@ -32,6 +37,18 @@ const Header = () => {
     return () => window.removeEventListener('scroll', handleScroll)
   }, [])
 
+  // Cerrar dropdown de búsqueda al hacer clic fuera
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (searchRef.current && !searchRef.current.contains(event.target as Node)) {
+        setIsSearchOpen(false)
+      }
+    }
+
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
+
   const handleLogout = async () => {
     await logout()
     router.push('/')
@@ -40,8 +57,20 @@ const Header = () => {
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault()
     if (searchQuery.trim()) {
+      setIsSearchOpen(false)
       router.push(`/tienda?search=${encodeURIComponent(searchQuery.trim())}`)
     }
+  }
+
+  const handleSearchInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value
+    setSearchQuery(value)
+    setIsSearchOpen(value.length >= 2)
+  }
+
+  const handleSearchClear = () => {
+    setSearchQuery('')
+    setIsSearchOpen(false)
   }
 
   const navigation = [
@@ -88,19 +117,30 @@ const Header = () => {
           </nav>
 
           {/* Search Bar - More compact */}
-          <div className="hidden md:block flex-1 max-w-sm mx-6">
+          <div className="hidden md:block flex-1 max-w-sm mx-6" ref={searchRef}>
             <form onSubmit={handleSearch} className="relative">
               <div className="relative">
                 <Search className="absolute left-2.5 top-1/2 transform -translate-y-1/2 text-gray-400 w-3.5 h-3.5" />
                 <input
                   type="text"
                   value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Buscar..."
+                  onChange={handleSearchInputChange}
+                  onFocus={() => searchQuery.length >= 2 && setIsSearchOpen(true)}
+                  placeholder="Buscar productos..."
                   className="w-full pl-8 pr-3 py-1.5 bg-gray-50 border border-gray-200 rounded-sm text-sm text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-primary-500 focus:border-transparent"
                 />
               </div>
             </form>
+            
+            {/* Search Dropdown */}
+            <SearchDropdown
+              isOpen={isSearchOpen}
+              onClose={() => setIsSearchOpen(false)}
+              results={searchResults}
+              isLoading={isSearchLoading}
+              query={searchQuery}
+              onClear={handleSearchClear}
+            />
           </div>
 
           {/* Right side actions - More compact */}

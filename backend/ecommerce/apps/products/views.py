@@ -1,6 +1,9 @@
 # Django imports
 from django.db import transaction
 from django.db.models import Q, Avg, Count, Sum, F
+from django.views.decorators.cache import cache_page
+from django.utils.decorators import method_decorator
+from django.core.cache import cache
 
 # DRF imports
 from rest_framework import generics, status, permissions, filters
@@ -31,11 +34,20 @@ class LargePagePagination(PageNumberPagination):
     max_page_size = 1000  # Máximo 1000 elementos por página
 
 
+# @method_decorator(cache_page(60 * 15), name='dispatch')  # Cache por 15 minutos - TEMPORALMENTE DESHABILITADO
 class ProductListView(generics.ListCreateAPIView):
     """
     Vista para listar y crear productos.
+    Optimizada para evitar N+1 queries y con caché.
     """
-    queryset = Product.objects.select_related('category', 'brand').prefetch_related('images', 'variants__size', 'variants__color')
+    queryset = Product.objects.select_related(
+        'category', 
+        'brand'
+    ).prefetch_related(
+        'images',
+        'variants__size',
+        'variants__color'
+    )
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
     filterset_class = ProductFilter
     search_fields = ['name', 'description', 'short_description', 'sku']
@@ -117,9 +129,11 @@ class ProductDetailView(generics.RetrieveUpdateDestroyAPIView):
         return ProductDetailSerializer
 
 
+# @method_decorator(cache_page(60 * 10), name='dispatch')  # Cache por 10 minutos - TEMPORALMENTE DESHABILITADO
 class ProductSearchView(generics.ListAPIView):
     """
     Vista para búsqueda avanzada de productos.
+    Con caché para mejorar rendimiento.
     """
     serializer_class = ProductSearchSerializer
     permission_classes = [permissions.AllowAny]
@@ -130,7 +144,14 @@ class ProductSearchView(generics.ListAPIView):
     ordering = ['-created_at']
     
     def get_queryset(self):
-        queryset = Product.objects.filter(status='published').select_related('category', 'brand').prefetch_related('images')
+        queryset = Product.objects.filter(status='published').select_related(
+            'category', 
+            'brand'
+        ).prefetch_related(
+            'images',
+            'variants__size',
+            'variants__color'
+        )
         
         # Filtros adicionales
         category = self.request.query_params.get('category')

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 """
-Script para migrar datos de SQLite a PostgreSQL.
-Ejecutar desde el directorio backend/ con: python scripts/migrate_to_postgresql.py
+Script para migrar de SQLite a PostgreSQL.
+Crea la base de datos PostgreSQL y migra los datos existentes.
 """
 
 import os
@@ -10,118 +10,131 @@ import django
 from pathlib import Path
 
 # Agregar el directorio del proyecto al path
-BASE_DIR = Path(__file__).resolve().parent.parent
-sys.path.append(str(BASE_DIR))
+sys.path.append(str(Path(__file__).parent.parent))
 
 # Configurar Django
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'ecommerce.settings.development')
 django.setup()
 
-from django.core.management import execute_from_command_line
-from django.db import connection
+import psycopg2
+from psycopg2.extensions import ISOLATION_LEVEL_AUTOCOMMIT
+from django.core.management import call_command
 from django.conf import settings
-import subprocess
+from decouple import config
 
-def check_postgresql_connection():
-    """Verificar conexión a PostgreSQL"""
+def create_database():
+    """Crear la base de datos PostgreSQL si no existe."""
+    db_name = config('DB_NAME', default='ecommerce_dev')
+    db_user = config('DB_USER', default='ecommerce_user')
+    db_password = config('DB_PASSWORD', default='ecommerce_password')
+    db_host = config('DB_HOST', default='localhost')
+    db_port = config('DB_PORT', default='5432')
+    
     try:
+        # Conectar a PostgreSQL como superusuario
+        conn = psycopg2.connect(
+            host=db_host,
+            port=db_port,
+            user='postgres',  # Usar usuario postgres para crear DB
+            password=config('POSTGRES_PASSWORD', default='postgres')
+        )
+        conn.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
+        cursor = conn.cursor()
+        
+        # Verificar si la base de datos existe
+        cursor.execute(f"SELECT 1 FROM pg_database WHERE datname = '{db_name}'")
+        exists = cursor.fetchone()
+        
+        if not exists:
+            print(f"📦 Creando base de datos '{db_name}'...")
+            cursor.execute(f"CREATE DATABASE {db_name}")
+            print(f"✅ Base de datos '{db_name}' creada exitosamente")
+        else:
+            print(f"ℹ️ La base de datos '{db_name}' ya existe")
+        
+        # Crear usuario si no existe
+        cursor.execute(f"SELECT 1 FROM pg_roles WHERE rolname = '{db_user}'")
+        user_exists = cursor.fetchone()
+        
+        if not user_exists:
+            print(f"👤 Creando usuario '{db_user}'...")
+            cursor.execute(f"CREATE USER {db_user} WITH PASSWORD '{db_password}'")
+            cursor.execute(f"GRANT ALL PRIVILEGES ON DATABASE {db_name} TO {db_user}")
+            print(f"✅ Usuario '{db_user}' creado exitosamente")
+        else:
+            print(f"ℹ️ El usuario '{db_user}' ya existe")
+        
+        cursor.close()
+        conn.close()
+        
+        return True
+        
+    except psycopg2.Error as e:
+        print(f"❌ Error creando base de datos: {e}")
+        return False
+
+def migrate_data():
+    """Migrar datos de SQLite a PostgreSQL."""
+    print("🔄 Iniciando migración de datos...")
+    
+    try:
+        # Ejecutar migraciones
+        print("📋 Ejecutando migraciones...")
+        call_command('migrate', verbosity=2)
+        
+        # Crear superusuario si no existe
+        print("👤 Creando superusuario...")
+        call_command('createsuperuser', interactive=False, 
+                    username='admin', email='admin@example.com')
+        
+        print("✅ Migración completada exitosamente")
+        return True
+        
+    except Exception as e:
+        print(f"❌ Error durante la migración: {e}")
+        return False
+
+def test_connection():
+    """Probar la conexión a PostgreSQL."""
+    print("🔍 Probando conexión a PostgreSQL...")
+    
+    try:
+        from django.db import connection
         with connection.cursor() as cursor:
-            cursor.execute("SELECT 1")
-            print("✅ Conexión a PostgreSQL exitosa")
+            cursor.execute("SELECT version()")
+            version = cursor.fetchone()[0]
+            print(f"✅ Conexión exitosa a PostgreSQL: {version}")
             return True
     except Exception as e:
-        print(f"❌ Error conectando a PostgreSQL: {e}")
+        print(f"❌ Error de conexión: {e}")
         return False
-
-def backup_sqlite():
-    """Crear backup de SQLite"""
-    sqlite_path = BASE_DIR / 'db.sqlite3'
-    if sqlite_path.exists():
-        backup_path = BASE_DIR / 'db_backup.sqlite3'
-        import shutil
-        shutil.copy2(sqlite_path, backup_path)
-        print(f"✅ Backup creado: {backup_path}")
-        return True
-    else:
-        print("ℹ️ No se encontró db.sqlite3")
-        return False
-
-def run_migrations():
-    """Ejecutar migraciones en PostgreSQL"""
-    try:
-        print("🔄 Ejecutando migraciones...")
-        execute_from_command_line(['manage.py', 'migrate'])
-        print("✅ Migraciones completadas")
-        return True
-    except Exception as e:
-        print(f"❌ Error en migraciones: {e}")
-        return False
-
-def create_superuser():
-    """Crear superusuario si no existe"""
-    try:
-        from django.contrib.auth import get_user_model
-        User = get_user_model()
-        
-        if not User.objects.filter(is_superuser=True).exists():
-            print("🔄 Creando superusuario...")
-            execute_from_command_line([
-                'manage.py', 'createsuperuser',
-                '--email', 'admin@admin.com',
-                '--username', 'admin',
-                '--noinput'
-            ])
-            # Establecer contraseña
-            user = User.objects.get(username='admin')
-            user.set_password('admin123')
-            user.save()
-            print("✅ Superusuario creado: admin@admin.com / admin123")
-        else:
-            print("ℹ️ Superusuario ya existe")
-        return True
-    except Exception as e:
-        print(f"❌ Error creando superusuario: {e}")
-        return False
-
-def load_sample_data():
-    """Cargar datos de muestra"""
-    try:
-        print("🔄 Cargando datos de muestra...")
-        execute_from_command_line(['manage.py', 'loaddata', 'sample_data.json'])
-        print("✅ Datos de muestra cargados")
-        return True
-    except Exception as e:
-        print(f"⚠️ No se pudieron cargar datos de muestra: {e}")
-        return True  # No es crítico
 
 def main():
-    """Función principal"""
-    print("🚀 Iniciando migración a PostgreSQL...")
+    """Función principal del script."""
+    print("🚀 Iniciando migración de SQLite a PostgreSQL...")
+    print("=" * 50)
     
-    # Verificar conexión
-    if not check_postgresql_connection():
-        print("❌ No se puede continuar sin conexión a PostgreSQL")
+    # Paso 1: Crear base de datos
+    if not create_database():
+        print("❌ No se pudo crear la base de datos. Abortando migración.")
         return False
     
-    # Crear backup
-    backup_sqlite()
-    
-    # Ejecutar migraciones
-    if not run_migrations():
+    # Paso 2: Probar conexión
+    if not test_connection():
+        print("❌ No se pudo conectar a PostgreSQL. Abortando migración.")
         return False
     
-    # Crear superusuario
-    if not create_superuser():
+    # Paso 3: Migrar datos
+    if not migrate_data():
+        print("❌ Error durante la migración de datos.")
         return False
     
-    # Cargar datos de muestra
-    load_sample_data()
-    
-    print("✅ Migración a PostgreSQL completada exitosamente!")
-    print("\n📋 Próximos pasos:")
-    print("1. Verificar que la aplicación funcione correctamente")
-    print("2. Ejecutar tests: python manage.py test")
-    print("3. Si todo está bien, eliminar db.sqlite3")
+    print("=" * 50)
+    print("🎉 ¡Migración completada exitosamente!")
+    print("📝 Próximos pasos:")
+    print("   1. Verificar que la aplicación funciona correctamente")
+    print("   2. Ejecutar tests para asegurar la integridad de los datos")
+    print("   3. Configurar backup automático de PostgreSQL")
     
     return True
 

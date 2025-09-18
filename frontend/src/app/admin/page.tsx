@@ -352,8 +352,12 @@ export default function AdminDashboard() {
               <div key={item.name} className="flex items-center justify-between">
                 <div className="flex items-center">
                   <div
-                    className="w-3 h-3 rounded-full mr-2"
-                    style={{ backgroundColor: COLORS[index % COLORS.length] }}
+                    className={`w-3 h-3 rounded-full mr-2 ${
+                      index === 0 ? 'bg-[#00ff88]' :
+                      index === 1 ? 'bg-[#00d4aa]' :
+                      index === 2 ? 'bg-[#00b4d8]' :
+                      'bg-[#7209b7]'
+                    }`}
                   />
                   <span className="text-gray-600 text-sm">{item.name}</span>
                 </div>

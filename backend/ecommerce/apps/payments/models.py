@@ -56,7 +56,7 @@ class Payment(models.Model):
     # Información del pago
     amount = models.DecimalField(_('amount'), max_digits=10, decimal_places=2)
     currency = models.CharField(_('currency'), max_length=3, default='COP')
-    method = models.CharField(_('method'), max_length=20, choices=PAYMENT_METHODS)
+    method = models.CharField(_('method'), max_length=20, choices=PAYMENT_METHODS, default='credit_card')
     provider = models.CharField(_('provider'), max_length=20, choices=PAYMENT_PROVIDERS)
     status = models.CharField(_('status'), max_length=20, choices=PAYMENT_STATUS, default='pending')
     

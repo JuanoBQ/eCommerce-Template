@@ -1,7 +1,7 @@
 "use client"
 
 import React, { useState, useCallback, useMemo } from 'react'
-import { X, Filter, Search, ChevronDown, ChevronUp, SlidersHorizontal, Loader2 } from 'lucide-react'
+import { X, Filter, ChevronDown, ChevronUp, SlidersHorizontal, Loader2 } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 
 export interface FilterOption {
@@ -24,12 +24,8 @@ export interface StoreFiltersProps {
   activeFilters: Record<string, (string | number | null)[]>
   onFilterChange: (groupId: string, values: (string | number | null)[]) => void
   onClearAll: () => void
-  searchValue: string
-  onSearchChange: (value: string) => void
-  searchPlaceholder?: string
   className?: string
   isMobile?: boolean
-  showSearch?: boolean
   isLoading?: boolean
 }
 
@@ -226,12 +222,8 @@ export const StoreFilters: React.FC<StoreFiltersProps> = ({
   activeFilters,
   onFilterChange,
   onClearAll,
-  searchValue,
-  onSearchChange,
-  searchPlaceholder = "Buscar productos...",
   className = "",
   isMobile = false,
-  showSearch = true,
   isLoading = false
 }) => {
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set())
@@ -334,19 +326,6 @@ export const StoreFilters: React.FC<StoreFiltersProps> = ({
   if (isMobile) {
     return (
       <div className={className}>
-        {/* Mobile Search Bar */}
-        {showSearch && (
-          <div className="relative mb-4">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
-            <input
-              type="text"
-              placeholder={searchPlaceholder}
-              value={searchValue}
-              onChange={(e) => onSearchChange(e.target.value)}
-              className="w-full pl-10 pr-4 py-3 bg-white border border-gray-300 rounded-lg text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-            />
-          </div>
-        )}
 
         {/* Mobile Filter Button */}
         <button
@@ -411,21 +390,6 @@ export const StoreFilters: React.FC<StoreFiltersProps> = ({
 
   return (
     <div className={`bg-transparent ${className}`}>
-      {/* Desktop Search Bar */}
-      {showSearch && (
-        <div className="mb-6">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
-            <input
-              type="text"
-              placeholder={searchPlaceholder}
-              value={searchValue}
-              onChange={(e) => onSearchChange(e.target.value)}
-              className="w-full pl-10 pr-4 py-3 bg-white border border-gray-200 rounded-lg text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent shadow-sm"
-            />
-          </div>
-        </div>
-      )}
 
       {/* Desktop Filter Groups */}
       <div className="relative bg-white rounded-lg shadow-sm overflow-hidden">
