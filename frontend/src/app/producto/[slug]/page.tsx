@@ -665,7 +665,6 @@ export default function ProductDetailPage() {
                               ? 'border-primary-500 scale-110'
                               : 'border-gray-300 hover:border-gray-400'
                           }`}
-                          /* eslint-disable-next-line react/forbid-dom-props */
                           style={{ backgroundColor: color.hex_code || '#666' }}
                           title={color.name}
                           aria-label={`Seleccionar color ${color.name}`}

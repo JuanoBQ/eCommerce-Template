@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, Suspense } from 'react'
+import { useEffect, useState, Suspense, useRef, useCallback } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { apiClient } from '@/lib/api'
 import toast from 'react-hot-toast'
@@ -22,15 +22,43 @@ function CheckoutPendingContent() {
   const [loading, setLoading] = useState(true)
   const [timeLeft, setTimeLeft] = useState(300) // 5 minutos
   const [paymentWindowOpened, setPaymentWindowOpened] = useState(false)
-  const [statusInterval, setStatusInterval] = useState<NodeJS.Timeout | null>(null)
   const [verificationStopped, setVerificationStopped] = useState(false)
   const [isMounted, setIsMounted] = useState(true)
   const [verificationAttempts, setVerificationAttempts] = useState(0)
   const [maxVerificationAttempts] = useState(30) // Máximo 30 intentos (5 minutos / 10 segundos)
   const [lastVerificationTime, setLastVerificationTime] = useState<number | null>(null)
+  
+  // Usar useRef para mantener referencia estable al intervalo y estados
+  const statusIntervalRef = useRef<NodeJS.Timeout | null>(null)
+  const verificationStoppedRef = useRef<boolean>(false)
+  const verificationAttemptsRef = useRef<number>(0)
 
   const orderNumber = searchParams.get('order')
   const paymentId = searchParams.get('payment')
+
+  // Declarar stopVerification antes de usarlo en los useEffect
+  const stopVerification = useCallback((reason: string) => {
+    console.log(`🛑 Deteniendo verificación: ${reason}`)
+    
+    // Marcar como detenido en la referencia
+    verificationStoppedRef.current = true
+    
+    // Detener el intervalo si existe
+    if (statusIntervalRef.current) {
+      clearInterval(statusIntervalRef.current)
+      statusIntervalRef.current = null
+      console.log('✅ Intervalo de verificación detenido')
+    }
+    
+    // Marcar como detenido en el estado
+    setVerificationStopped(true)
+    
+    // Mostrar notificación
+    toast(`Se detuvo la verificación automática (${reason}). Puedes verificar manualmente en "Mis Pedidos".`, {
+      icon: 'ℹ️',
+      duration: 4000
+    })
+  }, [])
 
   useEffect(() => {
     if (orderNumber && paymentId) {
@@ -53,34 +81,31 @@ function CheckoutPendingContent() {
       // Redirigir a página de pedidos después de 5 minutos
       router.push('/account/orders')
     }
-  }, [timeLeft, router])
+  }, [timeLeft, router, stopVerification])
+
+  // Sincronizar referencias con estados
+  useEffect(() => {
+    verificationAttemptsRef.current = verificationAttempts
+  }, [verificationAttempts])
+
+  useEffect(() => {
+    verificationStoppedRef.current = verificationStopped
+  }, [verificationStopped])
 
   // Detener verificación cuando se alcance el límite de intentos
   useEffect(() => {
     if (verificationAttempts >= maxVerificationAttempts) {
       stopVerification('Límite de intentos alcanzado')
     }
-  }, [verificationAttempts, maxVerificationAttempts])
-
-  const stopVerification = (reason: string) => {
-    if (statusInterval) {
-      clearInterval(statusInterval)
-      setStatusInterval(null)
-      setVerificationStopped(true)
-      toast(`Se detuvo la verificación automática (${reason}). Puedes verificar manualmente en "Mis Pedidos".`, {
-        icon: 'ℹ️',
-        duration: 4000
-      })
-    }
-  }
+  }, [verificationAttempts, maxVerificationAttempts, stopVerification])
 
   // Limpiar intervalo cuando el componente se desmonte
   useEffect(() => {
     return () => {
       setIsMounted(false)
-      if (statusInterval) {
-        clearInterval(statusInterval)
-        setStatusInterval(null)
+      if (statusIntervalRef.current) {
+        clearInterval(statusIntervalRef.current)
+        statusIntervalRef.current = null
       }
     }
   }, [])
@@ -106,11 +131,19 @@ function CheckoutPendingContent() {
       const checkStatus = async () => {
         // Verificar si el componente sigue montado
         if (!isMounted) {
+          console.log('🛑 Componente desmontado, deteniendo verificación')
           return
         }
 
-        // Verificar límite de intentos
-        if (verificationAttempts >= maxVerificationAttempts) {
+        // Verificar si la verificación ya fue detenida
+        if (verificationStoppedRef.current) {
+          console.log('🛑 Verificación ya detenida, no continuar')
+          return
+        }
+
+        // Verificar límite de intentos usando la referencia actual
+        if (verificationAttemptsRef.current >= maxVerificationAttempts) {
+          console.log(`🛑 Límite de intentos alcanzado (${verificationAttemptsRef.current}/${maxVerificationAttempts}), deteniendo verificación`)
           stopVerification('Límite de intentos alcanzado')
           return
         }
@@ -124,12 +157,19 @@ function CheckoutPendingContent() {
 
         try {
           setLastVerificationTime(now)
-          setVerificationAttempts(prev => prev + 1)
+          setVerificationAttempts(prev => {
+            const newAttempts = prev + 1
+            verificationAttemptsRef.current = newAttempts
+            return newAttempts
+          })
+          
+          console.log(`🔄 Verificación #${verificationAttemptsRef.current}/${maxVerificationAttempts}`)
           
           const statusResponse = await apiClient.get(`/payments/payments/check_status/?order=${orderNumber}`) as any
           
           if (statusResponse.success) {
             const paymentStatus = statusResponse.status
+            console.log(`📊 Estado recibido: ${paymentStatus}`)
             
             // Detener verificación para cualquier estado final
             if (paymentStatus === 'completed') {
@@ -152,8 +192,11 @@ function CheckoutPendingContent() {
             // Si el estado sigue siendo 'pending', continuar verificando
           }
         } catch (error: any) {
-          // Si la orden no existe (404), detener la verificación
+          console.warn('Error verificando estado del pago:', error)
+          
+          // Si la orden no existe (404), detener la verificación inmediatamente
           if (error?.response?.status === 404) {
+            console.log('🛑 Orden no encontrada (404), deteniendo verificación')
             stopVerification('Orden no encontrada')
             toast.error('La orden no existe o ha sido eliminada.')
             router.push('/account/orders')
@@ -161,7 +204,8 @@ function CheckoutPendingContent() {
           }
           
           // Si hay error de red o servidor, detener después de varios intentos
-          if (verificationAttempts >= 5) {
+          if (verificationAttemptsRef.current >= 5) {
+            console.log('🛑 Límite de errores alcanzado, deteniendo verificación')
             stopVerification('Error de conexión')
             toast.error('Error de conexión. Verifica tu conexión a internet.')
             router.push('/account/orders')
@@ -169,13 +213,13 @@ function CheckoutPendingContent() {
           }
           
           // Error silencioso en verificación, pero contar como intento
-          console.warn('Error verificando estado del pago:', error)
+          console.log(`⚠️ Error en verificación ${verificationAttemptsRef.current + 1}/${maxVerificationAttempts}:`, error?.message || 'Error desconocido')
         }
       }
 
       // Verificar cada 10 segundos
       const intervalRef = setInterval(checkStatus, 10000)
-      setStatusInterval(intervalRef)
+      statusIntervalRef.current = intervalRef
     } catch (error) {
       toast.error('Error al cargar información del pago')
     } finally {

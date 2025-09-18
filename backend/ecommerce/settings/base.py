@@ -86,8 +86,8 @@ MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'ecommerce.security.csp_middleware.CSPMiddleware',
-    'ecommerce.middleware.sentry.PerformanceMiddleware',
-    'ecommerce.middleware.sentry.SentryMiddleware',
+    # 'ecommerce.middleware.sentry.PerformanceMiddleware',  # Comentado - no se usa
+    # 'ecommerce.middleware.sentry.SentryMiddleware',  # Comentado - no se usa
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -97,7 +97,7 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'ecommerce.apps.inventory.middleware.InventoryMiddleware',
-    'ecommerce.middleware.sentry.SecurityHeadersMiddleware',
+    # 'ecommerce.middleware.sentry.SecurityHeadersMiddleware',  # Comentado - no se usa
     # 'ecommerce.middleware.cache_middleware.SmartCacheMiddleware',  # Deshabilitado temporalmente
     # 'ecommerce.middleware.cache_middleware.CacheStatsMiddleware',  # Deshabilitado temporalmente
 ]

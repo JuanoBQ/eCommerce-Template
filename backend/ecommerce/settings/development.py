@@ -4,7 +4,7 @@ Configuración de desarrollo para Django.
 
 from .base import *
 from decouple import config
-from .sentry import init_sentry
+# from .sentry import init_sentry  # Comentado - no se usa
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
@@ -169,14 +169,14 @@ try:
 except ImportError:
     pass
 
-# Configuración de Sentry
-SENTRY_DSN = config('SENTRY_DSN', default='')
-SENTRY_ENVIRONMENT = config('SENTRY_ENVIRONMENT', default='development')
-SENTRY_RELEASE = config('SENTRY_RELEASE', default=None)
+# Configuración de Sentry (comentado - no se usa)
+# SENTRY_DSN = config('SENTRY_DSN', default='')
+# SENTRY_ENVIRONMENT = config('SENTRY_ENVIRONMENT', default='development')
+# SENTRY_RELEASE = config('SENTRY_RELEASE', default=None)
 
-# Inicializar Sentry si está configurado
-if SENTRY_DSN:
-    try:
-        init_sentry()
-    except Exception as e:
-        print(f"Warning: Could not initialize Sentry: {e}")
+# Inicializar Sentry si está configurado (comentado - no se usa)
+# if SENTRY_DSN:
+#     try:
+#         init_sentry()
+#     except Exception as e:
+#         print(f"Warning: Could not initialize Sentry: {e}")

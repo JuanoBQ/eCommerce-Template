@@ -96,8 +96,6 @@ const FilterGroup: React.FC<{
   isExpanded: boolean
   onToggleExpanded: () => void
 }> = React.memo(({ group, activeValues, onToggle, isExpanded, onToggleExpanded }) => {
-  const filteredOptions = group.options
-
   const hasActiveValues = activeValues.length > 0
 
   return (
@@ -105,7 +103,8 @@ const FilterGroup: React.FC<{
       <button
         onClick={onToggleExpanded}
         className="w-full flex items-center justify-between p-4 hover:bg-gray-50 transition-colors"
-        aria-expanded={isExpanded ? 'true' : 'false'}
+        // eslint-disable-next-line jsx-a11y/aria-proptypes
+        aria-expanded={isExpanded}
         type="button"
       >
         <div className="flex items-center gap-3">
@@ -138,7 +137,7 @@ const FilterGroup: React.FC<{
             <div className="px-4 pb-4">
 
               <div className="space-y-2">
-                {filteredOptions.map((option) => {
+                {group.options.map((option) => {
                   const isActive = activeValues.includes(option.value)
                   return (
                     <motion.label

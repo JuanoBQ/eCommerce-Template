@@ -3,7 +3,7 @@ Configuración de Django para producción.
 """
 
 from .base import *
-from .sentry import init_sentry
+# from .sentry import init_sentry  # Comentado - no se usa
 import os
 import logging
 
@@ -165,16 +165,16 @@ CACHE_MIDDLEWARE_KEY_PREFIX = config('CACHE_MIDDLEWARE_KEY_PREFIX', default='eco
 CONN_MAX_AGE = config('DB_CONN_MAX_AGE', default=60, cast=int)
 
 # ===========================================
-# SENTRY CONFIGURATION
+# SENTRY CONFIGURATION (comentado - no se usa)
 # ===========================================
 
-# Inicializar Sentry si está configurado
-if config('SENTRY_DSN', default=''):
-    init_sentry(
-        dsn=config('SENTRY_DSN'),
-        environment=config('SENTRY_ENVIRONMENT', default='production'),
-        release=config('SENTRY_RELEASE', default='1.0.0'),
-    )
+# Inicializar Sentry si está configurado (comentado - no se usa)
+# if config('SENTRY_DSN', default=''):
+#     init_sentry(
+#         dsn=config('SENTRY_DSN'),
+#         environment=config('SENTRY_ENVIRONMENT', default='production'),
+#         release=config('SENTRY_RELEASE', default='1.0.0'),
+#     )
 
 # ===========================================
 # MIDDLEWARE ADICIONAL PARA PRODUCCIÓN

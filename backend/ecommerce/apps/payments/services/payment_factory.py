@@ -5,7 +5,6 @@ from typing import Optional
 from .base import BasePaymentService
 from .wompi_service import WompiService
 from .mercadopago_service import MercadoPagoService
-from .stripe_service import StripeService
 
 
 class PaymentServiceFactory:
@@ -16,7 +15,6 @@ class PaymentServiceFactory:
     _services = {
         'wompi': WompiService,
         'mercadopago': MercadoPagoService,
-        'stripe': StripeService,
     }
     
     @classmethod
@@ -25,7 +23,7 @@ class PaymentServiceFactory:
         Crea una instancia del servicio de pago especificado.
         
         Args:
-            provider: Nombre del proveedor ('wompi', 'mercadopago', 'stripe')
+            provider: Nombre del proveedor ('wompi', 'mercadopago')
             
         Returns:
             Instancia del servicio o None si no se encuentra
@@ -84,12 +82,12 @@ class PaymentServiceFactory:
             'AR': 'mercadopago',  # Argentina - MercadoPago
             'MX': 'mercadopago',  # México - MercadoPago
             'BR': 'mercadopago',  # Brasil - MercadoPago
-            'US': 'stripe',  # Estados Unidos - Stripe
-            'CA': 'stripe',  # Canadá - Stripe
-            'GB': 'stripe',  # Reino Unido - Stripe
-            'DE': 'stripe',  # Alemania - Stripe
-            'FR': 'stripe',  # Francia - Stripe
-            'ES': 'stripe',  # España - Stripe
+            'US': 'mercadopago',  # Estados Unidos - MercadoPago
+            'CA': 'mercadopago',  # Canadá - MercadoPago
+            'GB': 'mercadopago',  # Reino Unido - MercadoPago
+            'DE': 'mercadopago',  # Alemania - MercadoPago
+            'FR': 'mercadopago',  # Francia - MercadoPago
+            'ES': 'mercadopago',  # España - MercadoPago
         }
         
         return country_providers.get(country_code.upper(), cls.get_default_provider())
@@ -107,12 +105,12 @@ class PaymentServiceFactory:
         """
         currency_providers = {
             'COP': ['wompi', 'mercadopago'],  # Peso colombiano
-            'USD': ['stripe', 'mercadopago'],  # Dólar estadounidense
+            'USD': ['mercadopago'],  # Dólar estadounidense
             'ARS': ['mercadopago'],  # Peso argentino
             'MXN': ['mercadopago'],  # Peso mexicano
             'BRL': ['mercadopago'],  # Real brasileño
-            'EUR': ['stripe'],  # Euro
-            'GBP': ['stripe'],  # Libra esterlina
+            'EUR': ['mercadopago'],  # Euro
+            'GBP': ['mercadopago'],  # Libra esterlina
         }
         
         return currency_providers.get(currency.upper(), [cls.get_default_provider()])
@@ -151,17 +149,6 @@ class PaymentServiceFactory:
                 'website': 'https://mercadopago.com',
                 'logo_url': '/static/images/payment-logos/mercadopago.png'
             },
-            'stripe': {
-                'name': 'Stripe',
-                'display_name': 'Stripe',
-                'description': 'Pasarela de pago global',
-                'supported_currencies': ['USD', 'EUR', 'GBP', 'CAD', 'AUD', 'JPY', 'CHF', 'SEK', 'NOK', 'DKK'],
-                'supported_countries': ['US', 'CA', 'GB', 'DE', 'FR', 'ES', 'IT', 'NL', 'BE', 'AT', 'CH', 'SE', 'NO', 'DK', 'FI', 'IE', 'PT', 'LU', 'MT', 'CY', 'EE', 'LV', 'LT', 'SI', 'SK', 'HU', 'PL', 'CZ', 'RO', 'BG', 'HR', 'GR'],
-                'payment_methods': ['credit_card', 'debit_card', 'bank_transfer', 'digital_wallet'],
-                'environment': 'test',
-                'website': 'https://stripe.com',
-                'logo_url': '/static/images/payment-logos/stripe.png'
-            }
         }
         
         return configs.get(provider.lower(), {})
