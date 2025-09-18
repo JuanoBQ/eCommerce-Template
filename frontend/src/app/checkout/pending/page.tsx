@@ -128,20 +128,46 @@ function CheckoutPendingContent() {
           
           const statusResponse = await apiClient.get(`/payments/payments/check_status/?order=${orderNumber}`) as any
           
-          if (statusResponse.success && statusResponse.status === 'completed') {
-            // Detener verificación cuando el pago se complete
-            stopVerification('Pago completado')
+          if (statusResponse.success) {
+            const paymentStatus = statusResponse.status
             
-            toast.success('¡Pago completado!')
-            router.push('/account/orders')
-          } else if (statusResponse.success && statusResponse.status === 'failed') {
-            // Detener verificación si el pago falló
-            stopVerification('Pago fallido')
-            
-            toast.error('El pago no pudo ser procesado. Intenta nuevamente.')
-            router.push('/checkout')
+            // Detener verificación para cualquier estado final
+            if (paymentStatus === 'completed') {
+              stopVerification('Pago completado')
+              toast.success('¡Pago completado!')
+              router.push('/account/orders')
+            } else if (paymentStatus === 'failed') {
+              stopVerification('Pago fallido')
+              toast.error('El pago no pudo ser procesado. Intenta nuevamente.')
+              router.push('/checkout')
+            } else if (paymentStatus === 'refunded') {
+              stopVerification('Pago reembolsado')
+              toast.info('El pago ha sido reembolsado.')
+              router.push('/account/orders')
+            } else if (paymentStatus === 'cancelled') {
+              stopVerification('Pago cancelado')
+              toast.warning('El pago fue cancelado.')
+              router.push('/checkout')
+            }
+            // Si el estado sigue siendo 'pending', continuar verificando
           }
-        } catch (error) {
+        } catch (error: any) {
+          // Si la orden no existe (404), detener la verificación
+          if (error?.response?.status === 404) {
+            stopVerification('Orden no encontrada')
+            toast.error('La orden no existe o ha sido eliminada.')
+            router.push('/account/orders')
+            return
+          }
+          
+          // Si hay error de red o servidor, detener después de varios intentos
+          if (verificationAttempts >= 5) {
+            stopVerification('Error de conexión')
+            toast.error('Error de conexión. Verifica tu conexión a internet.')
+            router.push('/account/orders')
+            return
+          }
+          
           // Error silencioso en verificación, pero contar como intento
           console.warn('Error verificando estado del pago:', error)
         }

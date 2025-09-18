@@ -295,11 +295,11 @@ class PaymentViewSet(viewsets.ModelViewSet):
                     status=status.HTTP_404_NOT_FOUND
                 )
 
-            # Si ya está completo, retornar estado actual
-            if payment.status == 'completed':
+            # Si ya está en un estado final, retornar estado actual
+            if payment.status in ['completed', 'failed', 'cancelled', 'refunded']:
                 return Response({
                     'success': True,
-                    'status': 'completed',
+                    'status': payment.status,
                     'payment_id': payment.id,
                     'order_number': order_number,
                     'order_status': order.status,
@@ -319,6 +319,7 @@ class PaymentViewSet(viewsets.ModelViewSet):
                             
                             if new_status != payment.status:
                                 payment.status = new_status
+                                
                                 if new_status == 'completed':
                                     payment.processed_at = timezone.now()
                                     order.status = 'confirmed'
@@ -332,6 +333,18 @@ class PaymentViewSet(viewsets.ModelViewSet):
                                     except Exception as e:
                                         print(f"DEBUG: Error procesando stock: {e}")
                                         
+                                elif new_status == 'failed':
+                                    order.status = 'cancelled'
+                                    order.payment_status = 'failed'
+                                    order.save()
+                                    print(f"DEBUG: Orden {order_number} cancelada por pago fallido")
+                                    
+                                elif new_status == 'refunded':
+                                    order.status = 'refunded'
+                                    order.payment_status = 'refunded'
+                                    order.save()
+                                    print(f"DEBUG: Orden {order_number} marcada como reembolsada")
+                                    
                                 payment.save()
 
                             return Response({
@@ -464,16 +477,18 @@ class PaymentViewSet(viewsets.ModelViewSet):
                 'PENDING': 'pending',
                 'APPROVED': 'completed',
                 'DECLINED': 'failed',
+                'REJECTED': 'failed',
                 'VOIDED': 'cancelled',
                 'REFUNDED': 'refunded',
+                'CANCELLED': 'cancelled',
             }
         elif provider == 'mercadopago':
             mapping = {
                 'pending': 'pending',
                 'approved': 'completed',
                 'authorized': 'completed',
-                'in_process': 'processing',
-                'in_mediation': 'processing',
+                'in_process': 'pending',
+                'in_mediation': 'pending',
                 'rejected': 'failed',
                 'cancelled': 'cancelled',
                 'refunded': 'refunded',
@@ -482,7 +497,19 @@ class PaymentViewSet(viewsets.ModelViewSet):
         else:
             return 'pending'
         
-        return mapping.get(provider_status, 'pending')
+        # Convertir a minúsculas para comparación
+        provider_status_lower = str(provider_status).lower()
+        
+        # Buscar coincidencia exacta primero
+        if provider_status_lower in mapping:
+            return mapping[provider_status_lower]
+        
+        # Buscar coincidencia parcial
+        for key, value in mapping.items():
+            if key.lower() in provider_status_lower or provider_status_lower in key.lower():
+                return value
+        
+        return 'pending'
 
 
 class PaymentProvidersView(APIView):
